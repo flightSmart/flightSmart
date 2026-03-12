@@ -1,0 +1,356 @@
+body {
+  background-color:rgb(30,30,30) ;
+  font-family:'B612 Mono';
+  color:rgb(224,225,226);
+}
+
+
+/* Container to align button and info icon */
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+/* Updated info-icon styles */
+.info-icon {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; /* Slightly larger for better clicking */
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgb(100, 195, 153);
+  color: rgb(100, 195, 153);
+  font-family: serif;
+  font-size: 12px;
+  transition: 0.3s;
+  
+  /* Prevent highlighting */
+  user-select: none; 
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE/Edge */
+}
+
+.info-icon:hover {
+  background-color: rgba(100, 195, 153, 0.2);
+}
+
+
+
+
+button, select {
+  background-color: rgb(50, 50, 50);
+  border: 1px solid rgb(131, 131, 131);
+  color:rgb(224,225,226);
+  padding: 3px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12px;
+  font-family:'B612 Mono';
+
+  font-size: 12px
+}
+
+button:hover{
+  background-color:rgb(224,225,226);
+  color: rgb(30,30,30)
+}
+button:focus{
+  background-color:rgb(224,225,226);
+  color: rgb(30,30,30)
+}
+
+label {
+  font-size: 12px;
+}
+
+input[type=number] {
+  color:rgb(224,225,226);
+  background-color:rgb(50, 50, 50);
+  font-size: 12px;
+  font-family:'B612 Mono';
+  font-size: 12px
+}
+
+input[type=file] {
+  color:rgb(224,225,226);
+  background-color:rgb(30, 30, 30);
+  font-size: 12px;
+  font-family:'B612 Mono';
+  font-size: 12px
+}
+
+
+
+
+textarea {
+  color:rgb(224,225,226);
+  background-color:rgb(50, 50, 50);
+  font-size: 12px;
+  font-family:'B612 Mono';
+  font-size: 12px
+}
+
+select {
+  color:rgb(224,225,226);
+  background-color:rgb(50, 50, 50);
+  margin-top: 5px;
+}
+
+
+
+td {
+  background-color: rgb(30,30,30);
+  padding: 7px;
+  border-radius: 7px;
+  outline: 1px solid rgba(232, 232, 232, 0.275);
+}
+
+tr {
+  padding-bottom: 5px;
+}
+
+.data {
+  color: rgb(100,196,154); 
+  font-size: 12px;
+  font-family:'B612 Mono';
+}
+
+.link,
+.link:link,
+.link:visited {
+  color: rgb(224,225,226); 
+  font-style: italic;
+  text-decoration-line: underline;
+  font-size: 12px;
+  font-family:'B612 Mono';
+}
+
+
+.dataHeader {
+  font-family: Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.myCredit {
+  padding: 15px;
+  font-family: Helvetica, sans-serif;
+  font-size: 12px;
+  color: rgb(224,225,226); 
+
+  text-decoration-line: underline;
+  font-size: 12px;
+}
+
+#versionElement {
+  font-family: Helvetica, sans-serif;
+  font-size: 12px;
+  padding-left: 15px;
+
+  color: rgb(224,225,226); 
+}
+
+.dataHeader, .versionElement {
+  font-family: Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+hr {
+  border-color:rgb(224,225,226, 0.5);
+}
+
+
+
+
+.flightData {
+  color:rgb(224,225,226);
+  font-size: 12px;
+  background-color: rgb(30,30,30);
+  border-spacing: 10px;
+
+  border: 1px solid rgb(100, 195, 153);
+
+  width: 600px;
+  margin: auto;
+}
+
+.ldgDIV{
+  width: 560px;
+  
+  border-radius: 0px;
+  background-color: rgb(50, 50, 50);
+
+  padding:10px;
+  outline: 1px dashed rgb(100, 195, 153);
+  margin: auto;
+}
+
+
+.ldgBtton {
+  background-color: rgb(50, 50, 50);
+  border: 1px solid rgb(100, 195, 153);
+  color:rgb(224,225,226);
+  padding: 3px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12px;
+  font-family:'B612 Mono';
+  margin: 2px;
+  font-size: 12px
+}
+
+.ldgBtton:hover {
+  color:rgb(50,50,50);;
+  background-color:rgba(224,225,226, 1);
+}
+
+
+.ldgBttonSelected {
+  background-color: rgba(224,225,226, 1);
+  border: 1px solid rgb(100, 195, 153);
+  color:rgb(50,50,50);
+  padding: 3px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12px;
+  font-family:'B612 Mono';
+  margin: 2px;
+  font-size: 12px
+}
+
+
+
+.textOutput {
+  color:rgb(224,225,226);
+  background-color:rgb(50 50 50);
+  font-family:'B612 Mono';
+  font-size: 10px;
+  padding: .3em;
+}
+
+.start-label, .end-label {
+  background-color: rgba(0,0,0,0.0);
+  border: 2px solid rgba(0,0,0,0.5);
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-weight: bold;
+  font-family:'B612 Mono';
+}
+
+
+.leaflet-layer,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+  filter:  invert(100%) hue-rotate(200deg) brightness(90%) contrast(75%) saturate(20%);
+}
+
+.WebsiteCredits {
+  text-align: center;
+}
+
+.invis {
+  border: none;
+  border-collapse: collapse;
+}
+
+.invis td,
+.invis th {
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+
+.mainButton{
+  border: 1px solid rgb(100, 195, 153);
+  color: rgb(100, 195, 153);
+}
+
+/* Consolidated & Fixed Size for the Upload Box */
+.custom-file-input {
+  color: rgb(224, 225, 226);
+  background-color: rgb(50, 50, 50);
+  border: 1px solid rgb(118 118 118);
+  border-radius: 0px !important; /* Sharp corners */
+  cursor: pointer;
+  
+  /* Use flex to center the icon inside the box */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Restores the original size */
+  width: 155px;  
+  height: 64px; /* Matches the vertical height from your 23px padding */
+  
+  box-sizing: border-box;
+  transition: background-color 0.3s;
+}
+
+.custom-file-input:hover {
+  background-color: rgb(60, 60, 60);
+}
+
+/* Ensure the icon color matches your 'grey' preference */
+.file-icon-only {
+  color: rgb(117 117 117); 
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+/* Keep icon grey on hover too, or slightly brighten it */
+.custom-file-input:hover .file-icon-only {
+  color: rgb(224, 225, 226);
+}
+
+
+.custom-file-input:active {
+  background-color: rgb(40, 40, 40);
+}
+
+#kmlFileInput {
+  display: none;
+}
+
+.file-name {
+  margin-left: 10px;
+  color: rgb(150, 150, 150);
+  font-family: 'B612 Mono', monospace;
+  font-size: 12px;
+} 
+
+
+
+@media screen and (max-width: 600px) {
+  .flightData {
+    width: auto;
+  }
+
+  .ldgDIV{
+    width: 350px;
+    
+    border-radius: 0px;
+    background-color: rgb(50, 50, 50);
+  
+    padding:10px;
+    outline: 1px dashed rgb(100, 195, 153);
+    margin: auto;
+  }
+  
+
+
+}
+
+
