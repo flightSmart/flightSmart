@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<script type="text/javascript" src="/api/api.js"></script>
+</head>
+
+<body>
+	<form id="sbapiform">
+		<table>
+			<tr>
+				<td>Aircraft:</td>
+				<td>
+					<select name="type">
+						<option value="a320">A320</option>
+						<option value="b738">B738</option>
+					</select>
+				</td>
+			<tr>
+			<tr>
+				<td>Origin:</td>
+				<td><input name="orig" size="5" type="text" placeholder="ZZZZ" maxlength="4" value="KJFK"></td>
+			<tr>
+			<tr>
+				<td>Destination:</td>
+				<td><input name="dest" size="5" type="text" placeholder="ZZZZ" maxlength="4" value="KBOS"></td>
+			<tr>
+		</table>
+		<input type="button" onclick="simbriefsubmit('/api/test.php');" style="font-size:10px" value="Generate">
+	</form>
+</body>
+
+</html>
