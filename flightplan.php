@@ -20,10 +20,10 @@ print <<<END
 
 <div class="ldgDIV" style="display: flex; flex-direction: column;">
     <a href="/"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
-    <a class="ldgBtton" href="aircraftCalculator" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
-    <a class="ldgBtton" href="kmlToIF" title="KML to IF coordinates">KML -> IF Coordinates</a> 
-    <a class="ldgBtton" href="descent" title="TOD Calculator">Descent Calculator</a>
-    <a class="ldgBttonSelected" href="flightplan" title="Flightplan Generator">Flightplan Generator (Simbrief)</a>
+    <a class="ldgBtton" href="aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
+    <a class="ldgBtton" href="kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
+    <a class="ldgBtton" href="descent.html" title="TOD Calculator">Descent Calculator</a>
+    <a class="ldgBttonSelected" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (Simbrief)</a>
 </div>
 END;
 
