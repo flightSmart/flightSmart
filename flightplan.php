@@ -48,14 +48,16 @@ print <<<END
                         <br><br>
                     </div>
 
-                    <div id="aircraftLoadInput" style="margin-bottom: 0px;"> 
-                        <label for="orig">Depart (ICAO):</label>
-                        <input name="orig" size="5" type="text" placeholder="KLAX" maxlength="4" >
-                        <br>
-                        <label for="dest">Arrive (ICAO):</label>
-                        <input name="dest" size="5" type="text" placeholder="EGLL" maxlength="4" >
-                        <br><br>
-                    </div>  
+<div id="aircraftLoadInput" style="margin-bottom: 0px;"> 
+    <label for="orig">Depart (ICAO):</label>
+    <input name="orig" size="5" type="text" placeholder="KLAX" maxlength="4" 
+           style="background-color: rgb(50, 50, 50); color: rgb(224, 225, 226); border: 1px solid rgb(131, 131, 131); font-family: 'B612 Mono', monospace; font-size: 12px; padding: 3px; outline: none;">
+    <br>
+    <label for="dest">Arrive (ICAO):</label>
+    <input name="dest" size="5" type="text" placeholder="EGLL" maxlength="4" 
+           style="background-color: rgb(50, 50, 50); color: rgb(224, 225, 226); border: 1px solid rgb(131, 131, 131); font-family: 'B612 Mono', monospace; font-size: 12px; padding: 3px; outline: none;">
+    <br><br>
+</div>
                     
                     <button type="button" onclick="simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
                 </form>
