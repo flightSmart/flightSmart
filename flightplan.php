@@ -30,44 +30,41 @@ END;
 
 // --- ALWAYS SHOW THE FORM BLOCK ---
 print <<<END
-<table class="flightData">
-    <tr>
-        <td>
-            <div id="formContainer">
-                <form id="sbapiform">
-                    <div id="manufacturerButtons" style="margin-bottom: 10px;">
-                        <button type="button" id="airbusButton">Airbus</button>
-                        <button type="button" id="boeingButton">Boeing</button>
-                        <button type="button" id="bombardierButton">Bombardier</button>
-                        <button type="button" id="embraerButton">Embraer</button>
-                        <button type="button" id="McDonnellDouglasButton">McDonnell Douglas</button>
-                    </div>
+    <table class="flightData">
+        <tr>
+            <td>
+                <div id="manufacturerContainer">
+                    <form id="sbapiform">
+                        
+                        <div id="manufacturerButtons" style="margin-bottom: 15px;">
+                            <button type="button" id="airbusButton">Airbus</button>
+                            <button type="button" id="boeingButton">Boeing</button>
+                            <button type="button" id="bombardierButton">Bombardier</button>
+                            <button type="button" id="embraerButton">Embraer</button>
+                            <button type="button" id="McDonnellDouglasButton">McDonnell Douglas</button>
+                        </div>
 
-                    <table>
-                        <tr>
-                            <td>Aircraft:</td>
-                            <td>
-                                <select id="aircraftType" name="type" required>
-                                    <option value="" disabled selected>Select Manufacturer</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Origin:</td>
-                            <td><input name="orig" size="5" type="text" placeholder="KLAX" maxlength="4" value="KLAX"></td>
-                        </tr>
-                        <tr>
-                            <td>Destination:</td>
-                            <td><input name="dest" size="5" type="text" placeholder="KIAD" maxlength="4" value="KIAD"></td>
-                        </tr>
-                    </table>
-                    <br>
-                    <button type="button" onclick="simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
-                </form>
-            </div>
-        </td>
-    </tr>
-</table>
+                        <div id="aircraftTypeDropdown" style="margin-bottom: 15px;">
+                            <label for="aircraftType">Aircraft Type:</label>
+                            <select id="aircraftType" name="type" required>
+                                <option value="" disabled selected>Select Manufacturer</option>
+                            </select>
+                        </div>
+
+                        <div id="aircraftLoadInput" style="margin-bottom: 15px;"> 
+                            <label for="orig">Depart (ICAO):</label>
+                            <input name="orig" size="5" type="text" placeholder="KLAX" maxlength="4" >
+                            <br><br>
+                            <label for="dest">Arrive (ICAO):</label>
+                            <input name="dest" size="5" type="text" placeholder="EGLL" maxlength="4" >
+                        </div>  
+                        
+                        <button type="button" onclick="simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+    </table>
 
 <script>
     // --- Dropdown Update Function ---
