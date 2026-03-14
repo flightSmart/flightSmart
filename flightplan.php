@@ -200,4 +200,19 @@ print <<<END
 </body>
 </html>
 END;
+// --- RAW DATA OUTPUT ---
+if (isset($simbrief->ofp_array)) {
+    // Encode the array into formatted JSON
+    $rawJson = json_encode($simbrief->ofp_array, JSON_PRETTY_PRINT);
+    
+    // Output inside a styled container
+    print <<<END
+    <div style="margin: 30px auto; width: 80%; background-color: #1e1e1e; border: 1px solid #444; border-radius: 8px; padding: 15px; font-family: 'B612 Mono', monospace; color: #a9dc76; overflow-x: auto;">
+        <h3 style="color: #fff; margin-top: 0;">Raw SimBrief Data</h3>
+        <pre style="font-size: 12px;">$rawJson</pre>
+    </div>
+END;
+}
+
+print "</body>\n</html>";
 ?>
