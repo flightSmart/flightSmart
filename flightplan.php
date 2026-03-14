@@ -2,7 +2,7 @@
 
 include 'api/api.php';
 
-$xmllink = $_GET['ofp_id'];
+$xmllink = $_GET['ofp_id'] ?? null;
 
 // --- Header and Navigation Menu ---
 print <<<END
@@ -78,24 +78,32 @@ if ($xmllink != null && $xmllink != false) {
     $destinationRunway = $simbrief->ofp_array['destination']['plan_rwy'];
 
     // --- Route Formatting ---
-    // 1. Keep your original logic to drop the first block (slash speeds, etc)
     $baseRoute = trim(preg_replace('/\/\S+/', '', implode(" ", array_slice(explode(" ", $simbrief->ofp_array['atc']['route']), 1))));
-    // 2. Remove "DCT" and clean up any accidental double spaces
     $cleanRoute = trim(preg_replace('/\s+/', ' ', str_replace('DCT', '', $baseRoute)));
-    // 3. Bookend the route with the ICAO codes
     $route = $originICAO . " " . $cleanRoute . " " . $destinationICAO;
 
     // --- SID & STAR ---
-    // SimBrief returns an empty array [] if there is no SID/STAR, so we check if it is a string
     $sid_ident = $simbrief->ofp_array['general']['sid_ident'];
     $sid = (is_string($sid_ident) && trim($sid_ident) !== '') ? $sid_ident : 'N/A';
 
     $star_ident = $simbrief->ofp_array['general']['star_ident'];
     $star = (is_string($star_ident) && trim($star_ident) !== '') ? $star_ident : 'N/A';
     
-    // --- Images ---
+    // --- Images & PHP Proxy ---
     $flightMapDirectory = $simbrief->ofp_array['images']['directory'];
-    $flightMap = $simbrief->ofp_array['images']['map'][0]['link'];
+    $flightMapName = $simbrief->ofp_array['images']['map'][0]['link'];
+    $mapUrl = $flightMapDirectory . $flightMapName;
+
+    // Fetch the image in PHP to bypass browser CORS restrictions for the Canvas
+    $mapContext = stream_context_create(['http' => ['timeout' => 5]]);
+    $mapImageData = @file_get_contents($mapUrl, false, $mapContext);
+
+    if ($mapImageData !== false) {
+        $mapSrc = 'data:image/png;base64,' . base64_encode($mapImageData);
+    } else {
+        // Fallback to direct URL if the server blocks file_get_contents
+        $mapSrc = $mapUrl;
+    }
     
     print <<<END
             <hr style="border: 1px solid #444; margin: 30px 0;">
@@ -115,7 +123,8 @@ if ($xmllink != null && $xmllink != false) {
                 STAR: <span class="data">$star</span><br><br>
                 
                 <span class="dataHeader">Flight Map: </span><br>
-                <img src="$flightMapDirectory$flightMap" width="100%" style="max-width:500px;" />
+                <canvas id="mapCanvas" style="width: 100%; max-width: 500px; border-radius: 4px;"></canvas>
+                <img id="sourceMap" src="$mapSrc" crossorigin="anonymous" style="display:none;" onload="recolorMap()" />
             </div>
 END;
 }
@@ -127,6 +136,65 @@ print <<<END
 </table>
 
 <script>
+    // --- CANVAS RECOLORING LOGIC ---
+    function recolorMap() {
+        const img = document.getElementById('sourceMap');
+        const canvas = document.getElementById('mapCanvas');
+        if (!img || !canvas) return;
+
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // Set canvas dimensions to match the actual image
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        
+        // Draw the base image
+        ctx.drawImage(img, 0, 0);
+
+        try {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Loop through every pixel (RGBA format)
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+
+                // 1. Water Detection (SimBrief Blue is ~ 164, 206, 237)
+                if (Math.abs(r - 164) < 40 && Math.abs(g - 206) < 40 && Math.abs(b - 237) < 40) {
+                    data[i] = 30;      // #1e = 30
+                    data[i + 1] = 30;  // #1e = 30
+                    data[i + 2] = 30;  // #1e = 30
+                }
+                // 2. Land Detection (SimBrief Tan is ~ 244, 236, 195)
+                else if (Math.abs(r - 244) < 40 && Math.abs(g - 236) < 40 && Math.abs(b - 195) < 40) {
+                    data[i] = 93;      // #5d = 93
+                    data[i + 1] = 93;  // #5d = 93
+                    data[i + 2] = 93;  // #5d = 93
+                }
+                // 3. Route/Line Detection (Dark pixels)
+                else if (r < 80 && g < 80 && b < 80) {
+                    data[i] = 100;     // #64 = 100
+                    data[i + 1] = 196; // #c4 = 196
+                    data[i + 2] = 154; // #9a = 154
+                }
+            }
+
+            // Put the modified pixels back onto the canvas
+            ctx.putImageData(imageData, 0, 0);
+            
+        } catch (e) {
+            console.error("Canvas pixel manipulation failed (likely CORS). Fallback to standard image.", e);
+            img.style.display = "block";
+            img.style.width = "100%";
+            img.style.maxWidth = "500px";
+            canvas.style.display = "none";
+        }
+    }
+
+
+    // --- AIRCRAFT DROPDOWN LOGIC ---
     function updateAircraftDropdown(aircraftList) {
         const select = document.getElementById('aircraftType');
         select.innerHTML = '';
@@ -202,22 +270,5 @@ print <<<END
     <br>
     <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes ↗</a>
 </div>
-</body>
-</html>
 END;
-// --- RAW DATA OUTPUT ---
-if (isset($simbrief->ofp_array)) {
-    // Encode the array into formatted JSON
-    $rawJson = json_encode($simbrief->ofp_array, JSON_PRETTY_PRINT);
-    
-    // Output inside a styled container
-    print <<<END
-    <div style="margin: 30px auto; width: 80%; background-color: #1e1e1e; border: 1px solid #444; border-radius: 8px; padding: 15px; font-family: 'B612 Mono', monospace; color: #a9dc76; overflow-x: auto;">
-        <h3 style="color: #fff; margin-top: 0;">Raw SimBrief Data</h3>
-        <pre style="font-size: 12px;">$rawJson</pre>
-    </div>
-END;
-}
-
-print "</body>\n</html>";
 ?>
