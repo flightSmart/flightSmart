@@ -67,28 +67,33 @@ END;
 
 // --- RESULTS LOGIC (Inserts into the same TD if data exists) ---
 if ($xmllink != null && $xmllink != false) {
-    $route = trim(preg_replace('/\/\S+/', '', implode(" ", array_slice(explode(" ", $simbrief->ofp_array['atc']['route']), 1))));
+    
+    // --- Origin & Destination Data ---
     $originName = $simbrief->ofp_array['origin']['name'];
     $originICAO = $simbrief->ofp_array['origin']['icao_code'];
     $originRunway = $simbrief->ofp_array['origin']['plan_rwy'];
-    $navLog = $simbrief->ofp_array['navlog']['fix'];
-    
-    $sidObject = reset(array_filter($navLog, function ($item) {
-        return $item['is_sid_star'] === '1';
-    })) ?: false;
-    $sid = $sidObject ? $sidObject['name'] : 'N/A';
     
     $destinationName = $simbrief->ofp_array['destination']['name'];
     $destinationICAO = $simbrief->ofp_array['destination']['icao_code'];
     $destinationRunway = $simbrief->ofp_array['destination']['plan_rwy'];
+
+    // --- Route Formatting ---
+    // 1. Keep your original logic to drop the first block (slash speeds, etc)
+    $baseRoute = trim(preg_replace('/\/\S+/', '', implode(" ", array_slice(explode(" ", $simbrief->ofp_array['atc']['route']), 1))));
+    // 2. Remove "DCT" and clean up any accidental double spaces
+    $cleanRoute = trim(preg_replace('/\s+/', ' ', str_replace('DCT', '', $baseRoute)));
+    // 3. Bookend the route with the ICAO codes
+    $route = $originICAO . " " . $cleanRoute . " " . $destinationICAO;
+
+    // --- SID & STAR ---
+    // SimBrief returns an empty array [] if there is no SID/STAR, so we check if it is a string
+    $sid_ident = $simbrief->ofp_array['general']['sid_ident'];
+    $sid = (is_string($sid_ident) && trim($sid_ident) !== '') ? $sid_ident : 'N/A';
+
+    $star_ident = $simbrief->ofp_array['general']['star_ident'];
+    $star = (is_string($star_ident) && trim($star_ident) !== '') ? $star_ident : 'N/A';
     
-    $filteredArray = array_filter($navLog, function ($item) {
-        return $item['is_sid_star'] === '1';
-    });
-    $secondToLastObject = array_reverse($filteredArray);
-    $starObject = isset($secondToLastObject[1]) ? $secondToLastObject[1] : false;
-    $star = $starObject ? $starObject['name'] : 'N/A';
-    
+    // --- Images ---
     $flightMapDirectory = $simbrief->ofp_array['images']['directory'];
     $flightMap = $simbrief->ofp_array['images']['map'][0]['link'];
     
