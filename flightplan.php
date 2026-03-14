@@ -4,6 +4,7 @@ include 'api/api.php';
 
 $xmllink = $_GET['ofp_id'];
 
+// --- Header and Navigation Menu ---
 print <<<END
 <!DOCTYPE html>
 <html lang="en">
@@ -27,40 +28,108 @@ print <<<END
 </div>
 END;
 
+
+// --- Form View (If no data is requested yet) ---
 if ($xmllink == null || $xmllink == false) {
     print <<<END
     <table class="flightData">
         <tr>
             <td>
-                <div id="manufacturerButtons">
+                <div id="manufacturerContainer">
                     <form id="sbapiform">
-                        <table>
-                            <tr>
-                                <td>Aircraft:</td>
-                                <td>
-                                    <select name="type">
-                                        <option value="a320">A320</option>
-                                        <option value="b738">B738</option>
-                                    </select>
-                                </td>
-                            <tr>
-                            <tr>
-                                <td>Origin:</td>
-                                <td><input name="orig" size="5" type="text" placeholder="ZZZZ" maxlength="4" value="KLAX"></td>
-                            <tr>
-                            <tr>
-                                <td>Destination:</td>
-                                <td><input name="dest" size="5" type="text" placeholder="ZZZZ" maxlength="4" value="KIAD"></td>
-                            <tr>
-                        </table>
+                        
+                        <div id="manufacturerButtons" style="margin-bottom: 15px;">
+                            <button type="button" id="airbusButton">Airbus</button>
+                            <button type="button" id="boeingButton">Boeing</button>
+                            <button type="button" id="bombardierButton">Bombardier</button>
+                            <button type="button" id="embraerButton">Embraer</button>
+                            <button type="button" id="McDonnellDouglasButton">McDonnell Douglas</button>
+                        </div>
+
+                        <div id="aircraftTypeDropdown" style="margin-bottom: 15px;">
+                            <label for="aircraftType">Aircraft Type:</label>
+                            <select id="aircraftType" name="type" required>
+                                <option value="" disabled selected>Select Manufacturer</option>
+                            </select>
+                        </div>
+
+                        <div id="aircraftLoadInput" style="margin-bottom: 15px;"> 
+                            <label for="orig">Depart (ICAO):</label>
+                            <input name="orig" size="5" type="text" placeholder="KLAX" maxlength="4" >
+                            <br><br>
+                            <label for="dest">Arrive (ICAO):</label>
+                            <input name="dest" size="5" type="text" placeholder="EGLL" maxlength="4" >
+                        </div>  
+                        
                         <button type="button" onclick="simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
                     </form>
                 </div>
             </td>
         </tr>
     </table>
+
+    <script>
+        function toggleInfo() {
+            const infoBlock = document.getElementById("instructionText");
+            if(infoBlock) {
+                infoBlock.style.display = (infoBlock.style.display === "none" || infoBlock.style.display === "") ? "block" : "none";
+            }
+        }
+
+        // --- Dropdown Update Function ---
+        function updateAircraftDropdown(aircraftList) {
+            const select = document.getElementById('aircraftType');
+            
+            // Clear any existing options
+            select.innerHTML = '';
+            
+            // Create and add the default placeholder
+            let defaultOpt = document.createElement('option');
+            defaultOpt.text = "Select Type";
+            defaultOpt.value = "";
+            defaultOpt.disabled = true;
+            defaultOpt.selected = true;
+            select.add(defaultOpt);
+
+            // --- SimBrief Code Overrides ---
+            const simbriefOverrides = {
+                'DC1F': 'DC10',
+                'CL350': 'CL35'
+            };
+
+            // Loop through the provided array
+            aircraftList.forEach(type => {
+                let option = document.createElement('option');
+                option.text = type;  
+                option.value = simbriefOverrides[type] || type; 
+                select.add(option);
+            });
+        }
+
+        document.getElementById('airbusButton').addEventListener('click', function() {
+            updateAircraftDropdown(['A220', 'A318', 'A319', 'A320', 'A321', 'A333', 'A339', 'A346', 'A359', 'A388']);
+        });
+
+        document.getElementById('boeingButton').addEventListener('click', function() {
+            updateAircraftDropdown(['B712', 'B737', 'B38M', 'B738', 'B739', 'B742', 'B744', 'B748', 'B752', 'B763', 'B772', 'B77L', 'B77W', 'B77F', 'B788', 'B789', 'B78X']);
+        });
+
+        document.getElementById('bombardierButton').addEventListener('click', function() {
+            updateAircraftDropdown(['CL350', 'CRJ2', 'CRJ7', 'CRJ9', 'CRJX', 'DH8D']);
+        });
+
+        document.getElementById('embraerButton').addEventListener('click', function() {
+            updateAircraftDropdown(['E175', 'E190']);
+        });
+
+        document.getElementById('McDonnellDouglasButton').addEventListener('click', function() {
+            updateAircraftDropdown(['DC10', 'DC1F', 'MD11', 'MD1F']);
+        });
+    </script>
     END;
-} else {
+} 
+// --- Results View (If data has been generated) ---
+else {
     $route = trim(preg_replace('/\/\S+/', '', implode(" ", array_slice(explode(" ", $simbrief->ofp_array['atc']['route']), 1))));
     $originName = $simbrief->ofp_array['origin']['name'];
     $originICAO = $simbrief->ofp_array['origin']['icao_code'];
@@ -81,11 +150,12 @@ if ($xmllink == null || $xmllink == false) {
     $star = $sidObject ? $sidObject['name'] : 'N/A';
     $flightMapDirectory = $simbrief->ofp_array['images']['directory'];
     $flightMap = $simbrief->ofp_array['images']['map'][0]['link'];
+    
     print <<<END
     <table class="flightData">
         <tr>
             <td>
-                <div id="manufacturerButtons">
+                <div id="flightDataContainer">
 
                     <span class="dataHeader">Route</span>
                     <br>
@@ -97,7 +167,7 @@ if ($xmllink == null || $xmllink == false) {
                     <br>
                     <span class="data" style="color: rgb(224,225,226);">$originName ($originICAO)</span>
                     <br>
-                    RUNWAY: <span class="data">$originRunway</span>
+                    Runway: <span class="data">$originRunway</span>
                     <br>
                     SID: <span class="data">$sid</span>
                     <br>
@@ -106,9 +176,9 @@ if ($xmllink == null || $xmllink == false) {
                     <span class="dataHeader">Arrival: </span> <br>
                     <span class="data" style="color: rgb(224,225,226);">$destinationName ($destinationICAO)</span>
                     <br>
-                    RUNWAY: <span class="data">$destinationRunway</span>
+                    Runway: <span class="data">$destinationRunway</span>
                     <br>
-                    SID: <span class="data">$star</span>
+                    SID: <span class="data">$star</span><br>
                     <br>
                     
                     <span class="dataHeader">Flight Map: </span> <br>
@@ -121,6 +191,7 @@ if ($xmllink == null || $xmllink == false) {
     END;
 }
 
+// --- Footer and Credits ---
 print <<<END
 <div class="WebsiteCredits">
     <br>
@@ -129,3 +200,4 @@ print <<<END
 </body>
 </html>
 END;
+?>
