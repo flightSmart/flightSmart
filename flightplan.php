@@ -36,7 +36,7 @@ print <<<END
                 <div id="manufacturerContainer">
                     <form id="sbapiform">
                         
-                        <div id="manufacturerButtons" style="margin-bottom: 15px;">
+                        <div id="manufacturerButtons" style="margin-bottom: 0px;">
                             <button type="button" id="airbusButton">Airbus</button>
                             <button type="button" id="boeingButton">Boeing</button>
                             <button type="button" id="bombardierButton">Bombardier</button>
@@ -44,19 +44,21 @@ print <<<END
                             <button type="button" id="McDonnellDouglasButton">McDonnell Douglas</button>
                         </div>
 
-                        <div id="aircraftTypeDropdown" style="margin-bottom: 15px;">
+                        <div id="aircraftTypeDropdown" style="margin-bottom: 0px;">
                             <label for="aircraftType">Aircraft Type:</label>
                             <select id="aircraftType" name="type" required>
                                 <option value="" disabled selected>Select Manufacturer</option>
                             </select>
+                            <br><br>
                         </div>
 
-                        <div id="aircraftLoadInput" style="margin-bottom: 15px;"> 
+                        <div id="aircraftLoadInput" style="margin-bottom: 0px;"> 
                             <label for="orig">Depart (ICAO):</label>
                             <input name="orig" size="5" type="text" placeholder="KLAX" maxlength="4" >
-                            <br><br>
+                            <br>
                             <label for="dest">Arrive (ICAO):</label>
                             <input name="dest" size="5" type="text" placeholder="EGLL" maxlength="4" >
+                            <br><br>
                         </div>  
                         
                         <button type="button" onclick="simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
