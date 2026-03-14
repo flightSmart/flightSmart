@@ -40,92 +40,10 @@ body {
   background-color: rgba(100, 195, 153, 0.2);
 }
 
-/* Sharp blinking without fading - 3 times */
-  @keyframes sharp-blink {
-      50% { visibility: hidden; }
-  }
-  .blink-animation {
-      animation: sharp-blink 0.3s step-end 3;
-  }
-
-  .secondaryButton {
-      background-color: rgb(50, 50, 50);
-      border: 1px solid rgb(131, 131, 131);
-      color: rgb(224, 225, 226);
-  }
-
-  /* Style for the placeholders to look like your KML example grey */
-  input::placeholder {
-      color: rgba(224, 225, 226, 0.5);
-      opacity: 1; 
-  }
-
-  /* Default input state */
-  input[type=number] {
-      transition: color 0.2s ease;
-  }
-  
-  .mode-toggle-container {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 15px;
-  }
-
-  /* Custom Mode Button Styles */
-  .mode-btn {
-      flex: 1;
-      cursor: pointer;
-      font-size: 11px;
-      background-color: rgb(50, 50, 50);
-      border: 1px solid rgb(131, 131, 131); /* Grey border instead of green */
-      color: rgb(224, 225, 226);
-      padding: 5px 2px;
-  }
-
-  /* Soft lit-up state for the active mode */
-  .mode-btn-active {
-      background-color: rgba(224,225,226, 1);
-      color: rgb(30, 30, 30);
-      border: 1px solid rgb(131, 131, 131);
-  }
-
-  /* --- INFO ICON & INSTRUCTION STYLING --- */
-  .action-row {
-    display: flex;
-    justify-content: space-between; /* This pushes the icon to the far right */
-    align-items: center;
-    margin-top: 15px;
-    width: 100%; /* Ensure it spans the full width of the container */
-  }
-
-  .info-icon {
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 1px solid rgb(100, 195, 153);
-    color: rgb(100, 195, 153);
-    font-family: serif;
-    font-size: 12px;
-    transition: 0.3s;
-    user-select: none;
-  }
-  .info-icon:hover { background-color: rgba(100, 195, 153, 0.2); }
-
-  #instructionText {
-    display: none;
-    margin-top: 15px;
-    margin-bottom: 15px;
-    padding: 10px;
-    background-color: rgba(50, 50, 50, 0.5);
-    border-left: 2px solid rgb(100, 195, 153);
-  }
 
 
-button, select, input[type="button"] {
+
+button, select {
   background-color: rgb(50, 50, 50);
   border: 1px solid rgb(131, 131, 131);
   color:rgb(224,225,226);
@@ -139,13 +57,11 @@ button, select, input[type="button"] {
   font-size: 12px
 }
 
-
-
-button:hover, input[type="button"]:hover{
+button:hover{
   background-color:rgb(224,225,226);
   color: rgb(30,30,30)
 }
-button:focus, input[type="button"]:focus {
+button:focus{
   background-color:rgb(224,225,226);
   color: rgb(30,30,30)
 }
@@ -155,6 +71,14 @@ label {
 }
 
 input[type=number] {
+  color:rgb(224,225,226);
+  background-color:rgb(50, 50, 50);
+  font-size: 12px;
+  font-family:'B612 Mono';
+  font-size: 12px
+}
+
+input[type=text] {
   color:rgb(224,225,226);
   background-color:rgb(50, 50, 50);
   font-size: 12px;
