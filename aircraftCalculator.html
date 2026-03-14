@@ -3,23 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/x-icon" href="images/flightSmartLogoTransparent.png">
+<link rel="icon" type="image/x-icon" href="/images/flightSmartLogoTransparent.png">
 <title>flightSmart</title>
 <link href='https://fonts.googleapis.com/css?family=B612 Mono' rel='stylesheet'>
 <link rel="stylesheet"  href="mainstyle.css" type="text/css" />
 <style>
-   
+    /* --- Info Icon & Instruction Styling --- */
+    .action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+    }
+
+    .info-icon {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgb(100, 195, 153);
+      color: rgb(100, 195, 153);
+      font-family: serif;
+      font-size: 12px;
+      transition: 0.3s;
+      user-select: none;
+    }
+
+    .info-icon:hover { background-color: rgba(100, 195, 153, 0.2); }
+
+    #instructionText {
+      display: none;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: rgba(50, 50, 50, 0.5);
+      border-left: 2px solid rgb(100, 195, 153);
+    }
 </style>
 </head>
 <body>
 
 <div class="ldgDIV" style="display: flex; flex-direction: column;">
-    <a href="/"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
-    <a class="ldgBttonSelected" href="aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
-    <a class="ldgBtton" href="kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
-    <a class="ldgBtton" href="descent.html" title="Descent Calculator">Descent Calculator</a>
-    <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
-
+    <a href="/index.html"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
+    <a class="ldgBttonSelected" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
+    <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
+    <a class="ldgBtton" href="/descent.html" title="Descent Calculator">Descent Calculator</a>
 </div>
 
 <table class="flightData">
@@ -47,7 +78,7 @@
   <div class="action-row">
       <button class="mainButton" id="submitButton"> --Submit-- </button>
       <div class="info-icon" onclick="toggleInfo()" title="Click for instructions">i</div>
-  </div>
+    </div>
 </div>
 
 <div id="instructionText">
@@ -84,7 +115,7 @@ function toggleInfo() {
   infoBlock.style.display = (infoBlock.style.display === "none" || infoBlock.style.display === "") ? "block" : "none";
 }
 
-// --- Your Existing Logic ---
+
 document.getElementById('airbusButton').addEventListener('click', function() {
     updateAircraftDropdown(['A220', 'A318', 'A319', 'A320', 'A321', 'A333', 'A339','A346', 'A359', 'A388']);
 });
@@ -136,6 +167,41 @@ function updateAircraftDropdown(options) {
         select.appendChild(optionElement);
     });
 }
+
+// 1. Save selection when changed
+document.getElementById('aircraftType').addEventListener('change', function() {
+    localStorage.setItem('savedAircraft', this.value);
+});
+
+// 2. Function to restore selection on load
+function restoreSavedAircraft() {
+    const saved = localStorage.getItem('savedAircraft');
+    if (!saved) return;
+
+    // Define the lists to search which manufacturer the aircraft belongs to
+    const fleet = {
+        'airbusButton': ['A220', 'A318', 'A319', 'A320', 'A321', 'A333', 'A339', 'A346', 'A359', 'A388'],
+        'boeingButton': ['B712', 'B737', 'B38M', 'B738', 'B739', 'B742', 'B744', 'B748', 'B752', 'B763', 'B772', 'B77L', 'B77W', 'B77F', 'B788', 'B789', 'B78X'],
+        'bombardierButton': ['CL350', 'CRJ2', 'CRJ7', 'CRJ9', 'CRJX', 'DH8D'],
+        'embraerButton': ['E175', 'E190'],
+        'McDonnellDouglasButton': ['DC10', 'DC1F', 'MD11', 'MD1F']
+    };
+
+    // Find which button to "click"
+    for (const [btnId, list] of Object.entries(fleet)) {
+        if (list.includes(saved)) {
+            document.getElementById(btnId).click(); // This populates the dropdown
+            document.getElementById('aircraftType').value = saved; // This selects the item
+            break;
+        }
+    }
+}
+
+// Run the restore function when the page is ready
+window.addEventListener('DOMContentLoaded', restoreSavedAircraft);
+
+
+
 
 function round_nrst_10(number) {
     return Math.round(number / 10) * 10;
