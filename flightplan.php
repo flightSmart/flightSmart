@@ -105,9 +105,9 @@ if ($xmllink != null && $xmllink != false) {
 
     // Handle System Remarks (Looping through the array)
     if (is_array($sysRmks) && !empty($sysRmks)) {
-        $remarksHtml .= '<span class="dataHeader" style="color: #ff9e64;">System Remarks:</span><br>';
+        $remarksHtml .= '<span class="dataHeader" style="color: rgb(224,225,226)">System Remarks:</span><br>';
         foreach ($sysRmks as $msg) {
-            $remarksHtml .= '<span class="data" style="color: #ff9e64;">• ' . htmlspecialchars($msg) . '</span><br>';
+            $remarksHtml .= '<span class="data" style="color: #fa9822;">' . htmlspecialchars($msg) . '</span><br>';
         }
         $remarksHtml .= '<br>';
     }
