@@ -113,7 +113,7 @@ print <<<END
                         <p class="dataHeader" style="margin: 0; font-size: 13px; font-weight:350;"> 
                           Select an aircraft manufacturer and model, then enter your <strong>Departure and Arrival</strong> ICAO codes. <br> <br>
                           This tool connects directly to the <strong>Simbrief API</strong> to generate a realistic flight plan optimized for your route. <br><br>
-                          Once generated, you will be provided with estimated enroute times, departure/arrival procedures, and a customized map view formatted for Infinite Flight.
+                          Once generated, you will be provided with estimated enroute times, departure/arrival procedures, and a map preview.
                         </p>
                     </div>
 
@@ -170,6 +170,26 @@ if ($xmllink != null && $xmllink != false) {
         $remarksHtml .= '<br>';
     }
 
+    // --- Alternate Data ---
+    $alternate = $simbrief->ofp_array['alternate'] ?? null;
+    $altDisplay = "";
+
+    if ($alternate && !empty($alternate['icao_code'])) {
+        $altICAO = $alternate['icao_code'];
+        $altName = $alternate['name'];
+        $altDist = $alternate['distance'];
+        
+        // Convert Alternate ETE
+        $altEteSec = $alternate['ete'] ?? 0;
+        $altH = floor($altEteSec / 3600);
+        $altM = floor(($altEteSec % 3600) / 60);
+        $altTime = sprintf('%02d:%02d', $altH, $altM);
+    } else {
+        $altICAO = "N/A";
+        $altName = "";
+        $altDist = "";
+        $altTime = "";
+    }
 
     // --- Images & PHP Proxy ---
     $flightMapDirectory = $simbrief->ofp_array['images']['directory'];
@@ -211,6 +231,12 @@ if ($xmllink != null && $xmllink != false) {
                 Runway: <span class="data">$destinationRunway</span><br>
                 STAR: <span class="data">$star</span><br><br>
                 
+                <span class="dataHeader">Alternate: </span><br>
+                <span class="data" style="color: rgb(224,225,226);">$altName ($altICAO)</span><br>
+                Distance: <span class="data">$altDist</span><br>
+                ETE: <span class="data">$altTime</span><br><br>
+
+
                 $remarksHtml
                 
                 <span class="dataHeader">Flight Map: </span><br>
