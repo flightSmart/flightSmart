@@ -138,12 +138,16 @@ print <<<END
 </table>
 
 <script>
-            const img = document.getElementById('sourceMap');
+        
+        const img = document.getElementById('sourceMap');
 
         // We must wait for the image to load before processing
-        img.onload = function() {
-            processAndRecolorMap();
-        };
+        if (img) {
+             img.onload = function() {
+              processAndRecolorMap();
+         };
+        }
+
 
         function processAndRecolorMap() {
             const canvas = document.getElementById('mapCanvas');
@@ -226,8 +230,14 @@ print <<<END
     function updateAircraftDropdown(aircraftList) {
         const select = document.getElementById('aircraftType');
         select.innerHTML = '';
+        let defaultOpt = document.createElement('option');
+        defaultOpt.text = "Select Type";
+        defaultOpt.value = "";
+        defaultOpt.disabled = true;
+        defaultOpt.selected = true;
+        select.add(defaultOpt);
 
-        const simbriefOverrides = { 'DC1F': 'DC10', 'CL350': 'CL35', 'A220': 'BCS3'};
+        const simbriefOverrides = { 'DC1F': 'DC10', 'CL350': 'CL35' };
 
         aircraftList.forEach(type => {
             let option = document.createElement('option');
