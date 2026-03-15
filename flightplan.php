@@ -217,7 +217,7 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="data">$route</span><br><br>
 
                 <span class="dataHeader">Time and Distance:: </span> <br>
-                Estimated Enroute Time: <span class="data">$eteFormatted</span><br>
+                ETE: <span class="data">$eteFormatted</span><br>
                 Route Distance: <span class="data">$distance nm</span><br><br>
 
 
@@ -233,8 +233,9 @@ if ($xmllink != null && $xmllink != false) {
                 
                 <span class="dataHeader">Alternate: </span><br>
                 <span class="data" style="color: rgb(224,225,226);">$altName ($altICAO)</span><br>
-                Distance: <span class="data">$altDist</span><br>
                 ETE: <span class="data">$altTime</span><br><br>
+                Route Distance: <span class="data">$altDist</span><br>
+                
 
 
                 $remarksHtml
