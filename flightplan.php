@@ -234,7 +234,7 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="dataHeader">Alternate: </span><br>
                 <span class="data" style="color: rgb(224,225,226);">$altName ($altICAO)</span><br>
                 ETE: <span class="data">$altTime</span><br>
-                Route Distance: <span class="data">$altDist</span><br><br>
+                Route Distance: <span class="data">$altDist nm</span><br><br>
                 
 
 
