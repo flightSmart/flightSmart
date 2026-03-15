@@ -16,6 +16,16 @@ print <<<END
 <link href='https://fonts.googleapis.com/css?family=B612 Mono' rel='stylesheet'>
 <link rel="stylesheet"  href="mainstyle.css" type="text/css" />
 <script type="text/javascript" src="api/api.js"></script>
+<style>
+    @keyframes sharp-blink {
+        50% { visibility: hidden; }
+    }
+    .blink-animation {
+        animation: sharp-blink 0.8s step-end infinite;
+    }
+</style>
+
+
 </head>
 <body>
 
@@ -60,7 +70,8 @@ print <<<END
     <br><br>
 </div>
                     
-                    <button type="button" onclick="simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
+                    <button type="button" onclick="showLoading(); simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
+<p id="loadingMessage" class="blink-animation" style="display:none; color: rgb(224, 225, 226); font-family: 'B612 Mono', monospace; font-size: 12px; margin-top: 10px;">Generating...</p>
                 </form>
             </div>
     </td>
@@ -169,6 +180,13 @@ print <<<END
 </table>
 
 <script>
+        function showLoading() {
+            const loader = document.getElementById('loadingMessage');
+            if (loader) {
+                loader.style.display = 'block';
+            }
+        }
+
         
         const img = document.getElementById('sourceMap');
 
