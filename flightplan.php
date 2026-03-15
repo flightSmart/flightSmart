@@ -64,6 +64,7 @@ print <<<END
                 </form>
             </div>
     </td>
+</tr>
 END;
 
 // --- RESULTS LOGIC (Inserts into the same TD if data exists) ---
@@ -109,6 +110,7 @@ if ($xmllink != null && $xmllink != false) {
     //            <hr style="border: 1px solid #444; margin: 15px 0;">
 
     print <<<END
+    <tr>
         <td>
             <div id="resultsContainer">
                 <span class="dataHeader">Route</span><br>
