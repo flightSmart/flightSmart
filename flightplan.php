@@ -71,7 +71,8 @@ print <<<END
 </div>
                     
                     <button type="button" onclick="showLoading(); simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
-<p id="loadingMessage" class="blink-animation" style="display:none; color: rgb(224, 225, 226); font-family: 'B612 Mono', monospace; font-size: 12px; margin-top: 10px;">Generating...</p>
+    <p id="loadingMessage" class="blink-animation" style="display:none; color: rgb(224, 225, 226);">Generating...</p>
+
                 </form>
             </div>
     </td>
