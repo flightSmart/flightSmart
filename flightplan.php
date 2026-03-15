@@ -84,6 +84,12 @@ if ($xmllink != null && $xmllink != false) {
     $cleanRoute = trim(preg_replace('/\s+/', ' ', str_replace('DCT', '', $baseRoute)));
     $route = $originICAO . " " . $cleanRoute . " " . $destinationICAO;
 
+    // --- Time & Enroute Data ---
+    $eteSeconds = $simbrief->ofp_array['times']['est_time_enroute'];
+    $eteHours = floor($eteSeconds / 3600);
+    $eteMinutes = floor(($eteSeconds % 3600) / 60);
+    $eteFormatted = sprintf('%02d:%02d', $eteHours, $eteMinutes);
+
     // --- SID & STAR ---
     $sid_ident = $simbrief->ofp_array['general']['sid_ident'];
     $sid = (is_string($sid_ident) && trim($sid_ident) !== '') ? $sid_ident : 'N/A';
@@ -115,6 +121,10 @@ if ($xmllink != null && $xmllink != false) {
             <div id="resultsContainer">
                 <span class="dataHeader">Route</span><br>
                 <span class="data">$route</span><br><br>
+
+                <span class="dataHeader">Estimated Enroute Time: </span>
+                <span class="data">$eteFormatted</span><br><br>
+
 
                 <span class="dataHeader">Departure:</span><br>
                 <span class="data" style="color: rgb(224,225,226);">$originName ($originICAO)</span><br>
