@@ -3,25 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/x-icon" href="images/flightSmartLogoTransparent.png">
+<link rel="icon" type="image/x-icon" href="/images/flightSmartLogoTransparent.png">
 <title>flightSmart - Descent Calculator</title>
 <link href='https://fonts.googleapis.com/css?family=B612+Mono' rel='stylesheet'>
 <link rel="stylesheet" href="mainstyle.css" type="text/css" />
 <style>
-   
+    /* Sharp blinking without fading - 3 times */
+    @keyframes sharp-blink {
+        50% { visibility: hidden; }
+    }
+    .blink-animation {
+        animation: sharp-blink 0.3s step-end 3;
+    }
+
+    .secondaryButton {
+        background-color: rgb(50, 50, 50);
+        border: 1px solid rgb(131, 131, 131);
+        color: rgb(224, 225, 226);
+    }
+
+    /* Style for the placeholders to look like your KML example grey */
+    input::placeholder {
+        color: rgba(224, 225, 226, 0.5);
+        opacity: 1; 
+    }
+
+    /* Default input state */
+    input[type=number] {
+        transition: color 0.2s ease;
+    }
+    
+    .mode-toggle-container {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 15px;
+    }
+
+    /* Custom Mode Button Styles */
+    .mode-btn {
+        flex: 1;
+        cursor: pointer;
+        font-size: 11px;
+        background-color: rgb(50, 50, 50);
+        border: 1px solid rgb(131, 131, 131); /* Grey border instead of green */
+        color: rgb(224, 225, 226);
+        padding: 5px 2px;
+    }
+
+    /* Soft lit-up state for the active mode */
+    .mode-btn-active {
+        background-color: rgba(224,225,226, 1);
+        color: rgb(30, 30, 30);
+        border: 1px solid rgb(131, 131, 131);
+    }
+
+    /* --- INFO ICON & INSTRUCTION STYLING --- */
+    .action-row {
+      display: flex;
+      justify-content: space-between; /* This pushes the icon to the far right */
+      align-items: center;
+      margin-top: 15px;
+      width: 100%; /* Ensure it spans the full width of the container */
+    }
+
+    .info-icon {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgb(131 131 131);
+      color: rgb(131 131 131);
+      font-family: serif;
+      font-size: 12px;
+      transition: 0.3s;
+      user-select: none;
+    }
+    .info-icon:hover { background-color: rgba(194, 194, 194, 0.2); }
+
+    #instructionText {
+      display: none;
+      margin-top: 15px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: rgba(50, 50, 50, 0.5);
+      border-left: 2px solid rgb(100, 195, 153);
+    }
 </style>
 </head>
 <body>
 
 <div class="ldgDIV" style="display: flex; flex-direction: column;">
-    <a href="/"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
-    <a class="ldgBtton" href="aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
-       <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
-
-    <a class="ldgBtton" href="kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
-    <a class="ldgBttonSelected" href="descent.html" title="Descent Calculator">Descent Calculator</a>
-
-
+    <a href="/index.html"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
+    <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
+    <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
+    <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
+    <a class="ldgBttonSelected" href="/descent.html" title="Descent Calculator">Descent Calculator</a>
 </div>
 
 <table class="flightData">
@@ -52,7 +131,7 @@
 
             <div id="vsInputRow" style="margin-bottom: 15px;">
                 <input type="number" id="descentRate" placeholder="1800" onfocus="this.placeholder=''" onblur="this.placeholder='1800'" style="width: 100px; margin-right: 10px;">
-                <label for="descentRate">Target Descent Rate (fpm)</label>
+                <label for="descentRate"> Descent Rate (-fpm)</label>
             </div>
 
             <div id="distInputRow" style="margin-bottom: 15px; display: none;">

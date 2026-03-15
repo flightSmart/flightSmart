@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>flightSmart</title>
-  <link rel="icon" href="images/flightSmartLogoTransparent.png" />
+  <link rel="icon" href="/images/flightSmartLogoTransparent.png" />
   <link href="https://fonts.googleapis.com/css?family=B612 Mono" rel="stylesheet" />
   <link rel="stylesheet" href="mainstyle.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -33,12 +33,13 @@
     #inputData { width: 100%; box-sizing: border-box; resize: none; }
     .custom-file-input { border-radius: 0px !important; }
 
-    /* Info Icon & Action Row */
+       /* --- INFO ICON & INSTRUCTION STYLING --- */
     .action-row {
       display: flex;
-      justify-content: space-between;
+      justify-content: space-between; /* This pushes the icon to the far right */
       align-items: center;
-      margin-top: 10px;
+      margin-top: 15px;
+      width: 100%; /* Ensure it spans the full width of the container */
     }
 
     .info-icon {
@@ -49,26 +50,23 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      border: 1px solid rgb(100, 195, 153);
-      color: rgb(100, 195, 153);
+      border: 1px solid rgb(131 131 131);
+      color: rgb(131 131 131);
       font-family: serif;
       font-size: 12px;
       transition: 0.3s;
       user-select: none;
-      -webkit-user-select: none;
     }
-
-    .info-icon:hover { background-color: rgba(100, 195, 153, 0.2); }
+    .info-icon:hover { background-color: rgba(194, 194, 194, 0.2); }
 
     #instructionText {
       display: none;
-      margin-top: 10px;
+      margin-top: 15px;
       margin-bottom: 15px;
       padding: 10px;
       background-color: rgba(50, 50, 50, 0.5);
       border-left: 2px solid rgb(100, 195, 153);
     }
-
     /* --- ANIMATIONS & OUTPUT --- */
     @keyframes sharp-blink {
         50% { visibility: hidden; }
@@ -85,13 +83,11 @@
 <body>
 
 <div class="ldgDIV" style="display: flex; flex-direction: column;">
-    <a href="/"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
-    <a class="ldgBtton" href="aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
-      <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
-    <a class="ldgBttonSelected" href="kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
-    <a class="ldgBtton" href="descent.html" title="Descent Calculator">Descent Calculator</a>
-
-
+    <a href="/index.html"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
+    <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
+    <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
+    <a class="ldgBttonSelected" href="/kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
+    <a class="ldgBtton" href="/descent.html" title="Descent Calculator">Descent Calculator</a>
 </div>
 
 <table class="flightData">

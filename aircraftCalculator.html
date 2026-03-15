@@ -8,12 +8,13 @@
 <link href='https://fonts.googleapis.com/css?family=B612 Mono' rel='stylesheet'>
 <link rel="stylesheet"  href="mainstyle.css" type="text/css" />
 <style>
-    /* --- Info Icon & Instruction Styling --- */
+        /* --- INFO ICON & INSTRUCTION STYLING --- */
     .action-row {
       display: flex;
-      justify-content: space-between;
+      justify-content: space-between; /* This pushes the icon to the far right */
       align-items: center;
       margin-top: 15px;
+      width: 100%; /* Ensure it spans the full width of the container */
     }
 
     .info-icon {
@@ -24,19 +25,18 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      border: 1px solid rgb(100, 195, 153);
-      color: rgb(100, 195, 153);
+      border: 1px solid rgb(131 131 131);
+      color: rgb(131 131 131);
       font-family: serif;
       font-size: 12px;
       transition: 0.3s;
       user-select: none;
     }
-
-    .info-icon:hover { background-color: rgba(100, 195, 153, 0.2); }
+    .info-icon:hover { background-color: rgba(194, 194, 194, 0.2); }
 
     #instructionText {
       display: none;
-      margin-top: 10px;
+      margin-top: 15px;
       margin-bottom: 15px;
       padding: 10px;
       background-color: rgba(50, 50, 50, 0.5);
@@ -49,7 +49,7 @@
 <div class="ldgDIV" style="display: flex; flex-direction: column;">
     <a href="/index.html"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
     <a class="ldgBttonSelected" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
-        <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
+    <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
     <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
     <a class="ldgBtton" href="/descent.html" title="Descent Calculator">Descent Calculator</a>
 </div>
@@ -158,16 +158,27 @@ document.getElementById('submitButton').addEventListener('click', function() {
     }
 });
 
-function updateAircraftDropdown(options) {
-    var select = document.getElementById('aircraftType');
-    select.innerHTML = '';
-    options.forEach(function(option) {
-        var optionElement = document.createElement('option');
-        optionElement.value = option;
-        optionElement.textContent = option;
-        select.appendChild(optionElement);
-    });
-}
+    // --- AIRCRAFT DROPDOWN LOGIC ---
+    function updateAircraftDropdown(aircraftList) {
+        const select = document.getElementById('aircraftType');
+        select.innerHTML = '';
+        let defaultOpt = document.createElement('option');
+        defaultOpt.text = "Select Type";
+        defaultOpt.value = "";
+        defaultOpt.disabled = true;
+        defaultOpt.selected = true;
+        select.add(defaultOpt);
+
+        const simbriefOverrides = { 'DC1F': 'DC10', 'CL350': 'CL35' };
+
+        aircraftList.forEach(type => {
+            let option = document.createElement('option');
+            option.text = type;  
+            option.value = simbriefOverrides[type] || type; 
+            select.add(option);
+        });
+    }
+
 
 // 1. Save selection when changed
 document.getElementById('aircraftType').addEventListener('change', function() {
