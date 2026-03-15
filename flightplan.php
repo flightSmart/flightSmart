@@ -63,6 +63,7 @@ print <<<END
                     <button type="button" onclick="simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
                 </form>
             </div>
+    </td>
 END;
 
 // --- RESULTS LOGIC (Inserts into the same TD if data exists) ---
@@ -104,10 +105,11 @@ if ($xmllink != null && $xmllink != false) {
         // Fallback to direct URL if the server blocks file_get_contents
         $mapSrc = $mapUrl;
     }
-    
-    print <<<END
-            <hr style="border: 1px solid #444; margin: 30px 0;">
 
+    //            <hr style="border: 1px solid #444; margin: 15px 0;">
+
+    print <<<END
+        <td>
             <div id="resultsContainer">
                 <span class="dataHeader">Route</span><br>
                 <span class="data">$route</span><br><br>
@@ -123,7 +125,7 @@ if ($xmllink != null && $xmllink != false) {
                 STAR: <span class="data">$star</span><br><br>
                 
                 <span class="dataHeader">Flight Map: </span><br>
-                <canvas id="mapCanvas" style="width: 100%; max-width: 500px; border-radius: 4px;"></canvas>
+                <canvas id="mapCanvas" style="width: 100%;"></canvas>
                 <img id="sourceMap" src="$mapSrc" crossorigin="anonymous" style="display:none;" onload="recolorMap()" />
             </div>
 END;
@@ -136,76 +138,96 @@ print <<<END
 </table>
 
 <script>
-    // --- CANVAS RECOLORING LOGIC ---
-    function recolorMap() {
-        const img = document.getElementById('sourceMap');
-        const canvas = document.getElementById('mapCanvas');
-        if (!img || !canvas) return;
+            const img = document.getElementById('sourceMap');
 
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        
-        // Set canvas dimensions to match the actual image
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        
-        // Draw the base image
-        ctx.drawImage(img, 0, 0);
+        // We must wait for the image to load before processing
+        img.onload = function() {
+            processAndRecolorMap();
+        };
 
-        try {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
+        function processAndRecolorMap() {
+            const canvas = document.getElementById('mapCanvas');
+            if (!img || !canvas) return;
 
-            // Loop through every pixel (RGBA format)
-            for (let i = 0; i < data.length; i += 4) {
-                let r = data[i];
-                let g = data[i + 1];
-                let b = data[i + 2];
-
-                // 1. Water Detection (SimBrief Blue is ~ 164, 206, 237)
-                if (Math.abs(r - 164) < 40 && Math.abs(g - 206) < 40 && Math.abs(b - 237) < 40) {
-                    data[i] = 30;      // #1e = 30
-                    data[i + 1] = 30;  // #1e = 30
-                    data[i + 2] = 30;  // #1e = 30
-                }
-                // 2. Land Detection (SimBrief Tan is ~ 244, 236, 195)
-                else if (Math.abs(r - 244) < 40 && Math.abs(g - 236) < 40 && Math.abs(b - 195) < 40) {
-                    data[i] = 93;      // #5d = 93
-                    data[i + 1] = 93;  // #5d = 93
-                    data[i + 2] = 93;  // #5d = 93
-                }
-                // 3. Route/Line Detection (Dark pixels)
-                else if (r < 80 && g < 80 && b < 80) {
-                    data[i] = 100;     // #64 = 100
-                    data[i + 1] = 196; // #c4 = 196
-                    data[i + 2] = 154; // #9a = 154
-                }
-            }
-
-            // Put the modified pixels back onto the canvas
-            ctx.putImageData(imageData, 0, 0);
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             
-        } catch (e) {
-            console.error("Canvas pixel manipulation failed (likely CORS). Fallback to standard image.", e);
-            img.style.display = "block";
-            img.style.width = "100%";
-            img.style.maxWidth = "500px";
-            canvas.style.display = "none";
-        }
-    }
+            // --- NEW CODE: Calculate dimensions for cropping ---
+            const originalWidth = img.naturalWidth;
+            const originalHeight = img.naturalHeight;
+            const pixelsToCropFromBottom = 35;
+            
+            // The canvas will be shorter than the original image
+            const newHeight = originalHeight - pixelsToCropFromBottom;
+            
+            // Set canvas dimensions to the new, cropped size
+            canvas.width = originalWidth;
+            canvas.height = newHeight;
+            
+            // --- UPDATED drawImage: Draw the source onto the destination, effectively cropping ---
+            // drawImage(source, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+            // We are using the top-left (0,0) of the source and destination
+            ctx.drawImage(img, 
+                0, 0, originalWidth, newHeight, // Source rectangle (the part we want to keep)
+                0, 0, originalWidth, newHeight  // Destination rectangle (where it goes on the canvas)
+            );
 
+            try {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+
+                // Loop through every pixel (RGBA format)
+                for (let i = 0; i < data.length; i += 4) {
+                    let r = data[i];
+                    let g = data[i + 1];
+                    let b = data[i + 2];
+
+
+                    // 1. Water Detection (SimBrief Blue is ~ 164, 206, 237)
+                    if (Math.abs(r - 134) < 70 && Math.abs(g - 205) < 70 && Math.abs(b - 249) < 70) {
+                        data[i] = 30;      // #1e
+                        data[i + 1] = 30;
+                        data[i + 2] = 30;
+                    }
+                    // 2. Land Detection (SimBrief Tan is ~ 244, 236, 195)
+                    else if (Math.abs(r - 249) < 60 && Math.abs(g - 249) < 60 && Math.abs(b - 209) < 60) {
+                        data[i] = 93;      // #5d
+                        data[i + 1] = 93;
+                        data[i + 2] = 93;
+                    }
+                    // 3. Route/Line Detection (Dark pixels)
+                    else if (Math.abs(r - 101) < 80 && Math.abs(g - 108) < 80 && Math.abs(b - 111) < 80) {
+                        data[i] = 100;     // #64
+                        data[i + 1] = 196; // #c4
+                        data[i + 2] = 154; // #9a
+                    }
+
+                    else if (Math.abs(r - 0) < 80 && Math.abs(g - 0) < 80 && Math.abs(b - 0) < 80) {
+                        data[i] = 100;     // #64
+                        data[i + 1] = 196; // #c4
+                        data[i + 2] = 154; // #9a
+                    }
+                    
+                    else if (Math.abs(r - 233) < 80 && Math.abs(g - 233) < 80 && Math.abs(b - 83) < 80) {
+                        data[i] = 30;      // #1e
+                        data[i + 1] = 30;
+                        data[i + 2] = 30;
+                    }
+
+                }
+
+                // Put the modified pixels back onto the canvas
+                ctx.putImageData(imageData, 0, 0);
+            } catch (e) {
+                console.error("CORS Error: Ensure you are running this on a local server.", e);
+            }
+        }
 
     // --- AIRCRAFT DROPDOWN LOGIC ---
     function updateAircraftDropdown(aircraftList) {
         const select = document.getElementById('aircraftType');
         select.innerHTML = '';
-        let defaultOpt = document.createElement('option');
-        defaultOpt.text = "Select Type";
-        defaultOpt.value = "";
-        defaultOpt.disabled = true;
-        defaultOpt.selected = true;
-        select.add(defaultOpt);
 
-        const simbriefOverrides = { 'DC1F': 'DC10', 'CL350': 'CL35' };
+        const simbriefOverrides = { 'DC1F': 'DC10', 'CL350': 'CL35', 'A220': 'BCS3'};
 
         aircraftList.forEach(type => {
             let option = document.createElement('option');
@@ -271,4 +293,21 @@ print <<<END
     <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes ↗</a>
 </div>
 END;
+
+// --- RAW DATA OUTPUT ---
+if (isset($simbrief->ofp_array)) {
+    // Encode the array into formatted JSON
+    $rawJson = json_encode($simbrief->ofp_array, JSON_PRETTY_PRINT);
+    
+    // Output inside a styled container
+    print <<<END
+    <div style="margin: 30px auto; width: 80%; background-color: #1e1e1e; border: 1px solid #444; border-radius: 8px; padding: 15px; font-family: 'B612 Mono', monospace; color: #a9dc76; overflow-x: auto;">
+        <h3 style="color: #fff; margin-top: 0;">Raw SimBrief Data</h3>
+        <pre style="font-size: 12px;">$rawJson</pre>
+    </div>
+END;
+}
+
+print "</body>\n</html>";
+?>
 ?>
