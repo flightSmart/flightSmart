@@ -139,7 +139,7 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="data">$route</span><br><br>
 
                 <span class="dataHeader">Time and Distance:: </span> <br>
-                Estimated Enroute Time: <span class="data">$eteFormatted</span><br><br>
+                Estimated Enroute Time: <span class="data">$eteFormatted</span><br>
                 Route Distance: <span class="data">$distance nm</span><br><br>
 
 
@@ -153,7 +153,7 @@ if ($xmllink != null && $xmllink != false) {
                 Runway: <span class="data">$destinationRunway</span><br>
                 STAR: <span class="data">$star</span><br><br>
                 
-                remarksHtml
+                $remarksHtml
                 
                 <span class="dataHeader">Flight Map: </span><br>
                 <canvas id="mapCanvas" style="width: 100%;"></canvas>
