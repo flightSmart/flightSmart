@@ -89,6 +89,7 @@ if ($xmllink != null && $xmllink != false) {
     $eteHours = floor($eteSeconds / 3600);
     $eteMinutes = floor(($eteSeconds % 3600) / 60);
     $eteFormatted = sprintf('%02d:%02d', $eteHours, $eteMinutes);
+    $distance = $simbrief->ofp_array['general']['route_distance'];
 
     // --- SID & STAR ---
     $sid_ident = $simbrief->ofp_array['general']['sid_ident'];
@@ -97,6 +98,21 @@ if ($xmllink != null && $xmllink != false) {
     $star_ident = $simbrief->ofp_array['general']['star_ident'];
     $star = (is_string($star_ident) && trim($star_ident) !== '') ? $star_ident : 'N/A';
     
+    // --- Remarks Logic ---
+    $sysRmks = $simbrief->ofp_array['general']['sys_rmk'] ?? [];
+
+    $remarksHtml = "";
+
+    // Handle System Remarks (Looping through the array)
+    if (is_array($sysRmks) && !empty($sysRmks)) {
+        $remarksHtml .= '<span class="dataHeader" style="color: #ff9e64;">System Remarks:</span><br>';
+        foreach ($sysRmks as $msg) {
+            $remarksHtml .= '<span class="data" style="color: #ff9e64;">• ' . htmlspecialchars($msg) . '</span><br>';
+        }
+        $remarksHtml .= '<br>';
+    }
+
+
     // --- Images & PHP Proxy ---
     $flightMapDirectory = $simbrief->ofp_array['images']['directory'];
     $flightMapName = $simbrief->ofp_array['images']['map'][0]['link'];
@@ -119,11 +135,12 @@ if ($xmllink != null && $xmllink != false) {
     <tr>
         <td>
             <div id="resultsContainer">
-                <span class="dataHeader">Route</span><br>
+                <span class="dataHeader">Route:</span><br>
                 <span class="data">$route</span><br><br>
 
-                <span class="dataHeader">Estimated Enroute Time: </span>
-                <span class="data">$eteFormatted</span><br><br>
+                <span class="dataHeader">Time and Distance:: </span> <br>
+                Estimated Enroute Time: <span class="data">$eteFormatted</span><br><br>
+                Route Distance: <span class="data">$distance nm</span><br><br>
 
 
                 <span class="dataHeader">Departure:</span><br>
@@ -135,6 +152,8 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="data" style="color: rgb(224,225,226);">$destinationName ($destinationICAO)</span><br>
                 Runway: <span class="data">$destinationRunway</span><br>
                 STAR: <span class="data">$star</span><br><br>
+                
+                remarksHtml
                 
                 <span class="dataHeader">Flight Map: </span><br>
                 <canvas id="mapCanvas" style="width: 100%;"></canvas>
