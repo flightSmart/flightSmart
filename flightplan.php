@@ -23,6 +23,41 @@ print <<<END
     .blink-animation {
         animation: sharp-blink 0.8s step-end infinite;
     }
+
+    /* --- INFO ICON & INSTRUCTION STYLING --- */
+    .action-row {
+      display: flex;
+      justify-content: space-between; 
+      align-items: center;
+      margin-top: 15px;
+      width: 100%; 
+    }
+
+    .info-icon {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgb(131, 131, 131);
+      color: rgb(131, 131, 131);
+      font-family: serif;
+      font-size: 12px;
+      transition: 0.3s;
+      user-select: none;
+    }
+    .info-icon:hover { background-color: rgba(194, 194, 194, 0.2); }
+
+    #instructionText {
+      display: none;
+      margin-top: 15px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: rgba(50, 50, 50, 0.5);
+      border-left: 2px solid rgb(100, 195, 153);
+    }
 </style>
 
 
@@ -59,19 +94,30 @@ print <<<END
                         <br><br>
                     </div>
 
-<div id="aircraftLoadInput" style="margin-bottom: 0px;"> 
-    <label for="orig">Depart (ICAO):</label>
-    <input name="orig" size="5" type="text" placeholder="KLAX" maxlength="4" 
-           style="background-color: rgb(50, 50, 50); color: rgb(224, 225, 226); border: 1px solid rgb(131, 131, 131); font-family: 'B612 Mono', monospace; font-size: 12px; padding: 3px; outline: none;">
-    <br>
-    <label for="dest">Arrive (ICAO):</label>
-    <input name="dest" size="5" type="text" placeholder="EGLL" maxlength="4" 
-           style="background-color: rgb(50, 50, 50); color: rgb(224, 225, 226); border: 1px solid rgb(131, 131, 131); font-family: 'B612 Mono', monospace; font-size: 12px; padding: 3px; outline: none;">
-    <br><br>
-</div>
+                    <div id="aircraftLoadInput" style="margin-bottom: 0px;"> 
+                        <label for="orig">Depart (ICAO):</label>
+                        <input name="orig" size="5" type="text" placeholder="KLAX" maxlength="4" 
+                               style="background-color: rgb(50, 50, 50); color: rgb(224, 225, 226); border: 1px solid rgb(131, 131, 131); font-family: 'B612 Mono', monospace; font-size: 12px; padding: 3px; outline: none;">
+                        <br>
+                        <label for="dest">Arrive (ICAO):</label>
+                        <input name="dest" size="5" type="text" placeholder="EGLL" maxlength="4" 
+                               style="background-color: rgb(50, 50, 50); color: rgb(224, 225, 226); border: 1px solid rgb(131, 131, 131); font-family: 'B612 Mono', monospace; font-size: 12px; padding: 3px; outline: none;">
+                        
+                        <div class="action-row">
+                            <button type="button" onclick="showLoading(); simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
+                            <div class="info-icon" onclick="toggleInfo()" title="Click for instructions">i</div>
+                        </div>
+                    </div>
                     
-                    <button type="button" onclick="showLoading(); simbriefsubmit('flightplan.php');" class="mainButton">--Generate--</button>
-    <p id="loadingMessage" class="blink-animation" style="display:none; color: rgb(224, 225, 226);">Generating...</p>
+                    <div id="instructionText">
+                        <p class="dataHeader" style="margin: 0; font-size: 13px; font-weight:350;"> 
+                          Select an aircraft manufacturer and model, then enter your <strong>Departure and Arrival</strong> ICAO codes. <br> <br>
+                          This tool connects directly to the <strong>Simbrief API</strong> to generate a realistic flight plan optimized for your route. <br><br>
+                          Once generated, you will be provided with estimated enroute times, departure/arrival procedures, and a customized map view formatted for Infinite Flight.
+                        </p>
+                    </div>
+
+                    <p id="loadingMessage" class="blink-animation" style="display:none; color: rgb(224, 225, 226);">Generating...</p>
 
                 </form>
             </div>
@@ -181,6 +227,12 @@ print <<<END
 </table>
 
 <script>
+        // --- Toggle Info Function ---
+        function toggleInfo() {
+            const infoBlock = document.getElementById("instructionText");
+            infoBlock.style.display = (infoBlock.style.display === "none" || infoBlock.style.display === "") ? "block" : "none";
+        }
+
         function showLoading() {
             const loader = document.getElementById('loadingMessage');
             if (loader) {
@@ -188,7 +240,6 @@ print <<<END
             }
         }
 
-        
         const img = document.getElementById('sourceMap');
 
         // We must wait for the image to load before processing
@@ -353,21 +404,4 @@ print <<<END
     <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes ↗</a>
 </div>
 END;
-
-// --- RAW DATA OUTPUT ---
-if (isset($simbrief->ofp_array)) {
-    // Encode the array into formatted JSON
-    $rawJson = json_encode($simbrief->ofp_array, JSON_PRETTY_PRINT);
-    
-    // Output inside a styled container
-    print <<<END
-    <div style="margin: 30px auto; width: 80%; background-color: #1e1e1e; border: 1px solid #444; border-radius: 8px; padding: 15px; font-family: 'B612 Mono', monospace; color: #a9dc76; overflow-x: auto;">
-        <h3 style="color: #fff; margin-top: 0;">Raw SimBrief Data</h3>
-        <pre style="font-size: 12px;">$rawJson</pre>
-    </div>
-END;
-}
-
-print "</body>\n</html>";
-?>
 ?>
