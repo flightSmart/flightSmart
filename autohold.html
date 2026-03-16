@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flightSmart</title>
+  <link rel="icon" href="/images/flightSmartLogoTransparent.png" />
+  <link href="https://fonts.googleapis.com/css?family=B612 Mono" rel="stylesheet" />
+  <link rel="stylesheet" href="mainstyle.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 500px; margin-top: 10px; }
+
+    /* --- LAYOUT & UI --- */
+    .input-flex-container {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch; 
+      gap: 20px;
+      margin: 1px 0;
+      width: 100%;
+    }
+
+    .vertical-separator {
+        width: 1px;
+        background-color: rgba(224, 225, 226, 0.3); 
+        margin-top: 10px;
+        margin-bottom: 5px;
+    }
+
+    .input-section:first-child { flex: 0 0 auto; }
+    .input-section:last-child { flex: 1; }
+    #inputData { width: 100%; box-sizing: border-box; resize: none; }
+    .custom-file-input { border-radius: 0px !important; }
+
+       /* --- INFO ICON & INSTRUCTION STYLING --- */
+    .action-row {
+      display: flex;
+      justify-content: space-between; /* This pushes the icon to the far right */
+      align-items: center;
+      margin-top: 15px;
+      width: 100%; /* Ensure it spans the full width of the container */
+    }
+
+    .info-icon {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgb(131 131 131);
+      color: rgb(131 131 131);
+      font-family: serif;
+      font-size: 12px;
+      transition: 0.3s;
+      user-select: none;
+    }
+    .info-icon:hover { background-color: rgba(194, 194, 194, 0.2); }
+
+    #instructionText {
+      display: none;
+      margin-top: 15px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: rgba(50, 50, 50, 0.5);
+      border-left: 2px solid rgb(100, 195, 153);
+    }
+    /* --- ANIMATIONS & OUTPUT --- */
+    @keyframes sharp-blink {
+        50% { visibility: hidden; }
+    }
+    .blink-animation {
+        animation: sharp-blink 0.8s step-end infinite;
+    }
+
+    #outputRow { display: table-row; } /* Always visible box */
+    #errorDisplay { display: none; color: rgb(255, 100, 100); font-weight: bold; }
+    #successContent { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="ldgDIV" style="display: flex; flex-direction: column;">
+    <a href="/index.html"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
+    <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
+    <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
+    <div class="button-container">
+        <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
+        <a class="ldgBtton" href="/descent.html" title="TOD Calculator">TOD Calculator</a>
+    </div>
+    <div class="button-container">
+        <a class="ldgBttonSelected" href="/autohold.html" title="Auto Hold">Auto Hold</a> 
+    </div>
+</div>
+
+<table class="flightData">
+    <tr>   
+        <td>
+            Connect to Infinite Flight using Connect API. Make sure device running Infinite Flight is on the same network, and that Connect API is enabled in IF settings. <br>
+            <br> <button class="mainButton" onclick="sendData()">--Connect--</button>
+
+             <p id="loadingMessage" class="blink-animation" style="display:none; color: rgb(224, 225, 226);">Connecting...</p>
+         </td>
+    </tr>
+
+    <tr>   
+        <td>
+            Connected to Infinite Flight! 
+            
+            <div class="button-container" style="gap: 10px; margin-top: 15px; margin-bottom: 3px;">
+                Hold Direction: 
+                <button id="leftTurnBtn" onclick="changePatternImage('left')">Left Turns</button>
+                <button id="rightTurnBtn" onclick="changePatternImage('right')">Right Turns</button>
+            </div>
+
+            <div class="button-container" style="gap: 5px; margin-bottom: 15px;">
+                Leg Duration: &nbsp; 
+                <button id="leg30Btn" class="leg-btn" onclick="setLegDuration(30)">30s</button>
+                <button id="leg60Btn" class="leg-btn" onclick="setLegDuration(60)">60s</button>
+                <button id="leg90Btn" class="leg-btn" onclick="setLegDuration(90)">90s</button>
+                <button id="leg120Btn" class="leg-btn" onclick="setLegDuration(120)">120s</button>
+            </div>
+
+          <div class="action-row">
+                <div>
+                <button id="engageBtn" class="mainButton" onclick="engage()">--Start Auto Hold--</button> 
+                <button id="disengageBtn" class="mainButton" style="color: rgb(250, 152, 34); border: 1px solid rgb(250, 152, 34)" onclick="disengage()">--Disengage Auto Hold--</button>
+                </div>
+                <div class="info-icon" onclick="toggleInfo()" title="Click for instructions">i</div>
+            </div>
+
+            <div id="instructionText">
+                <p class="dataHeader" style="margin: 0; font-size: 13px; font-weight:350;"> 
+                    To start a hold, first select the turn direction and leg length. Then, press the Start Auto Hold button and the aircraft will preform IFR hold indefinitely based on your current heading and position using the Infinite Flight Autopilot.
+                    To stop the hold, press the Disengage Auto Hold Button.
+                    <br><br>
+                    You are still the pilot in command, and you can disengage the hold at any time by pressing the Disengage button or exiting the page. This tool is meant to assist pilots in flying holds, but it is not a replacement for manual flying and decision making. flightSmart is not responsible for any incidents or violations that may occur from using this tool, so please use it wisely and always maintain situational awareness. 
+                </p>
+            </div>
+
+           <hr style="margin-top: 10px;">
+            Log messages here<br><br>
+            <img id="patternImage" src="images/autohold/Base.svg" width="100%" alt="Auto Hold Pattern">
+
+        </td>   
+    </tr>
+
+
+</table>
+
+<div class="WebsiteCredits">
+    <br>
+    <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes ↗</a>
+</div>
+
+<script>
+function toggleInfo() {
+  const infoBlock = document.getElementById("instructionText");
+  infoBlock.style.display = (infoBlock.style.display === "none" || infoBlock.style.display === "") ? "block" : "none";
+}
+
+function changePatternImage(direction) {
+  const img = document.getElementById("patternImage");
+  const leftBtn = document.getElementById("leftTurnBtn");
+  const rightBtn = document.getElementById("rightTurnBtn");
+  
+  // Reset both buttons to their default state
+  leftBtn.classList.remove("active");
+  rightBtn.classList.remove("active");
+  
+  // Change image and highlight the clicked button
+  if (direction === 'left') {
+    img.src = "images/autohold/LeftBase.svg";
+    leftBtn.classList.add("active");
+  } else if (direction === 'right') {
+    img.src = "images/autohold/RightBase.svg";
+    rightBtn.classList.add("active");
+  }
+}
+
+function setLegDuration(seconds) {
+  // Group all the leg button IDs into an array
+  const legBtnIds = ['leg30Btn', 'leg60Btn', 'leg90Btn', 'leg120Btn'];
+  
+  // Loop through and remove the 'active' class from all of them
+  legBtnIds.forEach(id => {
+    document.getElementById(id).classList.remove("active");
+  });
+  
+  // Add the 'active' class to the specific button that was clicked
+  document.getElementById('leg' + seconds + 'Btn').classList.add("active");
+  
+  // You can also add logic here to save the selected duration for your sendData() function
+  console.log("Selected leg duration: " + seconds + " seconds");
+}
+
+function engage() {
+  // Highlight the engage button
+  document.getElementById("engageBtn").classList.add("active");
+  
+  // Remove focus so it relies on your .active class instead of the CSS :focus rule
+  document.getElementById("engageBtn").blur();
+  
+  // Logic to start the auto hold pattern goes here...
+}
+
+function disengage() {
+  const img = document.getElementById("patternImage");
+  img.src = "images/autohold/Base.svg";
+  
+  // Remove the active state from the Start button
+  document.getElementById("engageBtn").classList.remove("active");
+  
+  // Remove the focus state from the Disengage button so it doesn't look stuck
+  document.getElementById("disengageBtn").blur();
+  
+  // Reset the Turn buttons
+  document.getElementById("leftTurnBtn").classList.remove("active");
+  document.getElementById("rightTurnBtn").classList.remove("active");
+
+  // Reset the leg durations on disengage:
+  const legBtnIds = ['leg30Btn', 'leg60Btn', 'leg90Btn', 'leg120Btn'];
+  legBtnIds.forEach(id => document.getElementById(id).classList.remove("active"));
+}
+
+</script>
+</body>
+</html>
