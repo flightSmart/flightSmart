@@ -69,7 +69,7 @@ print <<<END
     <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
     <a class="ldgBttonSelected" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
     <div class="button-container">
-        <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF coordinates">KML -> IF Coordinates</a> 
+        <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF">KML -> IF</a> 
         <a class="ldgBtton" href="/descent.html" title="TOD Calculator">TOD Calculator</a>
     </div>
     <div class="button-container">
@@ -247,6 +247,9 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="dataHeader">Flight Map: </span><br>
                 <canvas id="mapCanvas" style="width: 100%;"></canvas>
                 <img id="sourceMap" src="$mapSrc" crossorigin="anonymous" style="display:none;" onload="recolorMap()" />
+
+                <span class="dataHeader">Data from Simbrief </span><br>
+                <a class="data" target="_blank" href="https://dispatch.simbrief.com/briefing/latest">Data from Simbrief</a>
             </div>
 END;
 }
