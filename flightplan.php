@@ -248,7 +248,7 @@ if ($xmllink != null && $xmllink != false) {
                 <canvas id="mapCanvas" style="width: 100%;"></canvas>
                 <img id="sourceMap" src="$mapSrc" crossorigin="anonymous" style="display:none;" onload="recolorMap()" />
 
-                <br>
+                <br><br>
                 <a class="dataHeader" 
                 target="_blank" 
                 style="color: rgb(224, 225, 226); text-decoration: underline;" 
