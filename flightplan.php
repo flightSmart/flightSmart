@@ -248,8 +248,13 @@ if ($xmllink != null && $xmllink != false) {
                 <canvas id="mapCanvas" style="width: 100%;"></canvas>
                 <img id="sourceMap" src="$mapSrc" crossorigin="anonymous" style="display:none;" onload="recolorMap()" />
 
-                <span class="dataHeader">Data from Simbrief </span><br>
-                <a class="data" target="_blank" href="https://dispatch.simbrief.com/briefing/latest">Data from Simbrief</a>
+                <br>
+                <a class="dataHeader" 
+                target="_blank" 
+                style="color: rgb(224, 225, 226); text-decoration: underline;" 
+                href="https://dispatch.simbrief.com/briefing/latest">
+                Data from Simbrief
+                </a>
             </div>
 END;
 }
