@@ -42,7 +42,7 @@
         .then(response => response.json())
         .then(data => {
             document.querySelector('.flightData').innerHTML = '';
-            data.sort((a, b) => b.inbounds - a.inbounds).forEach(airport => {
+            data.sort((a, b) => (b.gtads.length - a.gtads.length) || (b.inbounds - a.inbounds)).forEach(airport => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="expertServerTable">${airport.icao}</td>
