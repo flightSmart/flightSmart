@@ -27,77 +27,34 @@
 </div>
 
 <table class="flightData">
-
-<tr>
-    <td class="expertServerTable">
-        KBOS
-   </td>
-    <td class="expertServerTable">
-        173 Inbounds
-   </td>
-    <td class="expertServerTable" style="color: rgb(100, 195, 153);">
-        <img src="images/atc-icon.svg" width="14" alt="">
-        GTADS
-   </td>
-
-</tr> <tr>
-   <td class="expertServerTable">
-        KLGA
-   </td>
-    <td class="expertServerTable">
-        9 Inbounds
-   </td>
-    <td class="expertServerTable" style="color: rgb(100, 195, 153);">
-        <img src="images/atc-icon.svg" width="14" alt="">
-        GTADS
-   </td>
-
-</tr> <tr>
-   <td class="expertServerTable">
-        KDCA
-   </td>
-    <td class="expertServerTable">
-        40 Inbounds
-   </td>
-    <td class="expertServerTable" style="color: rgb(100, 195, 153);">
-        <img src="images/atc-icon.svg" width="14" alt="">
-        GTS
-   </td> 
-
-</tr> <tr>
-   <td class="expertServerTable">
-        OMDB
-   </td>
-    <td class="expertServerTable">
-        65 Inbounds
-   </td>
-    <td class="expertServerTable" style="color: rgb(100, 195, 153);">
-        <img src="images/atc-icon-grey.svg" width="14" alt="">
-        
-    </td> 
-
-</tr> <tr>
-   <td class="expertServerTable">
-        EGLL
-   </td>
-    <td class="expertServerTable">
-        34 Inbounds
-   </td>
-    <td class="expertServerTable" style="color: rgb(100, 195, 153);">
-        <img src="images/atc-icon-grey.svg" width="14" alt="">
-        
-   </td> 
-
-
-
-
-
-</tr>
+    <tr>
+        <td class="expertServerTable">Loading... (replace with a loading spinner gif or style however you like)</td>
+    </tr>
 </table>
 
 <div class="WebsiteCredits">
     <br>
     <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes ↗</a>
 </div>
+<script>
+    const apiUrl = window.location.protocol.includes('https') ? 'https://flightSmart.free.dangoweb.com/api/if' : 'http://localhost:3000';
+    fetch(`${apiUrl}/world-status`)
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector('.flightData').innerHTML = '';
+            data.sort((a, b) => b.inbounds - a.inbounds).forEach(airport => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="expertServerTable">${airport.icao}</td>
+                    <td class="expertServerTable">${airport.inbounds} Inbound${(airport.inbounds === 1) ? '' : 's'}</td>
+                    <td class="expertServerTable" style="color: rgb(100, 195, 153);"><img src="images/atc-icon${airport.gtads ? '' : '-grey'}.svg" width="14" alt="">${airport.gtads}</td>
+                `;
+                document.querySelector('.flightData').appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching world status:', error);
+        });
+</script>
 </body>
 </html>
