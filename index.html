@@ -37,12 +37,12 @@
     <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes ↗</a>
 </div>
 <script>
-    const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if/cdn' : 'http://localhost/flightSmart/api/if/cdn';
-    fetch(`${cdnUrl}/worldstatus.cdn.json`)
+    const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+    fetch(`${cdnUrl}/world-status.json`)
         .then(response => response.json())
         .then(data => {
             document.querySelector('.flightData').innerHTML = '';
-            data.sort((a, b) => (b.gtads.length - a.gtads.length) || (b.inbounds - a.inbounds)).forEach(airport => {
+            data.airports.sort((a, b) => (b.gtads.length - a.gtads.length) || (b.inbounds - a.inbounds)).forEach(airport => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="expertServerTable">${airport.icao}</td>
