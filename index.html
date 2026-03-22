@@ -23,7 +23,7 @@
             <div>
                 <span style="color: #aaa; font-size: 0.65em;" id="zulu-time">0000Z</span>
             </div>
-            <span class="material-symbols-outlined">home</span>
+            <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#e3e3e3"><path d="M264-216h96v-240h240v240h96v-348L480-726 264-564v348Zm-72 72v-456l288-216 288 216v456H528v-240h-96v240H192Zm288-327Z"/></svg>
         </div>
     </a>
         <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
@@ -36,7 +36,7 @@
 
 
 
-<table class="flightData" style="border-collapse: collapse; width: 600px;">
+<table class="flightData_main" >
     <tr>
         <td class="expertServerTable">Loading Expert Server Status...</td>
     </tr>
@@ -51,7 +51,8 @@
 </div>
 
 <script>
-    const cdnUrl = 'https://flightsmart.tools/api/if';
+    // const cdnUrl = 'https://flightsmart.tools/api/if'; use for VS code liver server
+    const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
 
     function getDuration(startTime) {
         if (!startTime) return "";
@@ -103,7 +104,7 @@
     fetch(`${cdnUrl}/world-status.json`)
         .then(response => response.json())
         .then(data => {
-            document.querySelector('.flightData').innerHTML = '';
+            document.querySelector('.flightData_main').innerHTML = '';
 
             data.airports
                 .sort((a, b) => (b.gtads.length - a.gtads.length) || (b.inbounds - a.inbounds))
@@ -145,7 +146,7 @@
                             ${timeOnline ? `${timeOnline}` : ''}
                         </td>
                     `;
-                    document.querySelector('.flightData').appendChild(row);
+                    document.querySelector('.flightData_main').appendChild(row);
                 });
         })
         .catch(error => {

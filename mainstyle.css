@@ -204,6 +204,18 @@ hr {
   margin: auto;
 }
 
+.flightData_main {
+  color: var(--text-main);
+  font-size: 12px;
+  background-color: var(--bg-dark);
+  border-spacing: 10px;
+  border: 1px solid var(--accent-green);
+  width: 600px;
+  margin: auto;
+  border-collapse: collapse;
+  width: 600px;
+}
+
 .ldgDIV {
   width: 560px;
   border-radius: 0px;
@@ -375,4 +387,17 @@ hr {
     outline: 1px dashed var(--accent-green);
     margin: auto;
   }
+
+
+  .flightData_main {
+  color: var(--text-main);
+  font-size: 12px;
+  background-color: var(--bg-dark);
+  border-spacing: 10px;
+  border: 1px solid var(--accent-green);
+  margin: auto;
+  border-collapse: collapse;
+  width: 100%;
+}
+
 }
