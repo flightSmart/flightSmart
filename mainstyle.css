@@ -1,19 +1,48 @@
-body {
-  background-color:rgb(30,30,30) ;
-  font-family:'B612 Mono';
-  color:rgb(224,225,226);
+:root {
+  /* Backgrounds */
+  --bg-dark: rgb(30, 30, 30);
+  --bg-light: rgb(50, 50, 50);
+  --bg-hover: rgb(60, 60, 60);
+  --bg-active: rgb(40, 40, 40);
+
+  /* Text & Accents */
+  --text-main: rgb(224, 225, 226);
+  --text-main-alpha: rgba(224, 225, 226, 0.5); /* For borders like hr */
+  --text-muted: rgb(150, 150, 150);
+  --accent-green: rgb(100, 195, 153);
+  --accent-green-alpha: rgba(100, 195, 153, 0.2);
+
+  /* Borders & Icons */
+  --border-main: rgb(131, 131, 131);
+  --border-muted: rgb(118, 118, 118);
+  --border-faint: rgba(232, 232, 232, 0.275);
+  --icon-muted: rgb(117, 117, 117);
+
+  /* Zulu Clock Specific */
+  --zulu-green: #00ff00;
+  --zulu-gray: #888;
+
+  /* Fonts */
+  --font-mono: 'B612 Mono', monospace;
+  --font-sans: Helvetica, sans-serif;
 }
 
 
+body {
+  background-color: var(--bg-dark);
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
 
 .button-container {
-    display: flex;
-    gap: 0; /* Change this if you want a small gap between them */
+  display: flex;
+  gap: 0; 
 }
 
-
-
-
+.material-symbols-outlined {
+  color: var(--text-main); 
+  font-size: 16px;
+}
 
 /* Container to align button and info icon */
 .action-row {
@@ -30,118 +59,88 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px; /* Slightly larger for better clicking */
+  width: 18px; 
   height: 18px;
   border-radius: 50%;
-  border: 1px solid rgb(100, 195, 153);
-  color: rgb(100, 195, 153);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
   font-family: serif;
   font-size: 12px;
   transition: 0.3s;
   
   /* Prevent highlighting */
   user-select: none; 
-  -webkit-user-select: none; /* Safari */
-  -moz-user-select: none;    /* Firefox */
-  -ms-user-select: none;     /* IE/Edge */
+  -webkit-user-select: none; 
+  -moz-user-select: none;    
+  -ms-user-select: none;     
 }
 
 .info-icon:hover {
-  background-color: rgba(100, 195, 153, 0.2);
+  background-color: var(--accent-green-alpha);
 }
 
-
-
-
 button, select {
-  background-color: rgb(50, 50, 50);
-  border: 1px solid rgb(131, 131, 131);
-  color:rgb(224,225,226);
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-main);
+  color: var(--text-main);
   padding: 3px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 12px;
-  font-family:'B612 Mono';
-
-  font-size: 12px
+  font-family: var(--font-mono);
 }
 
-button:hover{
-  background-color:rgb(224,225,226);
-  color: rgb(30,30,30)
-}
-button:focus{
-  background-color:rgb(224,225,226);
-  color: rgb(30,30,30)
+button:hover,
+button:focus {
+  background-color: var(--text-main);
+  color: var(--bg-dark);
 }
 
 button.active {
-  background-color: rgb(224, 225, 226);
-  color: rgb(30, 30, 30);
-  border: 1px solid rgb(224, 225, 226); /* Optional: makes the border match */
+  background-color: var(--text-main);
+  color: var(--bg-dark);
+  border: 1px solid var(--text-main); 
 }
-
 
 label {
   font-size: 12px;
 }
 
-input[type=number] {
-  color:rgb(224,225,226);
-  background-color:rgb(50, 50, 50);
+input[type=number],
+input[type=text],
+textarea {
+  color: var(--text-main);
+  background-color: var(--bg-light);
   font-size: 12px;
-  font-family:'B612 Mono';
-  font-size: 12px
-}
-
-input[type=text] {
-  color:rgb(224,225,226);
-  background-color:rgb(50, 50, 50);
-  font-size: 12px;
-  font-family:'B612 Mono';
-  font-size: 12px
+  font-family: var(--font-mono);
 }
 
 input[type=file] {
-  color:rgb(224,225,226);
-  background-color:rgb(30, 30, 30);
+  color: var(--text-main);
+  background-color: var(--bg-dark);
   font-size: 12px;
-  font-family:'B612 Mono';
-  font-size: 12px
-}
-
-
-
-
-textarea {
-  color:rgb(224,225,226);
-  background-color:rgb(50, 50, 50);
-  font-size: 12px;
-  font-family:'B612 Mono';
-  font-size: 12px
+  font-family: var(--font-mono);
 }
 
 select {
-  color:rgb(224,225,226);
-  background-color:rgb(50, 50, 50);
+  color: var(--text-main);
+  background-color: var(--bg-light);
   margin-top: 5px;
 }
 
-
-
 td {
-  background-color: rgb(30,30,30);
+  background-color: var(--bg-dark);
   padding: 7px;
   border-radius: 7px;
-  outline: 1px solid rgba(232, 232, 232, 0.275);
+  outline: 1px solid var(--border-faint);
 }
 
 .expertServerTable {
-  background-color: rgb(30,30,30);
+  background-color: var(--bg-dark);
   padding: 7px;
   border-radius: 0px;
-  outline: 0px solid rgba(232, 232, 232, 0.275);
+  outline: 0px solid var(--border-faint);
 }
 
 tr {
@@ -149,151 +148,116 @@ tr {
 }
 
 .data {
-  color: rgb(100,196,154); 
+  color: var(--accent-green); 
   font-size: 12px;
-  font-family:'B612 Mono';
+  font-family: var(--font-mono);
 }
 
 .link,
 .link:link,
 .link:visited {
-  color: rgb(224,225,226); 
+  color: var(--text-main); 
   font-style: italic;
   text-decoration-line: underline;
   font-size: 12px;
-  font-family:'B612 Mono';
+  font-family: var(--font-mono);
 }
 
-
 .dataHeader {
-  font-family: Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-weight: bold;
   font-size: 12px;
 }
 
 .myCredit {
   padding: 15px;
-  font-family: Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
-  color: rgb(224,225,226); 
-
+  color: var(--text-main); 
   text-decoration-line: underline;
-  font-size: 12px;
 }
 
 #versionElement {
-  font-family: Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   padding-left: 15px;
-
-  color: rgb(224,225,226); 
+  color: var(--text-main); 
 }
 
 .dataHeader, .versionElement {
-  font-family: Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-weight: bold;
   font-size: 12px;
 }
 
 hr {
-  border-color:rgb(224,225,226, 0.5);
+  border-color: var(--text-main-alpha);
 }
 
-
-
-
 .flightData {
-  color:rgb(224,225,226);
+  color: var(--text-main);
   font-size: 12px;
-  background-color: rgb(30,30,30);
+  background-color: var(--bg-dark);
   border-spacing: 10px;
-
-  border: 1px solid rgb(100, 195, 153);
-
+  border: 1px solid var(--accent-green);
   width: 600px;
   margin: auto;
 }
 
-.ldgDIV{
+.ldgDIV {
   width: 560px;
-  
   border-radius: 0px;
-  background-color: rgb(50, 50, 50);
-
-  padding:10px;
-  outline: 1px dashed rgb(100, 195, 153);
+  background-color: var(--bg-light);
+  padding: 10px;
+  outline: 1px dashed var(--accent-green);
   margin: auto;
 }
 
-
-.ldgBtton {
-  flex: 1; /* This makes them share the space 50/50 automatically */
+.ldgBtton,
+.ldgBttoninvis {
+  flex: 1; 
   text-align: center;
-  /* keep your other styling here */
-
-  background-color: rgb(50, 50, 50);
-  border: 1px solid rgb(100, 195, 153);
-  color:rgb(224,225,226);
+  background-color: var(--bg-light);
+  color: var(--text-main);
   padding: 3px;
-  text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 12px;
-  font-family:'B612 Mono';
+  font-family: var(--font-mono);
   margin: 2px;
-  font-size: 12px
+}
 
+.ldgBtton {
+  border: 1px solid var(--accent-green);
 }
 
 .ldgBttoninvis {
-  flex: 1; /* This makes them share the space 50/50 automatically */
-  text-align: center;
-  /* keep your other styling here */
-
-  background-color: rgb(50, 50, 50);
-  border: 0px solid rgb(100, 195, 153);
-  color:rgb(224,225,226);
-  padding: 3px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 12px;
-  font-family:'B612 Mono';
-  margin: 2px;
-  font-size: 12px
+  border: 0px solid var(--accent-green);
 }
 
 .ldgBtton:hover {
-  color:rgb(50,50,50);;
-  background-color:rgba(224,225,226, 1);
+  color: var(--bg-light);
+  background-color: var(--text-main);
 }
 
-
 .ldgBttonSelected {
-    flex: 1; /* This makes them share the space 50/50 automatically */
+  flex: 1; 
   text-align: center;
-  /* keep your other styling here */
-
-
-  background-color: rgba(224,225,226, 1);
-  border: 1px solid rgb(100, 195, 153);
-  color:rgb(50,50,50);
+  background-color: var(--text-main);
+  border: 1px solid var(--accent-green);
+  color: var(--bg-light);
   padding: 3px;
-  text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 12px;
-  font-family:'B612 Mono';
+  font-family: var(--font-mono);
   margin: 2px;
-  font-size: 12px
 }
 
-
-
 .textOutput {
-  color:rgb(224,225,226);
-  background-color:rgb(50 50 50);
-  font-family:'B612 Mono';
+  color: var(--text-main);
+  background-color: var(--bg-light);
+  font-family: var(--font-mono);
   font-size: 10px;
   padding: .3em;
 }
@@ -304,15 +268,14 @@ hr {
   padding: 2px 5px;
   border-radius: 3px;
   font-weight: bold;
-  font-family:'B612 Mono';
+  font-family: var(--font-mono);
 }
-
 
 .leaflet-layer,
 .leaflet-control-zoom-in,
 .leaflet-control-zoom-out,
 .leaflet-control-attribution {
-  filter:  invert(100%) hue-rotate(200deg) brightness(90%) contrast(75%) saturate(20%);
+  filter: invert(100%) hue-rotate(200deg) brightness(90%) contrast(75%) saturate(20%);
 }
 
 .WebsiteCredits {
@@ -331,53 +294,44 @@ hr {
   background: transparent;
 }
 
-
-.mainButton{
-  border: 1px solid rgb(100, 195, 153);
-  color: rgb(100, 195, 153);
+.mainButton {
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
 }
 
 /* Consolidated & Fixed Size for the Upload Box */
 .custom-file-input {
-  color: rgb(224, 225, 226);
-  background-color: rgb(50, 50, 50);
-  border: 1px solid rgb(118 118 118);
-  border-radius: 0px !important; /* Sharp corners */
+  color: var(--text-main);
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-muted);
+  border-radius: 0px !important; 
   cursor: pointer;
-  
-  /* Use flex to center the icon inside the box */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
-  /* Restores the original size */
   width: 155px;  
-  height: 64px; /* Matches the vertical height from your 23px padding */
-  
+  height: 64px; 
   box-sizing: border-box;
   transition: background-color 0.3s;
 }
 
 .custom-file-input:hover {
-  background-color: rgb(60, 60, 60);
+  background-color: var(--bg-hover);
 }
 
-/* Ensure the icon color matches your 'grey' preference */
+.custom-file-input:active {
+  background-color: var(--bg-active);
+}
+
 .file-icon-only {
-  color: rgb(117 117 117); 
+  color: var(--icon-muted); 
   width: 28px;
   height: 28px;
   display: block;
 }
 
-/* Keep icon grey on hover too, or slightly brighten it */
 .custom-file-input:hover .file-icon-only {
-  color: rgb(224, 225, 226);
-}
-
-
-.custom-file-input:active {
-  background-color: rgb(40, 40, 40);
+  color: var(--text-main);
 }
 
 #kmlFileInput {
@@ -386,34 +340,39 @@ hr {
 
 .file-name {
   margin-left: 0px;
-  color: rgb(150, 150, 150);
-  font-family: 'B612 Mono', monospace;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
   font-size: 12px;
 } 
 
+.zulu-clock-container {
+  font-family: 'Courier New', monospace;
+  color: var(--zulu-green); 
+  padding: 0px 0px;
+  border-radius: 4px;
+  display: inline-block;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
 
-
-
+.zulu-label {
+  margin-left: 5px;
+  font-size: 0.9rem;
+  color: var(--zulu-gray);
+}
 
 @media screen and (max-width: 600px) {
   .flightData {
     width: auto;
-    min-width: 90%
+    min-width: 90%;
   }
 
-  .ldgDIV{
+  .ldgDIV {
     width: 350px;
-    
     border-radius: 0px;
-    background-color: rgb(50, 50, 50);
-  
-    padding:10px;
-    outline: 1px dashed rgb(100, 195, 153);
+    background-color: var(--bg-light);
+    padding: 10px;
+    outline: 1px dashed var(--accent-green);
     margin: auto;
   }
-  
-
-
 }
-
-

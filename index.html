@@ -6,6 +6,7 @@
 <link rel="icon" type="image/x-icon" href="/images/flightSmartLogoTransparent.png">
 <title>flightSmart</title>
 <link href='https://fonts.googleapis.com/css?family=B612 Mono' rel='stylesheet'>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,500,0,0" />
 <link rel="stylesheet"  href="mainstyle.css" type="text/css" />
 </head>
 <body>
@@ -13,48 +14,162 @@
 
 
 
+
+
 <div class="ldgDIV" style="display: flex; flex-direction: column;">
-    <a href="/index.html"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
-    <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
+    <a href="/index.html" style="display: flex; align-items: center; justify-content: space-between; margin-left: 4px; margin-bottom: 6px; text-decoration: none; color: black;">
+        <img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart">
+        <div style="display: flex; align-items: center; gap: 8px; margin-right: 5px;">
+            <div>
+                <span style="color: #aaa; font-size: 0.65em;" id="zulu-time">0000Z</span>
+            </div>
+            <span class="material-symbols-outlined">home</span>
+        </div>
+    </a>
+        <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
     <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
     <div class="button-container">
         <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF">KML -> IF</a> 
-        <a class="ldgBtton" href="/descent.html" title="TOD Calculator">TOD Calculator</a>
-    </div>
-    <div class="button-container">
-        <a class="ldgBtton" href="/autohold.html" title="Auto Hold">Auto Hold</a> 
+        <a class="ldgBtton" href="/descent.html" title="TOD Calculator">Top of Descent Calculator</a>
     </div>
 </div>
 
-<table class="flightData">
+
+
+<table class="flightData" style="border-collapse: collapse; width: 600px;">
     <tr>
-        <td class="expertServerTable">Loading... (replace with a loading spinner gif or style however you like)</td>
+        <td class="expertServerTable">Loading Expert Server Status...</td>
     </tr>
 </table>
 
 <div class="WebsiteCredits">
     <br>
-    <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes ↗</a>
+    <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes 
+<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#e3e3e3" style="transform: translateY(3px);">
+  <path d="m243-240-51-51 405-405H240v-72h480v480h-72v-357L243-240Z"/>
+</svg></a>
 </div>
+
 <script>
-    const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+    const cdnUrl = 'https://flightsmart.tools/api/if';
+
+    function getDuration(startTime) {
+        if (!startTime) return "";
+        const diffMs = Date.now() - startTime;
+        const diffMins = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    }
+
+    function getTrafficColor(count) {
+        // Define our anchor colors
+        const colors = {
+            gray:   [224, 225, 226], // < 20
+            yellow: [244, 167, 77],  // 55
+            red:    [107, 5, 4]      // 110
+        };
+
+        // 1. Static Boundaries
+        if (count < 20) return `rgb(${colors.gray.join(',')})`;
+        if (count >= 110) return `rgb(${colors.red.join(',')})`;
+
+        let start, end, ratio;
+
+        // 2. Determine which segment we are in
+        if (count < 55) {
+            // Segment 1: Gray to Yellow (Range: 20 to 55)
+            start = colors.gray;
+            end = colors.yellow;
+            ratio = (count - 20) / (55 - 20);
+        } else {
+            // Segment 2: Yellow to Red (Range: 55 to 110)
+            start = colors.yellow;
+            end = colors.red;
+            ratio = (count - 55) / (110 - 55);
+        }
+
+        // 3. Interpolate the RGB channels
+        const lerp = (s, e, t) => Math.round(s + (e - s) * t);
+        
+        const r = lerp(start[0], end[0], ratio);
+        const g = lerp(start[1], end[1], ratio);
+        const b = lerp(start[2], end[2], ratio);
+
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+
     fetch(`${cdnUrl}/world-status.json`)
         .then(response => response.json())
         .then(data => {
             document.querySelector('.flightData').innerHTML = '';
-            data.airports.sort((a, b) => (b.gtads.length - a.gtads.length) || (b.inbounds - a.inbounds)).forEach(airport => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="expertServerTable">${airport.icao}</td>
-                    <td class="expertServerTable">${airport.inbounds} Inbound${(airport.inbounds === 1) ? '' : 's'}</td>
-                    <td class="expertServerTable" style="color: rgb(100, 195, 153);"><img src="images/atc-icon${airport.gtads ? '' : '-grey'}.svg" width="14" alt="">${airport.gtads}</td>
-                `;
-                document.querySelector('.flightData').appendChild(row);
-            });
+
+            data.airports
+                .sort((a, b) => (b.gtads.length - a.gtads.length) || (b.inbounds - a.inbounds))
+                .slice(0, 10) 
+                .forEach((airport, index) => { 
+                    const row = document.createElement('tr');
+                    
+                    // Store the color logic in a variable
+                    const bgColor = index % 2 === 0 ? 'rgba(50, 50, 50, 0.45)' : 'transparent';
+                    
+                    const timeOnline = getDuration(airport.startTime);
+
+                    // Inject the bgColor directly into EVERY cell
+                    const inboundColor = getTrafficColor(airport.inbounds);
+                    const outboundColor = getTrafficColor(airport.outbounds);
+
+                    row.innerHTML = `
+                        <td class="expertServerTable" style="background-color: ${bgColor}; padding: 12px 15px;">${airport.icao}</td>
+                        
+                        <td class="expertServerTable" style="background-color: ${bgColor}; color: ${inboundColor}; padding: 12px 15px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="rgba(227, 227, 227, .5)" style="transform: translateY(3px);">
+                                <path d="M144-144v-72h672v72H144Zm579-191L144-508v-275l92 27 46 139 131 40-30-335 115 34 116 361 151 44q23 7 37 26.5t14 42.5q0 35-29 57.5T723-335Z"/>
+                            </svg>
+                            ${airport.inbounds}
+                        </td>
+
+                        <td class="expertServerTable" style="background-color: ${bgColor}; color: ${outboundColor}; padding: 12px 25px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="rgba(227, 227, 227, .5)" style="transform: translateY(3px);">
+                                <path d="M144-144v-72h672v72H144Zm72-192L70-570l93-25 112 94 133-36-203-268 116-32 289 245 163-44q29-8 55 7t34 44q8 29-7 54.5T811-497L216-336Z"/>
+                            </svg>
+                            ${airport.outbounds}
+                        </td>
+                                
+                        <td class="expertServerTable" style="background-color: ${bgColor}; color: rgb(100, 195, 153); padding: 12px 10px;">
+                            <img src="images/atc-icon${airport.gtads ? '' : '-grey'}.svg" width="14" style="vertical-align: -2px;" alt=""> 
+                            ${airport.gtads}
+                        </td>
+                        <td class="expertServerTable" style="background-color: ${bgColor}; color: #aaa; font-size: 0.85em; padding: 10px 15px;">
+                            ${timeOnline ? `${timeOnline}` : ''}
+                        </td>
+                    `;
+                    document.querySelector('.flightData').appendChild(row);
+                });
         })
         .catch(error => {
             console.error('Error fetching world status:', error);
         });
+
+        function updateZuluTime() {
+            const now = new Date();
+            
+            // Get UTC hours and minutes, ensuring they are always two digits
+            const hours = String(now.getUTCHours()).padStart(2, '0');
+            const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+            
+            // Combine them into the HHMM format
+            const timeString = hours + minutes +'Z';
+            
+            document.getElementById('zulu-time').textContent = timeString;
+        }
+updateZuluTime();
+setInterval(updateZuluTime, 30000);
+
+
+
 </script>
 </body>
 </html>
+

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/x-icon" href="/images/flightSmartLogoTransparent.png">
 <title>flightSmart - Descent Calculator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 <link href='https://fonts.googleapis.com/css?family=B612+Mono' rel='stylesheet'>
 <link rel="stylesheet" href="mainstyle.css" type="text/css" />
 <style>
@@ -96,15 +97,20 @@
 <body>
 
 <div class="ldgDIV" style="display: flex; flex-direction: column;">
-    <a href="/index.html"><img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart"></a>
-    <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
+    <a href="/index.html" style="display: flex; align-items: center; justify-content: space-between; margin-left: 4px; margin-bottom: 6px; text-decoration: none; color: black;">
+        <img src="images/flightSmartTitleOG.png" width="200" alt="flightSmart">
+        <div style="display: flex; align-items: center; gap: 8px; margin-right: 5px;">
+            <div>
+                <span style="color: #aaa; font-size: 0.65em;" id="zulu-time">0000Z</span>
+            </div>
+            <span class="material-symbols-outlined">home</span>
+        </div>
+    </a>
+        <a class="ldgBtton" href="/aircraftCalculator.html" title="Aircraft Calculator">Aircraft Calculator (using Community Data!)</a>
     <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
     <div class="button-container">
         <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF">KML -> IF</a> 
-        <a class="ldgBttonSelected" href="/descent.html" title="TOD Calculator">TOD Calculator</a>
-    </div>
-    <div class="button-container">
-        <a class="ldgBtton" href="/autohold.html" title="Auto Hold">Auto Hold</a> 
+        <a class="ldgBtton" href="/descent.html" title="TOD Calculator">Top of Descent Calculator</a>
     </div>
 </div>
 
@@ -170,9 +176,13 @@
     </tr>
 </table>
 
+
 <div class="WebsiteCredits">
     <br>
-    <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes ↗</a>
+    <a href="https://community.infiniteflight.com/t/the-unofficial-infinite-aircraft-calculator-using-community-data/869648" target="_blank" class="myCredit">website by darkeyes 
+<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="#e3e3e3" style="transform: translateY(3px);">
+  <path d="m243-240-51-51 405-405H240v-72h480v480h-72v-357L243-240Z"/>
+</svg></a>
 </div>
 
 <script>
@@ -275,6 +285,22 @@
         document.getElementById('outputData').innerHTML = '';
         resetInputColors();
     }
+
+
+        function updateZuluTime() {
+            const now = new Date();
+            
+            // Get UTC hours and minutes, ensuring they are always two digits
+            const hours = String(now.getUTCHours()).padStart(2, '0');
+            const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+            
+            // Combine them into the HHMM format
+            const timeString = hours + minutes +'Z';
+            
+            document.getElementById('zulu-time').textContent = timeString;
+        }
+updateZuluTime();
+setInterval(updateZuluTime, 30000);
 </script>
 
 </body>
