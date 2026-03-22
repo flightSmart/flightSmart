@@ -53,71 +53,56 @@
 <script>
     // const cdnUrl = 'https://flightsmart.tools/api/if'; 
     const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+// --- Helper Functions ---
+function getDuration(startTime) {
+    if (!startTime) return "";
+    const diffMs = Date.now() - startTime;
+    const diffMins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+}
 
-    function getDuration(startTime) {
-        if (!startTime) return "";
-        const diffMs = Date.now() - startTime;
-        const diffMins = Math.floor(diffMs / 60000);
-        const hours = Math.floor(diffMins / 60);
-        const mins = diffMins % 60;
-        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+function getTrafficColor(count) {
+    const colors = {
+        gray:   [224, 225, 226], // < 20
+        yellow: [244, 167, 77],  // 55
+        red:    [107, 5, 4]      // 110
+    };
+
+    if (count < 20) return `rgb(${colors.gray.join(',')})`;
+    if (count >= 110) return `rgb(${colors.red.join(',')})`;
+
+    let start, end, ratio;
+    if (count < 55) {
+        start = colors.gray;
+        end = colors.yellow;
+        ratio = (count - 20) / (55 - 20);
+    } else {
+        start = colors.yellow;
+        end = colors.red;
+        ratio = (count - 55) / (110 - 55);
     }
 
-    function getTrafficColor(count) {
-        // Define our anchor colors
-        const colors = {
-            gray:   [224, 225, 226], // < 20
-            yellow: [244, 167, 77],  // 55
-            red:    [107, 5, 4]      // 110
-        };
+    const lerp = (s, e, t) => Math.round(s + (e - s) * t);
+    return `rgb(${lerp(start[0], end[0], ratio)}, ${lerp(start[1], end[1], ratio)}, ${lerp(start[2], end[2], ratio)})`;
+}
 
-        // 1. Static Boundaries
-        if (count < 20) return `rgb(${colors.gray.join(',')})`;
-        if (count >= 110) return `rgb(${colors.red.join(',')})`;
-
-        let start, end, ratio;
-
-        // 2. Determine which segment we are in
-        if (count < 55) {
-            // Segment 1: Gray to Yellow (Range: 20 to 55)
-            start = colors.gray;
-            end = colors.yellow;
-            ratio = (count - 20) / (55 - 20);
-        } else {
-            // Segment 2: Yellow to Red (Range: 55 to 110)
-            start = colors.yellow;
-            end = colors.red;
-            ratio = (count - 55) / (110 - 55);
-        }
-
-        // 3. Interpolate the RGB channels
-        const lerp = (s, e, t) => Math.round(s + (e - s) * t);
-        
-        const r = lerp(start[0], end[0], ratio);
-        const g = lerp(start[1], end[1], ratio);
-        const b = lerp(start[2], end[2], ratio);
-
-        return `rgb(${r}, ${g}, ${b})`;
-    }
-
-
+// --- Data Fetching Logic ---
+function fetchWorldStatus() {
     fetch(`${cdnUrl}/world-status.json`)
         .then(response => response.json())
         .then(data => {
-            document.querySelector('.flightData_main').innerHTML = '';
+            const tableBody = document.querySelector('.flightData_main');
+            tableBody.innerHTML = ''; // Clear existing rows
 
             data.airports
                 .sort((a, b) => (b.gtads.length - a.gtads.length) || (b.inbounds - a.inbounds))
                 .slice(0, 10) 
                 .forEach((airport, index) => { 
                     const row = document.createElement('tr');
-                    
-                    // Store the color logic in a variable
                     const bgColor = index % 2 === 0 ? 'rgba(50, 50, 50, 0.45)' : 'transparent';
-                    
                     const timeOnline = getDuration(airport.startTime);
-
-                    // Inject the bgColor directly into EVERY cell
                     const inboundColor = getTrafficColor(airport.inbounds);
                     const outboundColor = getTrafficColor(airport.outbounds);
 
@@ -146,29 +131,64 @@
                             ${timeOnline ? `${timeOnline}` : ''}
                         </td>
                     `;
-                    document.querySelector('.flightData_main').appendChild(row);
+                    tableBody.appendChild(row);
                 });
         })
-        .catch(error => {
-            console.error('Error fetching world status:', error);
-        });
+        .catch(error => console.error('Error fetching world status:', error));
+}
 
-        function updateZuluTime() {
-            const now = new Date();
-            
-            // Get UTC hours and minutes, ensuring they are always two digits
-            const hours = String(now.getUTCHours()).padStart(2, '0');
-            const minutes = String(now.getUTCMinutes()).padStart(2, '0');
-            
-            // Combine them into the HHMM format
-            const timeString = hours + minutes +'Z';
-            
-            document.getElementById('zulu-time').textContent = timeString;
+// --- Polling & Idle Detection Logic ---
+let lastActivityTime = Date.now();
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const POLL_INTERVAL_MS = 60 * 1000;     // 60 seconds
+let pollTimer = null;
+let isIdle = false;
+
+// 1. Function to restart the timer when the user is active
+function resetIdleTimer() {
+    lastActivityTime = Date.now();
+    if (isIdle) {
+        console.log("User resumed activity. Fetching data and restarting polling...");
+        isIdle = false;
+        fetchWorldStatus(); // Immediately grab fresh data
+        startPolling();     // Restart the 60s loop
+    }
+}
+
+// 2. Listeners for user activity
+['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+});
+
+// 3. The main polling loop
+function startPolling() {
+    if (pollTimer) clearInterval(pollTimer); // Clear any existing timers just in case
+    
+    pollTimer = setInterval(() => {
+        if (Date.now() - lastActivityTime >= IDLE_TIMEOUT_MS) {
+            console.log("User idle for 15 minutes. Pausing Live API polling.");
+            isIdle = true;
+            clearInterval(pollTimer); // Stop asking the server for data
+        } else {
+            fetchWorldStatus(); // User is active, get data!
         }
+    }, POLL_INTERVAL_MS);
+}
+
+// --- Zulu Time Clock ---
+function updateZuluTime() {
+    const now = new Date();
+    const hours = String(now.getUTCHours()).padStart(2, '0');
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+    document.getElementById('zulu-time').textContent = `${hours}${minutes}Z`;
+}
+
+// --- Initialization ---
 updateZuluTime();
-setInterval(updateZuluTime, 30000);
+setInterval(updateZuluTime, 30000); // Keep clock ticking
 
-
+fetchWorldStatus(); // Fetch immediately on first load
+startPolling();     // Start the 60-second loop
 
 </script>
 </body>
