@@ -51,8 +51,8 @@
 </div>
 
 <script>
-    const cdnUrl = 'https://flightsmart.tools/api/if'; 
-    //const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+    // const cdnUrl = 'https://flightsmart.tools/api/if'; 
+    const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
 
     function getDuration(startTime) {
         if (!startTime) return "";
