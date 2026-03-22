@@ -79,7 +79,7 @@ print <<<END
     <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
     <div class="button-container">
         <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF">KML -> IF</a> 
-        <a class="ldgBtton" href="/descent.html" title="TOD Calculator">Top of Descent Calculator</a>
+        <a class="ldgBtton" href="/descent.html" title="TOD Calculator">TOD Calculator</a>
     </div>
 </div>
 

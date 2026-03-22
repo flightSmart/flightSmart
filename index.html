@@ -30,7 +30,7 @@
     <a class="ldgBtton" href="flightplan.php" title="Flightplan Generator">Flightplan Generator (via Simbrief)</a>
     <div class="button-container">
         <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF">KML -> IF</a> 
-        <a class="ldgBtton" href="/descent.html" title="TOD Calculator">Top of Descent Calculator</a>
+        <a class="ldgBtton" href="/descent.html" title="TOD Calculator">TOD Calculator</a>
     </div>
 </div>
 
@@ -51,8 +51,8 @@
 </div>
 
 <script>
-    // const cdnUrl = 'https://flightsmart.tools/api/if'; use for VS code liver server
-    const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+    const cdnUrl = 'https://flightsmart.tools/api/if'; 
+    //const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
 
     function getDuration(startTime) {
         if (!startTime) return "";

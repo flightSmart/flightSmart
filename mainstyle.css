@@ -390,13 +390,13 @@ hr {
 
   .flightData_main {
   color: var(--text-main);
-  font-size: 12px;
+  font-size: 9px;
   background-color: var(--bg-dark);
   border-spacing: 10px;
   border: 1px solid var(--accent-green);
   margin: auto;
   border-collapse: collapse;
-  width: 95%;
+  width: 100%;
 }
 
 }
