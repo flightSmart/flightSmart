@@ -185,7 +185,7 @@ if ($xmllink != null && $xmllink != false) {
     $vref = $landingRwy['vref'] ?? 'N/A';
 
     echo '<pre style="color: yellow; background: #222; padding: 10px;">';
-    print_r($landingRwy);
+    print_r($simbrief->ofp_array['tlr']['landing']);
     echo '</pre>';
 
     
