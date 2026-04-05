@@ -182,7 +182,7 @@ if ($xmllink != null && $xmllink != false) {
     $v1 = $takeoffRwy['speeds_v1'] ?? 'N/A';
     $vr = $takeoffRwy['speeds_vr'] ?? 'N/A';
     $v2 = $takeoffRwy['speeds_v2'] ?? 'N/A';
-    $vref = $landingRwy['speeds_vref'] ?? 'N/A';
+    $vref = $landingRwy['vref'] ?? 'N/A';
 
     // Fix for the 2-digit Simbrief quirk (adds a "1" only if the API returns 2 digits)
     if (is_numeric($v1) && strlen((string)$v1) == 2) { $v1 = "1" . $v1; }
@@ -258,7 +258,7 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="data" style="color: rgb(224,225,226);">$originName ($originICAO)</span><br>
                 Runway: <span class="data">$originRunway</span><br>
                 SID: <span class="data">$sid</span><br>
-                V-Speeds: <span class="data">V1: $v1 | VR: $vr | V2: $v2</span><br>
+                V-Speeds: <span style="color: rgb(224,225,226);">V1:</span> <span class="data">$v1</span> <span style="color: rgb(224,225,226);">| VR:</span> <span class="data">$vr</span> <span style="color: rgb(224,225,226);">| V2:</span> <span class="data">$v2</span><br>
                 Climb: <span class="data">$climbProfile</span><br><br>
                 
                 <span class="dataHeader">Arrival: </span><br>
