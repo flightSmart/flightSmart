@@ -172,10 +172,22 @@ if ($xmllink != null && $xmllink != false) {
     $descentProfile = $simbrief->ofp_array['general']['descent_profile'] ?? 'N/A';
 
     // --- V-Speeds (Runway Analysis / TLR) ---
-    $v1 = $simbrief->ofp_array['tlr']['takeoff']['v1'] ?? 'N/A';
-    $vr = $simbrief->ofp_array['tlr']['takeoff']['vr'] ?? 'N/A';
-    $v2 = $simbrief->ofp_array['tlr']['takeoff']['v2'] ?? 'N/A';
-    $vref = $simbrief->ofp_array['tlr']['landing']['vref'] ?? 'N/A';
+    // Simbrief nests the speeds inside the runway array
+    $takeoffRwy = $simbrief->ofp_array['tlr']['takeoff']['runway'] ?? [];
+    if (isset($takeoffRwy[0])) { $takeoffRwy = $takeoffRwy[0]; } // Grab first runway if there are multiple
+
+    $landingRwy = $simbrief->ofp_array['tlr']['landing']['runway'] ?? [];
+    if (isset($landingRwy[0])) { $landingRwy = $landingRwy[0]; }
+    
+    $v1 = $takeoffRwy['speeds_v1'] ?? 'N/A';
+    $vr = $takeoffRwy['speeds_vr'] ?? 'N/A';
+    $v2 = $takeoffRwy['speeds_v2'] ?? 'N/A';
+    $vref = $landingRwy['speeds_vref'] ?? 'N/A';
+
+    // Fix for the 2-digit Simbrief quirk (adds a "1" only if the API returns 2 digits)
+    if (is_numeric($v1) && strlen((string)$v1) == 2) { $v1 = "1" . $v1; }
+    if (is_numeric($vr) && strlen((string)$vr) == 2) { $vr = "1" . $vr; }
+    if (is_numeric($v2) && strlen((string)$v2) == 2) { $v2 = "1" . $v2; }
     
     // --- Remarks Logic ---
     $sysRmks = $simbrief->ofp_array['general']['sys_rmk'] ?? [];
@@ -245,14 +257,14 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="dataHeader">Departure:</span><br>
                 <span class="data" style="color: rgb(224,225,226);">$originName ($originICAO)</span><br>
                 Runway: <span class="data">$originRunway</span><br>
-                SID: <span class="data">$sid</span><br><br>
-                V-Speeds: <span class="data">V1: 1$v1 | VR: 1$vr | V2: 1$v2</span><br>
+                SID: <span class="data">$sid</span><br>
+                V-Speeds: <span class="data">V1: $v1 | VR: $vr | V2: $v2</span><br>
                 Climb: <span class="data">$climbProfile</span><br><br>
                 
                 <span class="dataHeader">Arrival: </span><br>
                 <span class="data" style="color: rgb(224,225,226);">$destinationName ($destinationICAO)</span><br>
                 Runway: <span class="data">$destinationRunway</span><br>
-                STAR: <span class="data">$star</span><br><br>
+                STAR: <span class="data">$star</span><br>
                 VREF: <span class="data">$vref</span><br>
                 Descent: <span class="data">$descentProfile</span><br><br>
                 
