@@ -165,6 +165,16 @@ if ($xmllink != null && $xmllink != false) {
 
     $star_ident = $simbrief->ofp_array['general']['star_ident'];
     $star = (is_string($star_ident) && trim($star_ident) !== '') ? $star_ident : 'N/A';
+
+    // --- Profiles Data ---
+    $climbProfile = $simbrief->ofp_array['general']['climb_profile'] ?? 'N/A';
+    $descentProfile = $simbrief->ofp_array['general']['descent_profile'] ?? 'N/A';
+
+    // --- V-Speeds (Runway Analysis / TLR) ---
+    $v1 = $simbrief->ofp_array['tlr']['takeoff']['v1'] ?? 'N/A';
+    $vr = $simbrief->ofp_array['tlr']['takeoff']['vr'] ?? 'N/A';
+    $v2 = $simbrief->ofp_array['tlr']['takeoff']['v2'] ?? 'N/A';
+    $vref = $simbrief->ofp_array['tlr']['landing']['vref'] ?? 'N/A';
     
     // --- Remarks Logic ---
     $sysRmks = $simbrief->ofp_array['general']['sys_rmk'] ?? [];
@@ -235,16 +245,23 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="data" style="color: rgb(224,225,226);">$originName ($originICAO)</span><br>
                 Runway: <span class="data">$originRunway</span><br>
                 SID: <span class="data">$sid</span><br><br>
+                V-Speeds: <span class="data">V1: 1$v1 | VR: 1$vr | V2: 1$v2</span><br>
+                Climb: <span class="data">$climbProfile</span><br><br>
                 
                 <span class="dataHeader">Arrival: </span><br>
                 <span class="data" style="color: rgb(224,225,226);">$destinationName ($destinationICAO)</span><br>
                 Runway: <span class="data">$destinationRunway</span><br>
                 STAR: <span class="data">$star</span><br><br>
+                VREF: <span class="data">$vref</span><br>
+                Descent: <span class="data">$descentProfile</span><br><br>
                 
+
+        
                 <span class="dataHeader">Alternate: </span><br>
                 <span class="data" style="color: rgb(224,225,226);">$altName ($altICAO)</span><br>
                 ETE: <span class="data">$altTime</span><br>
                 Route Distance: <span class="data">$altDist nm</span><br><br>
+                
                 
 
 
