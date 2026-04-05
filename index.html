@@ -51,8 +51,42 @@
 </div>
 
 <script>
-    // const cdnUrl = 'https://flightsmart.tools/api/if'; 
-    const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+
+let activeSessionId = null;
+
+const freqMap = {
+    0: "Ground", 1: "Tower", 2: "Unicom", 3: "Clearance",
+    4: "Approach", 5: "Departure", 6: "Center", 7: "ATIS",
+    8: "Aircraft", 9: "Recorded", 10: "Unknown", 11: "Unused"
+};
+
+
+// FOR TESTING ON LIVE SERVER
+//const cdnUrl = 'https://flightsmart.tools/api/if';     
+// FOR PRODUCTION
+const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+
+const apiCache = new Map()
+
+async function fetchWithCache(url, ttlMs) {
+    const now = Date.now();
+    const cachedItem = apiCache.get(url);
+    
+    // Return cached data if it exists and hasn't expired
+    if (cachedItem && (now - cachedItem.timestamp < ttlMs)) {
+        return cachedItem.data;
+    }
+    
+    // Otherwise, fetch fresh data
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    
+    // Save to cache with current timestamp
+    apiCache.set(url, { data, timestamp: now });
+    return data;
+}
+
 // --- Helper Functions ---
 function getDuration(startTime) {
     if (!startTime) return "";
@@ -63,11 +97,160 @@ function getDuration(startTime) {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
+function getAtcGlow(gtads) {
+    if (!gtads) return 0;
+    const min = 0.2, max = 0.9;
+    const minLen = 1, maxLen = 5;
+    const clamped = Math.min(Math.max(gtads.length, minLen), maxLen);
+    return min + ((clamped - minLen) / (maxLen - minLen)) * (max - min);
+}
+
+
+function formatATIS(raw) {
+    if (!raw || typeof raw !== 'string') return raw;
+
+    const infoMatch     = raw.match(/information ([A-Z]+)/i);
+    const timeMatch     = raw.match(/time (\d{4}) ZULU/i);
+    const windCalmMatch = raw.match(/Wind Calm/i);
+    const windMatch     = !windCalmMatch && raw.match(/Wind (\d{3}) at (\d+)( gust (\d+))?/i);
+    const visMatch      = raw.match(/Visibility (\d+)/i);
+    const tempMatch     = raw.match(/Temperature (-?\d+)/i);
+    const dewMatch      = raw.match(/Dew Point (-?\d+)/i);
+    const altMatch      = raw.match(/Altimeter (\d{4})/i);
+    const ldgMatch      = raw.match(/Landing Runway[s]?\s+([\w,\s]+?)(?=\s*,?\s*Departing|\.|$)/i);
+    const depRwMatch    = raw.match(/Departing Runway[s]?\s+([\w,\s]+?)(?=\.|$|\s+Advise|\s+Notam)/i);
+
+    // SID/STAR — grab comma-separated identifiers after each keyword
+    const sidMatch  = raw.match(/Recommended Departure Procedures[,\s]+([A-Z0-9,\s]+?)(?=,?\s*Recommended Arrival|,?\s*Advise|,?\s*Notam|\.|$)/i);
+    const starMatch = raw.match(/Recommended Arrival Procedures[,\s]+([A-Z0-9,\s]+?)(?=,?\s*Advise|,?\s*Notam|\.|$)/i);
+
+    const parseProcList = (str) => {
+        if (!str) return [];
+        return str.split(/[\s,]+/).map(s => s.trim()).filter(s => /^[A-Z0-9]{3,8}$/.test(s));
+    };
+
+    const sids  = parseProcList(sidMatch  ? sidMatch[1]  : '');
+    const stars = parseProcList(starMatch ? starMatch[1] : '');
+
+    // Time + staleness color
+    let timeStr = '';
+    if (timeMatch) {
+        const atisTime = timeMatch[1];
+        const now = new Date();
+        const currentZuluMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+        const atisMinutes = parseInt(atisTime.substring(0,2)) * 60 + parseInt(atisTime.substring(2,4));
+        let diff = currentZuluMinutes - atisMinutes;
+        if (diff < 0) diff += 1440;
+        let warningColor = '#e3e3e3';
+        if (diff >= 120)      warningColor = 'rgb(179, 32, 32)';
+        else if (diff >= 65)  warningColor = 'rgb(244, 167, 77)';
+        timeStr = `${atisTime}Z <span style="color:${warningColor};">(${diff} min. ago)</span>`;
+    }
+
+    const wind  = windCalmMatch ? 'CALM'
+                : windMatch     ? `${windMatch[1]}${windMatch[2].padStart(2,'0')}${windMatch[4] ? 'G'+windMatch[4] : ''}KT`
+                : '';
+    const vis   = visMatch   ? `${visMatch[1]}SM`          : '';
+    const temp  = tempMatch  ? tempMatch[1].padStart(2,'0') : 'XX';
+    const dew   = dewMatch   ? dewMatch[1].padStart(2,'0')  : 'XX';
+    const alt   = altMatch   ? `A${altMatch[1]}`            : '';
+    const ldgRw = ldgMatch   ? ldgMatch[1].trim()           : 'N/A';
+    const toRw  = depRwMatch ? depRwMatch[1].trim()         : 'N/A';
+
+    // SID/STAR table — only rendered when at least one list is populated
+    let procHtml = '';
+    if (sids.length > 0 || stars.length > 0) {
+        procHtml = `
+            <div style="margin-top: 10px; padding-top: 7px; border-top: 0px solid rgba(255,255,255,0.1);">
+                <div style="color: #aaa; margin-bottom: 6px; font-weight: bold; font-size: 0.75em; letter-spacing: 1px;">PROCEDURES</div>
+                ${sids.length > 0  ? `<div><span style="color:#aaa;">RCMD SID:</span> <span style="color: rgb(100, 195, 153);">${sids.join(', ')}</span></div>`  : ''}
+                ${stars.length > 0 ? `<div><span style="color:#aaa;">RCMD STAR:</span> <span style="color: rgb(100, 195, 153);">${stars.join(', ')}</span></div>` : ''}
+            </div>`;
+    }
+
+    // Remarks & NOTAMs — map raw phrases to short display labels
+    const remarkFlags = [
+        // Updated to use your MC file
+        { re: /no intersection departures/i,                          label: 'No Intersection Dept.', file: 'NoIntersectionDeptMC' }, 
+        { re: /no pattern work/i,                                     label: 'No Pattern Work',        file: 'NoPatternWorkMC' },
+        { re: /gate hold in effect/i,                                 label: 'Gate Hold',              file: 'GateHold' },
+        { re: /no light aircraft accepted/i,                          label: 'No Light Aircraft',      file: 'NoLightAircraftMC' },
+        { re: /rolling departures only/i,                             label: 'Rolling Dept.',          file: 'RollingDepature' },
+        { re: /file flight plan prior to contacting/i,                label: 'FPL Required',           file: 'FPLrequired' },
+        { re: /straight out departures only/i,                        label: 'Straight Out Dept.',     file: 'StraightOutDept' },
+        { re: /multiple frequencies in use/i,                         label: 'Mult. Freq. In Use',     file: 'multfreqinuse' },
+        { re: /use of Departure and Arrival procedures recommended/i, label: 'SID/STAR Rcmd',          file: 'procrcmd' },
+        { re: /use of Departure and Arrival procedures required/i,    label: 'SID/STAR Req',           file: 'procrreq' },
+        { re: /event in progress/i,                                   label: 'Event In Progress',      file: 'event' },
+        { re: /check forum for event information/i,                   label: 'Check Forum',            file: 'forum' },
+        { re: /low visibility/i,                                      label: 'Low Visibility',         file: 'lowvis' },
+        { re: /size restrictions/i,                                   label: 'Size Restrictions',      file: 'size' },
+    ];
+
+    let remarksHtml = `
+        <div style="margin-top: 3px; padding-top: 10px; border-top: 0px solid rgba(255,255,255,0.1);">
+            <div style="color: #aaa; margin-bottom: 6px; font-weight: bold; font-size: 0.75em; letter-spacing: 1px;">REMARKS & NOTAMs</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, 32px); gap: 4px;">
+
+                ${remarkFlags.map(f => {
+                    const active = f.re.test(raw);
+                    const isMC = f.file.includes('MC');
+                    
+                    // Active: MC gets a red glow, Standard gets a white glow.
+                    // Inactive: Both get a flat, uniform grey (brightness 0 + invert).
+                    const filter = active
+                        ? (isMC 
+                            ? 'drop-shadow(0 0 5px rgba(179, 32, 32, 0.9))' 
+                            : 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8)) brightness(1.1)')
+                        : 'brightness(0) invert(0.4) opacity(0.18)'; 
+
+                    return `
+                    <div style="position: relative; display: flex; align-items: center; justify-content: center;"
+                        onmouseenter="this.querySelector('.remark-tip').style.display='block'"
+                        onmouseleave="this.querySelector('.remark-tip').style.display='none'">
+                        <img src="/ATIS_notams/${f.file}.svg" 
+                            width="25" height="25"
+                            style="filter: ${filter}; transition: filter 0.2s;">
+                        <div class="remark-tip" style="
+                            display: none;
+                            position: absolute;
+                            bottom: 32px;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            background: rgba(20,20,20,0.95);
+                            color: ${active ? 'rgb(244, 167, 77)' : '#aaa'};
+                            font-size: 10px;
+                            white-space: nowrap;
+                            padding: 3px 7px;
+                            border-radius: 4px;
+                            border: 1px solid rgba(255,255,255,0.1);
+                            pointer-events: none;
+                            z-index: 10;
+                            font-family: 'B612 Mono', monospace;
+                        ">${f.label}</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+
+
+    return `
+<div style="font-family:'B612 Mono',monospace; line-height:1.6; color:#e3e3e3;">
+    <div><span style="color:#aaa;">ATIS INFO:</span> ${infoMatch ? infoMatch[1] : 'UNKNOWN'}</div>
+    <div><span style="color:#aaa;">TIME:</span> ${timeStr}</div>
+    <div><span style="color:#aaa;">WX:</span> ${wind} ${vis} ${temp}/${dew} ${alt}</div>
+    <div><span style="color:#aaa;">LDG RW:</span> ${ldgRw}</div>
+    <div><span style="color:#aaa;">TO RW:</span> ${toRw}</div>
+    ${procHtml}
+    ${remarksHtml}
+</div>`.trim();
+}
+
 function getTrafficColor(count) {
     const colors = {
         gray:   [224, 225, 226], // < 20
         yellow: [244, 167, 77],  // 55
-        red:    [206, 66, 87]      // 110
+        red:    [179, 32, 32]      // 110
     };
 
     if (count < 20) return `rgb(${colors.gray.join(',')})`;
@@ -88,53 +271,151 @@ function getTrafficColor(count) {
     return `rgb(${lerp(start[0], end[0], ratio)}, ${lerp(start[1], end[1], ratio)}, ${lerp(start[2], end[2], ratio)})`;
 }
 
+// --- NEW SVG GRAPH GENERATOR ---
+function generateInboundGraph(buckets) {
+    if (!buckets) return '';
+
+    const b15 = buckets['15'] || 0;
+    const b30 = buckets['30'] || 0;
+    const b45 = buckets['45'] || 0;
+    const b60 = buckets['60'] || 0;
+    const b120 = buckets['120'] || 0;
+    const b180 = buckets['180'] || 0;
+
+    const maxVal = Math.max(b15, b30, b45, b60, b120, b180, 4);
+    const chartHeight = 80;
+    const axisY = chartHeight + 20;
+    
+    const getY = (val) => chartHeight - ((val / maxVal) * (chartHeight - 30)) + 10;
+    const mapX = (t) => 20 + (t / 180) * 460;
+    
+    const x0 = mapX(0);
+    const [x15, x30, x45, x60, x120, x180] = [15, 30, 45, 60, 120, 180].map(mapX);
+    const [y15, y30, y45, y60, y120, y180] = [b15, b30, b45, b60, b120, b180].map(getY);
+
+    const makeNode = (x, y, val, label) => `
+        <line x1="${x}" y1="${y}" x2="${x}" y2="${axisY}" stroke="#7ab48b" stroke-width="1" opacity="0.3" stroke-dasharray="2,2" />
+        <circle cx="${x}" cy="${y}" r="3" fill="#7ab48b" />
+        <text x="${x}" y="${y - 8}" fill="#aaa" font-weight="bold" font-size="10" text-anchor="middle" font-family="'B612 Mono', monospace">${val}</text>
+        <text x="${x}" y="${axisY + 15}" fill="#aaa" font-weight="bold" text-anchor="middle" font-family="'B612 Mono', monospace" font-size="8">${label}</text>
+    `;
+
+return `
+    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+        <div style="color: #aaa; margin-bottom: 10px; font-weight: bold; font-size: 0.75em; letter-spacing: 1px;">INBOUND TRAFFIC TIMELINE</div>
+        <svg width="100%" height="130" viewBox="0 0 500 130" style="max-width: 500px; display: block;">
+            
+            <defs>
+                <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+                    <path d="M 8 0 L 0 0 0 8" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+                </pattern>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <rect width="40" height="40" fill="url(#smallGrid)"/>
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+                </pattern>
+                <clipPath id="chartArea">
+                    <rect x="${x0}" y="10" width="${x180 - x0}" height="${axisY - 10}" />
+                </clipPath>
+            </defs>
+
+            <!-- Grid clipped to chart area -->
+            <rect x="${x0}" y="10" width="${x180 - x0}" height="${axisY - 10}" fill="url(#grid)" clip-path="url(#chartArea)" />
+
+            <!-- Axes -->
+            <line x1="${x0}" y1="10" x2="${x0}" y2="${axisY}" stroke="#aaa" stroke-width="0.5" />
+            <text x="${x0}" y="${axisY + 15}" fill="#aaa" font-weight="bold" text-anchor="middle" font-family="'B612 Mono', monospace" font-size="8">NOW</text>
+            <line x1="10" y1="${axisY}" x2="490" y2="${axisY}" stroke="#aaa" stroke-width="0.5" />
+            
+            <!-- Line -->
+            <polyline points="${x15},${y15} ${x30},${y30} ${x45},${y45} ${x60},${y60} ${x120},${y120} ${x180},${y180}" fill="none" stroke="#7ab48b" stroke-width="2" stroke-dasharray="6,4" />
+
+            ${makeNode(x15, y15, b15, '15m')}
+            ${makeNode(x30, y30, b30, '30m')}
+            ${makeNode(x45, y45, b45, '45m')}
+            ${makeNode(x60, y60, b60, '1h')}
+            ${makeNode(x120, y120, b120, '2h')}
+            ${makeNode(x180, y180, b180, '3h')}
+            
+        </svg>
+    </div>
+    `;
+}
+
+
+
 // --- Data Fetching Logic ---
-function fetchWorldStatus() {
-    fetch(`${cdnUrl}/world-status.json`)
-        .then(response => response.json())
-        .then(data => {
+// --- Data Fetching Logic ---
+
+
+async function fetchWorldStatus() {
+        try {
+            // Use the cache layer with a 60-second TTL (60000 ms)
+            const url = `${cdnUrl}/world-status.json`;
+            const data = await fetchWithCache(url, 60000);
+            
+            activeSessionId = data.sessionId;
             const tableBody = document.querySelector('.flightData_main');
-            tableBody.innerHTML = ''; // Clear existing rows
+            tableBody.innerHTML = ''; 
 
             data.airports
                 .sort((a, b) => (b.gtads.length - a.gtads.length) || (b.inbounds - a.inbounds))
                 .slice(0, 10) 
-                .forEach((airport, index) => { 
+                .forEach((airport, index) => {
                     const row = document.createElement('tr');
                     const bgColor = index % 2 === 0 ? 'rgba(50, 50, 50, 0.45)' : 'transparent';
                     const timeOnline = getDuration(airport.startTime);
                     const inboundColor = getTrafficColor(airport.inbounds);
                     const outboundColor = getTrafficColor(airport.outbounds);
+                    const groundCount = airport.groundCount || 0;
 
+                    const hasATC = airport.gtads && (airport.gtads.length > 0 || airport.gtads > 0);
+                    
+                    if (hasATC) {
+                        row.style.cursor = 'pointer';
+                        row.title = "Click to view controllers, ATIS, & Inbound Timeline";
+                        // Notice we now pass the FULL 'airport' object into toggleAirportDetails
+                        row.onclick = () => toggleAirportDetails(airport, row, bgColor);
+                    }
+                    
+                    const glow = getAtcGlow(airport.gtads);
+
+                    
                     row.innerHTML = `
                         <td class="expertServerTable" style="background-color: ${bgColor}; padding: 12px 15px;">${airport.icao}</td>
-                        
-                        <td class="expertServerTable" style="background-color: ${bgColor}; color: ${inboundColor}; padding: 12px 15px;">
+                        <td class="expertServerTable" style="background-color: ${bgColor}; color: ${inboundColor}; padding: 12px 25px;">
                             <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="rgba(227, 227, 227, .5)" style="transform: translateY(3px);">
                                 <path d="M144-144v-72h672v72H144Zm579-191L144-508v-275l92 27 46 139 131 40-30-335 115 34 116 361 151 44q23 7 37 26.5t14 42.5q0 35-29 57.5T723-335Z"/>
                             </svg>
                             ${airport.inbounds}
                         </td>
-
+                        <td class="expertServerTable" style="background-color: ${bgColor}; color: #aaa;">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="rgba(227, 227, 227, .5)" style="transform: translateY(2px);">
+                                <path d="M240-120v-720h280q100 0 170 70t70 170q0 100-70 170t-170 70H400v240H240Zm160-400h128q33 0 56.5-23.5T608-600q0-33-23.5-56.5T528-680H400v160Z"/>
+                            </svg>
+                            ${groundCount}
+                        </td>
                         <td class="expertServerTable" style="background-color: ${bgColor}; color: ${outboundColor}; padding: 12px 25px;">
                             <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="rgba(227, 227, 227, .5)" style="transform: translateY(3px);">
                                 <path d="M144-144v-72h672v72H144Zm72-192L70-570l93-25 112 94 133-36-203-268 116-32 289 245 163-44q29-8 55 7t34 44q8 29-7 54.5T811-497L216-336Z"/>
                             </svg>
                             ${airport.outbounds}
                         </td>
-                                
-                        <td class="expertServerTable" style="background-color: ${bgColor}; color: rgb(100, 195, 153); padding: 12px 10px;">
-                            <img src="images/atc-icon${airport.gtads ? '' : '-grey'}.svg" width="14" style="vertical-align: -2px;" alt=""> 
+                        
+                        <td class="expertServerTable" style="background-color: ${bgColor}; color: rgb(100, 195, 153); padding: 12px 5px; ${glow ? `text-shadow: 0 0 8px rgba(100, 195, 153, ${glow});` : ''}">
+
+                        <img src="images/atc-icon${airport.gtads ? '' : '-grey'}.svg" width="14" style="vertical-align: -2px; ${glow ? `filter: drop-shadow(0 0 4px rgba(100, 195, 153, ${glow}));` : ''}" alt="">
                             ${airport.gtads}
                         </td>
+
                         <td class="expertServerTable" style="background-color: ${bgColor}; color: #aaa; font-size: 0.85em; padding: 10px 15px;">
                             ${timeOnline ? `${timeOnline}` : ''}
                         </td>
                     `;
                     tableBody.appendChild(row);
                 });
-        })
-        .catch(error => console.error('Error fetching world status:', error));
+    } catch (error) {
+        console.error('Error fetching world status:', error);
+    }
 }
 
 // --- Polling & Idle Detection Logic ---
@@ -182,6 +463,108 @@ function updateZuluTime() {
     const minutes = String(now.getUTCMinutes()).padStart(2, '0');
     document.getElementById('zulu-time').textContent = `${hours}${minutes}Z`;
 }
+async function toggleAirportDetails(airport, parentRow, bgColor) {
+    const icao = airport.icao;
+    const nextRow = parentRow.nextElementSibling;
+
+    if (nextRow && nextRow.classList.contains('atc-dropdown-row')) {
+        nextRow.remove();
+        return;
+    }
+
+    const dropRow = document.createElement('tr');
+    dropRow.classList.add('atc-dropdown-row');
+    dropRow.innerHTML = `
+        <td colspan="6" style="background: linear-gradient(90deg, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 14px, ${bgColor} 14px); padding: 15px 30px; text-align: left; outline: none;">            
+            <div id="loading-${icao}" style="color: #aaa; font-size: 0.85em;">Loading ATC & ATIS data for ${icao}...</div>
+            <div id="content-${icao}" style="display: none; color: #e3e3e3; font-size: 0.9em;"></div>
+        </td>
+    `;
+    parentRow.parentNode.insertBefore(dropRow, parentRow.nextSibling);
+
+    try {
+        const sessionId = activeSessionId;
+        if (!sessionId) {
+            document.getElementById(`loading-${icao}`).innerText = "Session ID not available yet.";
+            return;
+        }
+        
+        const statusUrl = `${cdnUrl}/sessions/${sessionId}/airport/${icao}/status`;
+        const atisUrl = `${cdnUrl}/sessions/${sessionId}/airport/${icao}/atis`;
+
+        // Use the cache layer with a 15-second TTL (15000 ms)
+        const [statusData, atisData] = await Promise.all([
+            fetchWithCache(statusUrl, 15000).catch(() => ({ result: { atcFacilities: [] } })),
+            fetchWithCache(atisUrl, 15000).catch(() => ({ result: null }))
+        ]);
+
+        let contentHtml = '';
+        const facilities = statusData.result?.atcFacilities || [];
+        // ... (The rest of your HTML rendering code remains exactly the same)
+
+        // 1. Controller Table
+        if (facilities.length > 0) {
+            const sortOrder = { 0: 1, 1: 2, 4: 3, 5: 4, 6: 5 };
+            facilities.sort((a, b) => (sortOrder[a.type] || 99) - (sortOrder[b.type] || 99));
+
+            contentHtml += `
+                <div style="color: #aaa; margin-bottom: 6px; font-weight: bold; font-size: 0.75em; letter-spacing: 1px;">FACILITIES</div>
+                <table style="width: auto; border-collapse: collapse; margin-bottom: 15px; font-family: 'B612 Mono', monospace;">
+                    <thead>
+                        <tr style="color: #aaa;">
+                            <th style="text-align: left; padding: 0px 0px 2px; font-weight: normal;">Controller</th>
+                            <th style="text-align: left; padding: 0px 20px 2px; font-weight: normal;">Station</th>
+                            <th style="text-align: left; padding: 0px 20px 2px; font-weight: normal;">Time Online</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            facilities.forEach(f => {
+                const stationName = freqMap[f.type] || "Unknown";
+                const activeTime = getDuration(new Date(f.startTime).getTime());
+                contentHtml += `
+                    <tr>
+                        <td style="padding: 0px 3px 2px; outline: none; background-color: transparent;">${f.username || 'Unknown'}</td>
+                        <td style="padding: 0px 23px 2px; color: rgb(100, 195, 153); outline: none; background-color: transparent;">${stationName}</td>
+                        <td style="padding: 0px 23px 2px; color: #aaa; outline: none; background-color: transparent;">${activeTime}</td>
+                    </tr>
+                `;
+            });
+            contentHtml += `</tbody></table>`;
+        }
+
+        // 2. ATIS Section
+        const isAtisOpen = facilities.some(f => f.type === 7);
+        if (isAtisOpen || atisData.result) {
+            let atisDisplay = (atisData.result && atisData.result.trim().length > 0) 
+                            ? formatATIS(atisData.result) 
+                            : `<div style="color: #777; font-style: italic; font-family: 'B612 Mono', monospace;">None published</div>`;
+
+            contentHtml += `
+                <div style="margin-top: 5px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div style="color: #aaa; margin-top: 6px;margin-bottom: 6px; font-weight: bold; font-size: 0.75em; letter-spacing: 1px;">DIGITAL ATIS</div>
+                    ${atisDisplay}
+                </div>
+            `;
+        }
+
+        // 3. INJECT THE NEW INBOUND SVG GRAPH 
+        if (airport.inbounds > 0 && airport.inboundBuckets) {
+            contentHtml += generateInboundGraph(airport.inboundBuckets);
+        }
+
+        document.getElementById(`loading-${icao}`).style.display = 'none';
+        const contentDiv = document.getElementById(`content-${icao}`);
+        contentDiv.innerHTML = contentHtml;
+        contentDiv.style.display = 'block';
+
+    } catch (error) {
+        document.getElementById(`loading-${icao}`).innerText = "Failed to load airport details.";
+        console.error(`Error fetching detailed status for ${icao}:`, error);
+    }
+}
+
 
 // --- Initialization ---
 updateZuluTime();
