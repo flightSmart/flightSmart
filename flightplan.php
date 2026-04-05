@@ -184,6 +184,11 @@ if ($xmllink != null && $xmllink != false) {
     $v2 = $takeoffRwy['speeds_v2'] ?? 'N/A';
     $vref = $landingRwy['vref'] ?? 'N/A';
 
+    echo '<pre style="color: yellow; background: #222; padding: 10px;">';
+    print_r($landingRwy);
+    echo '</pre>';
+
+    
     // Fix for the 2-digit Simbrief quirk (adds a "1" only if the API returns 2 digits)
     if (is_numeric($v1) && strlen((string)$v1) == 2) { $v1 = "1" . $v1; }
     if (is_numeric($vr) && strlen((string)$vr) == 2) { $vr = "1" . $vr; }
