@@ -293,9 +293,10 @@ function generateInboundGraph(buckets) {
     const [x15, x30, x45, x60, x120, x180] = [15, 30, 45, 60, 120, 180].map(mapX);
     const [y15, y30, y45, y60, y120, y180] = [b15, b30, b45, b60, b120, b180].map(getY);
 
+        
     const makeNode = (x, y, val, label) => `
         <line x1="${x}" y1="${y}" x2="${x}" y2="${axisY}" stroke="#7ab48b" stroke-width="1" opacity="0.3" stroke-dasharray="2,2" />
-        <circle cx="${x}" cy="${y}" r="3" fill="#7ab48b" />
+        <circle cx="${x}" cy="${y}" r="3" fill="#7ab48b" filter="url(#dot-glow)" />
         <text x="${x}" y="${y - 8}" fill="#aaa" font-weight="bold" font-size="10" text-anchor="middle" font-family="'B612 Mono', monospace">${val}</text>
         <text x="${x}" y="${axisY + 15}" fill="#aaa" font-weight="bold" text-anchor="middle" font-family="'B612 Mono', monospace" font-size="8">${label}</text>
     `;
@@ -306,6 +307,13 @@ return `
         <svg width="100%" height="130" viewBox="0 0 500 130" style="max-width: 500px; display: block;">
             
             <defs>
+                <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%">
+                    <feGaussianBlur stdDeviation="2.5" result="blur" />
+                    <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
                 <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
                     <path d="M 8 0 L 0 0 0 8" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
                 </pattern>
@@ -323,7 +331,7 @@ return `
 
             <!-- Axes -->
             <line x1="${x0}" y1="10" x2="${x0}" y2="${axisY}" stroke="#aaa" stroke-width="0.5" />
-            <text x="${x0}" y="${axisY + 15}" fill="#aaa" font-weight="bold" text-anchor="middle" font-family="'B612 Mono', monospace" font-size="8">NOW</text>
+            <text x="${x0}" y="${axisY + 15}" fill="#aaa" font-weight="bold" text-anchor="middle" font-family="'B612 Mono', monospace" font-size="8">0m</text>
             <line x1="10" y1="${axisY}" x2="490" y2="${axisY}" stroke="#aaa" stroke-width="0.5" />
             
             <!-- Line -->
@@ -378,7 +386,11 @@ async function fetchWorldStatus() {
                     }
                     
                     const glow = getAtcGlow(airport.gtads);
-
+                    
+                    // MAKE EVERY ROW CLICKABLE
+                    row.style.cursor = 'pointer';
+                    row.title = "Click to view details, METAR, & Inbound Timeline";
+                    row.onclick = () => toggleAirportDetails(airport, row, bgColor);
                     
                     row.innerHTML = `
                         <td class="expertServerTable" style="background-color: ${bgColor}; padding: 12px 15px;">${airport.icao}</td>
@@ -463,6 +475,9 @@ function updateZuluTime() {
     const minutes = String(now.getUTCMinutes()).padStart(2, '0');
     document.getElementById('zulu-time').textContent = `${hours}${minutes}Z`;
 }
+
+
+
 async function toggleAirportDetails(airport, parentRow, bgColor) {
     const icao = airport.icao;
     const nextRow = parentRow.nextElementSibling;
@@ -476,7 +491,7 @@ async function toggleAirportDetails(airport, parentRow, bgColor) {
     dropRow.classList.add('atc-dropdown-row');
     dropRow.innerHTML = `
         <td colspan="6" style="background: linear-gradient(90deg, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 14px, ${bgColor} 14px); padding: 15px 30px; text-align: left; outline: none;">            
-            <div id="loading-${icao}" style="color: #aaa; font-size: 0.85em;">Loading ATC & ATIS data for ${icao}...</div>
+            <div id="loading-${icao}" style="color: #aaa; font-size: 0.85em;">Loading data for ${icao}...</div>
             <div id="content-${icao}" style="display: none; color: #e3e3e3; font-size: 0.9em;"></div>
         </td>
     `;
@@ -491,16 +506,17 @@ async function toggleAirportDetails(airport, parentRow, bgColor) {
         
         const statusUrl = `${cdnUrl}/sessions/${sessionId}/airport/${icao}/status`;
         const atisUrl = `${cdnUrl}/sessions/${sessionId}/airport/${icao}/atis`;
+        const metarUrl = `${cdnUrl}/metar/${icao}`;
 
-        // Use the cache layer with a 15-second TTL (15000 ms)
-        const [statusData, atisData] = await Promise.all([
+        // Fetch Status, ATIS, and METAR simultaneously
+        const [statusData, atisData, metarRaw] = await Promise.all([
             fetchWithCache(statusUrl, 15000).catch(() => ({ result: { atcFacilities: [] } })),
-            fetchWithCache(atisUrl, 15000).catch(() => ({ result: null }))
+            fetchWithCache(atisUrl, 15000).catch(() => ({ result: null })),
+            fetch(metarUrl).then(res => res.text()).catch(() => (''))
         ]);
 
         let contentHtml = '';
         const facilities = statusData.result?.atcFacilities || [];
-        // ... (The rest of your HTML rendering code remains exactly the same)
 
         // 1. Controller Table
         if (facilities.length > 0) {
@@ -532,14 +548,19 @@ async function toggleAirportDetails(airport, parentRow, bgColor) {
                 `;
             });
             contentHtml += `</tbody></table>`;
+        } else {
+             contentHtml += `<div style="color: #aaa; margin-bottom: 15px; font-size: 0.85em; font-family: 'B612 Mono', monospace;">No ATC currently active.</div>`;
         }
 
-        // 2. ATIS Section
+        // 2. SMART WEATHER SECTION (ATIS Priority, METAR Fallback)
         const isAtisOpen = facilities.some(f => f.type === 7);
-        if (isAtisOpen || atisData.result) {
-            let atisDisplay = (atisData.result && atisData.result.trim().length > 0) 
+        const hasAtisData = atisData && atisData.result && atisData.result.trim().length > 0;
+
+        if (isAtisOpen || hasAtisData) {
+            // Show Digital ATIS if available
+            let atisDisplay = hasAtisData 
                             ? formatATIS(atisData.result) 
-                            : `<div style="color: #777; font-style: italic; font-family: 'B612 Mono', monospace;">None published</div>`;
+                            : `<div style="color: #777; font-style: italic; font-family: 'B612 Mono', monospace;">ATIS published but currently empty</div>`;
 
             contentHtml += `
                 <div style="margin-top: 5px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
@@ -547,9 +568,21 @@ async function toggleAirportDetails(airport, parentRow, bgColor) {
                     ${atisDisplay}
                 </div>
             `;
+        } else {
+            // Fallback to METAR if no ATIS is active
+            let metarDisplay = metarRaw.trim().length > 0 
+                ? `<div style="font-family:'B612 Mono',monospace; line-height:1.6; color:#e3e3e3;">${metarRaw.trim()}</div>`
+                : `<div style="color: #777; font-style: italic; font-family: 'B612 Mono', monospace;">METAR unavailable</div>`;
+
+            contentHtml += `
+                <div style="margin-top: 5px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div style="color: #aaa; margin-top: 6px;margin-bottom: 6px; font-weight: bold; font-size: 0.75em; letter-spacing: 1px;">CURRENT METAR</div>
+                    ${metarDisplay}
+                </div>
+            `;
         }
 
-        // 3. INJECT THE NEW INBOUND SVG GRAPH 
+        // 3. INJECT THE INBOUND SVG GRAPH 
         if (airport.inbounds > 0 && airport.inboundBuckets) {
             contentHtml += generateInboundGraph(airport.inboundBuckets);
         }
@@ -564,7 +597,6 @@ async function toggleAirportDetails(airport, parentRow, bgColor) {
         console.error(`Error fetching detailed status for ${icao}:`, error);
     }
 }
-
 
 // --- Initialization ---
 updateZuluTime();
