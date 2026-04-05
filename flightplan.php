@@ -182,12 +182,8 @@ if ($xmllink != null && $xmllink != false) {
     $v1 = $takeoffRwy['speeds_v1'] ?? 'N/A';
     $vr = $takeoffRwy['speeds_vr'] ?? 'N/A';
     $v2 = $takeoffRwy['speeds_v2'] ?? 'N/A';
-    $vref = $landingRwy['vref'] ?? 'N/A';
-
-    echo '<pre style="color: yellow; background: #222; padding: 10px;">';
-    print_r($simbrief->ofp_array['tlr']['landing']);
-    echo '</pre>';
-
+    $vref = $simbrief->ofp_array['tlr']['landing']['distance_dry']['speeds_vref'] ?? 'N/A';
+    $landingFlaps = $simbrief->ofp_array['tlr']['landing']['distance_dry']['flap_setting'] ?? 'N/A';
     
     // Fix for the 2-digit Simbrief quirk (adds a "1" only if the API returns 2 digits)
     if (is_numeric($v1) && strlen((string)$v1) == 2) { $v1 = "1" . $v1; }
@@ -270,7 +266,7 @@ if ($xmllink != null && $xmllink != false) {
                 <span class="data" style="color: rgb(224,225,226);">$destinationName ($destinationICAO)</span><br>
                 Runway: <span class="data">$destinationRunway</span><br>
                 STAR: <span class="data">$star</span><br>
-                VREF: <span class="data">$vref</span><br>
+                <span style="color: rgb(224,225,226);">VREF:</span> <span class="data">$vref</span> <span style="color: rgb(224,225,226);">| Flaps:</span> <span class="data">$landingFlaps</span><br>
                 Descent: <span class="data">$descentProfile</span><br><br>
                 
 
