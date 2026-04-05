@@ -88,6 +88,7 @@ print <<<END
         <td>
             <div id="manufacturerContainer">
                 <form id="sbapiform">
+                    <input type="hidden" name="tlr" value="1">
                     <div id="manufacturerButtons" style="margin-bottom: 0px;">
                         <button type="button" id="airbusButton">Airbus</button>
                         <button type="button" id="boeingButton">Boeing</button>
