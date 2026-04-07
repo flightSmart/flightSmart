@@ -100,7 +100,11 @@ let carouselPage = 0; // 0 = Today+2, -1 = Prev 3, 1 = Next 3
 // --- NEW: File Parsing & Carousel Logic ---
 function getOffsetDate(offsetDays) {
     const d = new Date();
-    d.setDate(d.getDate() + offsetDays);
+    // Before 0600Z we're still on the previous schedule day
+    if (d.getUTCHours() < 6) {
+        d.setUTCDate(d.getUTCDate() - 1);
+    }
+    d.setUTCDate(d.getUTCDate() + offsetDays);
     return d;
 }
 
@@ -221,9 +225,8 @@ function updateCarousel() {
         const key      = `${month} ${dateNumP}`;
  
         let dateLabel;
-        if      (offset === 0) dateLabel = `Today: ${weekday}, ${month} ${getOrdinal(dateNum)}`;
-        else if (offset === 1) dateLabel = `Tomorrow: ${weekday}, ${month} ${getOrdinal(dateNum)}`;
-        else                   dateLabel = `${weekday}, ${month} ${getOrdinal(dateNum)}`;
+        dateLabel = `${weekday}, ${month} ${getOrdinal(dateNum)}`;
+
  
         const isToday     = offset === 0;
         const isTomorrow  = offset === 1;
@@ -380,9 +383,9 @@ const freqMap = {
 
 
 // FOR TESTING ON LIVE SERVER
-const cdnUrl = 'https://flightsmart.tools/api/if';     
+//const cdnUrl = 'https://flightsmart.tools/api/if';     
 // FOR PRODUCTION
-//const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
 
 
 const MAP_CALIBRATION = [
@@ -712,7 +715,7 @@ function generateInboundGraph(buckets) {
     const chartHeight = 80;
     const axisY = chartHeight + 20;
     
-    const getY = (val) => chartHeight - ((val / maxVal) * (chartHeight - 30)) + 10;
+   const getY = (val) => val === 0 ? axisY : chartHeight - ((val / maxVal) * (chartHeight - 30)) + 10;
     const mapX = (t) => 20 + (t / 180) * 460;
     
     const x0 = mapX(0);
@@ -721,11 +724,17 @@ function generateInboundGraph(buckets) {
 
     const step = (x180 - x0) / 12;  // = 38.333...
         
+    // const makeNode = (x, y, val, label) => `
+    //     <line x1="${x}" y1="${y}" x2="${x}" y2="${axisY}" stroke="#7ab48b" stroke-width="1" opacity="0.5" stroke-dasharray="2,2" />
+    //     <circle cx="${x}" cy="${y}" r="3" fill="#7ab48b" filter="url(#dot-glow)" />
+    //     <text x="${x}" y="${y - 8}" fill="#aaa" font-weight="bold" font-size="10" text-anchor="middle" font-family="'B612 Mono', monospace">${val}</text>
+    //     <text x="${x}" y="${axisY + 15}" fill="#aaa" font-weight="bold" text-anchor="middle" font-family="'B612 Mono', monospace" font-size="8">${label}</text>
+    // `;
     const makeNode = (x, y, val, label) => `
-        <line x1="${x}" y1="${y}" x2="${x}" y2="${axisY}" stroke="#7ab48b" stroke-width="1" opacity="0.5" stroke-dasharray="2,2" />
-        <circle cx="${x}" cy="${y}" r="3" fill="#7ab48b" filter="url(#dot-glow)" />
-        <text x="${x}" y="${y - 8}" fill="#aaa" font-weight="bold" font-size="10" text-anchor="middle" font-family="'B612 Mono', monospace">${val}</text>
-        <text x="${x}" y="${axisY + 15}" fill="#aaa" font-weight="bold" text-anchor="middle" font-family="'B612 Mono', monospace" font-size="8">${label}</text>
+    ${val !== 0 ? `<line x1="${x}" y1="${y}" x2="${x}" y2="${axisY}" stroke="#7ab48b" stroke-width="1" opacity="0.5" stroke-dasharray="2,2" />` : ''}
+    <circle cx="${x}" cy="${y}" r="3" fill="#7ab48b" ${val !== 0 ? 'filter="url(#dot-glow)"' : ''} />
+    <text x="${x}" y="${y - 8}" fill="#aaa" font-weight="bold" font-size="10" text-anchor="middle" font-family="'B612 Mono', monospace">${val}</text>
+    <text x="${x}" y="${axisY + 15}" fill="#aaa" font-weight="bold" text-anchor="middle" font-family="'B612 Mono', monospace" font-size="8">${label}</text>
     `;
 
 return `
