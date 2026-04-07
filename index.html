@@ -85,6 +85,8 @@
 </svg></a>
 </div>
 
+<script data-goatcounter="https://flightsmart.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 
 <script>
 
@@ -378,9 +380,9 @@ const freqMap = {
 
 
 // FOR TESTING ON LIVE SERVER
-//const cdnUrl = 'https://flightsmart.tools/api/if';     
+const cdnUrl = 'https://flightsmart.tools/api/if';     
 // FOR PRODUCTION
-const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
+//const cdnUrl = window.location.protocol.includes('https') ? 'https://flightsmart.tools/api/if' : 'http://localhost:3000';
 
 
 const MAP_CALIBRATION = [
@@ -905,7 +907,7 @@ function getFramedViewBox(airportsToRender) {
     });
     
     // Fallback if no valid coordinates
-    if (minX === Infinity) return `0 97 ${MAP_VIEWBOX.w} ${MAP_VIEWBOX.h}`;
+    if (minX === Infinity) return "-10 85 1820 780";
 
     // Add padding so airports aren't touching the edge
     let padX = (maxX - minX) * 0.15;
@@ -961,7 +963,7 @@ function toggleMapZoom() {
             svg.style.border = "1px solid rgba(255,255,255,0.2)"; // Show border
             if(btnIcon) btnIcon.innerHTML = '<path d="M240-120v-120H120v-80h200v200h-80Zm400 0v-200h200v80H720v120h-80ZM120-640v-80h120v-120h80v200H120Zm520 0v-200h80v120h120v80H640Z"/>';
         } else {
-            svg.setAttribute('viewBox', `0 97 ${MAP_VIEWBOX.w} ${MAP_VIEWBOX.h}`);
+            svg.setAttribute('viewBox', "-10 85 1820 780");
             svg.style.border = "1px solid transparent"; // Hide border
             if(btnIcon) btnIcon.innerHTML = '<path d="M120-120v-200h80v120h120v80H120Zm520 0v-80h120v-120h80v200H640ZM120-640v-200h200v80H200v120h-80Zm640 0v-120H640v-80h200v200h-80Z"/>';
         }
@@ -992,7 +994,7 @@ function moveCarousel(direction) {
 
 
 const WORLD_MAP_GRAPHICS = `
-   <path id="Path" fill="none" stroke="#72787e" stroke-width="" d="M 476 846 L 1320 846 M 476 97 L 1330 97 M 479 846 C 380.590668 844.422241 253.301453 815.598816 169 759 C 77.478523 697.553711 4 586.959961 4 473 M 1320 846 C 1418.409302 844.422241 1545.698486 815.598816 1630 759 C 1721.521484 697.553711 1795 586.959961 1795 473 M 479 100 C 380.590668 101.577759 253.301453 130.401184 169 187 C 77.478523 248.446289 4 359.040039 4 473 M 1320 100 C 1418.409302 101.577759 1545.698486 130.401184 1630 187 C 1721.521484 248.446289 1795 359.040039 1795 473"/>
+   <path id="Path" fill="none" stroke="#72787e" stroke-width="1.5" d="M 476 846 L 1320 846 M 476 97 L 1330 97 M 479 846 C 380.590668 844.422241 253.301453 815.598816 169 759 C 77.478523 697.553711 4 586.959961 4 473 M 1320 846 C 1418.409302 844.422241 1545.698486 815.598816 1630 759 C 1721.521484 697.553711 1795 586.959961 1795 473 M 479 100 C 380.590668 101.577759 253.301453 130.401184 169 187 C 77.478523 248.446289 4 359.040039 4 473 M 1320 100 C 1418.409302 101.577759 1545.698486 130.401184 1630 187 C 1721.521484 248.446289 1795 359.040039 1795 473"/>
     <g id="Lat-Lines">
         <path id="path1" fill="none" stroke="#72787e" stroke-width="1.5" d="M 14 546 L 1787.999756 546"/>
         <path id="Path-copy-4" fill="none" stroke="#72787e" stroke-width="1.5" d="M 4 471.994995 L 1795 472"/>
