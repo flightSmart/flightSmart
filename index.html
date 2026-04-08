@@ -100,10 +100,7 @@ let carouselPage = 0; // 0 = Today+2, -1 = Prev 3, 1 = Next 3
 // --- NEW: File Parsing & Carousel Logic ---
 function getOffsetDate(offsetDays) {
     const d = new Date();
-    // Before 0600Z we're still on the previous schedule day
-    if (d.getUTCHours() < 6) {
-        d.setUTCDate(d.getUTCDate() - 1);
-    }
+    // Removed the < 6 hour subtraction — carousel always reflects current UTC date
     d.setUTCDate(d.getUTCDate() + offsetDays);
     return d;
 }
