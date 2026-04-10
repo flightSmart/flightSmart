@@ -122,8 +122,8 @@ function getCarouselIcaos() {
     let icaos = [];
     for(let i = 0; i < 3; i++) {
         const d = getOffsetDate(carouselPage * 3 + i);
-        const month = d.toLocaleString('en-US', {month: 'short'}); // "Apr"
-        const dateNum = String(d.getDate()).padStart(2, '0'); // "06"
+        const month = d.toLocaleString('en-US', {month: 'short', timeZone: 'UTC'});
+        const dateNum = String(d.getUTCDate()).padStart(2, '0');
         const key = `${month} ${dateNum}`;
         if(featuredSchedule[key]) {
             icaos.push(...featuredSchedule[key].airports);
@@ -136,7 +136,8 @@ function getCarouselIcaos() {
 
 async function loadFeaturedSchedule() {
     try {
-        const monthName = new Date().toLocaleString('en-US', {month: 'long'}).toLowerCase();
+        const monthName = getOffsetDate(0).toLocaleString('en-US', {month: 'long', timeZone: 'UTC'}).toLowerCase();
+        
         const response = await fetch(`${monthName}.txt`);
         if (!response.ok) return;
         const text = await response.text();
@@ -220,10 +221,10 @@ function updateCarousel() {
     for (let i = 0; i < 3; i++) {
         const offset = carouselPage * 3 + i;
         const d = getOffsetDate(offset);
-        const month    = d.toLocaleString('en-US', { month: 'short' });
-        const dateNum  = d.getDate();
+        const month    = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+        const dateNum  = d.getUTCDate();
         const dateNumP = String(dateNum).padStart(2, '0');
-        const weekday  = d.toLocaleString('en-US', { weekday: 'short' });
+        const weekday  = d.toLocaleString('en-US', { weekday: 'short', timeZone: 'UTC' });
         const key      = `${month} ${dateNumP}`;
  
         let dateLabel;
@@ -337,7 +338,7 @@ function updateCarousel() {
     let nextHasData = false;
     for (let i = 0; i < 3; i++) {
         const d   = getOffsetDate((carouselPage + 1) * 3 + i);
-        const key = `${d.toLocaleString('en-US', { month: 'short' })} ${String(d.getDate()).padStart(2, '0')}`;
+        const key = `${d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })} ${String(d.getUTCDate()).padStart(2, '0')}`;
         if (featuredSchedule[key]) nextHasData = true;
     }
     document.getElementById('btnNextFeatured').style.visibility =
@@ -1161,8 +1162,8 @@ function renderGlobalMap(airports) {
     const openIcaos = openAirports.map(a => a.icao);
 
     const d = getOffsetDate(0); 
-    const month = d.toLocaleString('en-US', {month: 'short'});
-    const dateNum = String(d.getDate()).padStart(2, '0');
+    const month = d.toLocaleString('en-US', {month: 'short', timeZone: 'UTC'});
+    const dateNum = String(d.getUTCDate()).padStart(2, '0');
     const todayKey = `${month} ${dateNum}`;
     
     let todaysIcaos = [];
