@@ -419,8 +419,8 @@
 
 <script>
 // Extract username from URL path: e.g. /logbook-map/Alex98
-const pathSegments = window.location.pathname.split('/').filter(Boolean);
-const username = pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : '';
+const urlParams = new URLSearchParams(window.location.search);
+const username = urlParams.get('u') || '';
 
 // ⚠️ REPLACE THIS WITH YOUR BACKEND DOMAIN 
 const backendUrl = 'https://flightsmart.tools';
