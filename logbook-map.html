@@ -418,12 +418,13 @@
 </div>
 
 <script>
-// Extract username from URL path: e.g. /logbook-map/Alex98
+    
+// Extract username from URL parameter: e.g. ?u=Alex98
 const urlParams = new URLSearchParams(window.location.search);
 const username = urlParams.get('u') || '';
 
-// ⚠️ REPLACE THIS WITH YOUR BACKEND DOMAIN 
-const backendUrl = 'https://flightsmart.tools';
+// Use your existing API endpoint structure
+const backendUrl = 'https://flightsmart.tools/api/if';
 
 function backToMain() {
     window.location.href = "https://www.flightsmart.tools";
