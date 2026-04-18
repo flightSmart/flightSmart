@@ -946,7 +946,7 @@ if (!username) {
     document.getElementById('loading').innerText='No username provided in URL.';
 } else {
     // 1. Fetch IF API logbook via your backend
-    fetch(`${backendUrl}/api/logbook/${username}`)
+    fetch(`${backendUrl}/logbook/${username}`)
         .then(response => {
             if (!response.ok) throw new Error('Failed to fetch user flights');
             return response.json();
