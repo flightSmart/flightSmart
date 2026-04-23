@@ -966,7 +966,10 @@ function initApp() {
     
     // Check URL path for username first, fallback to local storage
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
-    const urlUsername = pathSegments.length > 0 && !pathSegments.includes('index.html') ? pathSegments[pathSegments.length - 1] : '';
+    let lastSegment = pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : '';
+    
+    // Ignore the segment if it's an HTML file
+    const urlUsername = lastSegment.endsWith('.html') ? '' : lastSegment;
     
     let savedUsername = urlUsername || localStorage.getItem('fs_username') || '';
     let savedKey = localStorage.getItem('fs_api_key') || '';
