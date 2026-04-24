@@ -1008,7 +1008,7 @@ row.addEventListener('mouseenter', function(){
     this.classList.add('active-row'); // Make the row orange on hover
     if (flightLayers[idx]) {
         flightLayers[idx].layers.forEach(function(l) { 
-            l.setStyle({color:'#fa9822',weight:2,opacity:1}).bringToFront();
+            l.setStyle({color:'#fa9822',weight:1,opacity:1}).bringToFront();
             if (l.getElement()) l.getElement().classList.add('glow-path');
         });
     }
@@ -1039,7 +1039,7 @@ row.addEventListener('click', function(){
         window.selectedFlightIndex = idx;
         if (flightLayers[idx]) {
             flightLayers[idx].layers.forEach(function(l) { 
-                l.setStyle({color:'#fa9822',weight:2,opacity:1}).bringToFront();
+                l.setStyle({color:'#fa9822',weight:1,opacity:1}).bringToFront();
                 if (l.getElement()) l.getElement().classList.add('glow-path');
             });
         }
