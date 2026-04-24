@@ -1055,15 +1055,28 @@ Papa.parse(googleSheetUrl, {
     download: true, header: false,
     complete: function(sheetResults) {
         var flights = [];
+        
+        // 1. Alias dictionary to catch historical codes and update them 
+        // to modern OurAirports codes on the fly.
+        var codeAliases = {
+            'EGOD': 'EGFD' // Llanbedr Airfield changed its ICAO
+            // You can add future changed codes here like: 'OLD': 'NEW'
+        };
+
         sheetResults.data.forEach(function(row){
             if (row.length>=7 && row[5] && row[6] && row[5].trim()!=='' && row[6].trim()!=='') {
+                
+                // 2. Force uppercase to ensure the database match never fails
+                var rawDep = row[5].trim().toUpperCase();
+                var rawArr = row[6].trim().toUpperCase();
+
                 flights.push({
                     date:      (row[0]||'').trim() || 'Unknown',
                     duration:  (row[1]||'').trim(), 
                     aircraft:  ((row[2]||'').trim()+' '+(row[3]||'').trim()).trim(),
                     livery:    (row[4]&&row[4].trim()) ? row[4].trim() : 'Standard',
-                    departure: row[5].trim(),
-                    arrival:   row[6].trim(),
+                    departure: codeAliases[rawDep] || rawDep,
+                    arrival:   codeAliases[rawArr] || rawArr,
                     ldgs:      (row[7]||'').trim(), 
                     remarks:   (row[9]||'').trim()  
                 });
@@ -1082,9 +1095,33 @@ Papa.parse(googleSheetUrl, {
             download: true, header: true,
             complete: function(airportResults) {
                 document.getElementById('loading').style.display='none';
-                var airportData={};
-                airportResults.data.forEach(function(row){
-                    if (row.ident) airportData[row.ident]={ lat: parseFloat(row.latitude_deg), lon: parseFloat(row.longitude_deg), name: row.name || row.ident };
+                var airportData = {};
+                airportResults.data.forEach(function(row) {
+                    if (!row.ident) return;
+                    
+                    var apObj = { 
+                        lat: parseFloat(row.latitude_deg), 
+                        lon: parseFloat(row.longitude_deg), 
+                        name: row.name || row.ident 
+                    };
+                    
+                    // 1. Index by OurAirports primary ident (e.g., SPIM)
+                    airportData[row.ident.trim().toUpperCase()] = apObj;
+                    
+                    // 2. Index by modern ICAO / GPS code (e.g., SPJC)
+                    if (row.gps_code && row.gps_code.trim() !== '') {
+                        airportData[row.gps_code.trim().toUpperCase()] = apObj;
+                    }
+                    
+                    // 3. Index by IATA as a fallback (e.g., LIM)
+                    if (row.iata_code && row.iata_code.trim() !== '') {
+                        airportData[row.iata_code.trim().toUpperCase()] = apObj;
+                    }
+
+                    // 4. Index by local codes just to be safe
+                    if (row.local_code && row.local_code.trim() !== '') {
+                        airportData[row.local_code.trim().toUpperCase()] = apObj;
+                    }
                 });
 
                 var mfrSet=new Set(), famSet=new Set(), spcSet=new Set(), airlineSet=new Set(), apSet=new Set();
