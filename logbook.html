@@ -5,7 +5,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href='https://fonts.googleapis.com/css?family=B612+Mono' rel='stylesheet'>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Shadows+Into+Light&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link rel="icon" type="image/x-icon" href="/images/flightSmartLogoTransparent.png">
@@ -57,6 +59,42 @@
             --sidebar-font: var(--font-mono);
             --hover-info-bg: var(--bg-light);
             --hover-info-brd: var(--border-main);
+        }
+
+        /* ── LIGHT MODE THEME ── */
+        [data-theme="light"] {
+            --bg-dark: rgb(220, 220, 220);
+            --bg-light: rgb(225, 225, 225);
+            --bg-hover: rgb(218, 217, 213);
+            --bg-active: rgb(240, 239, 236);
+            --text-main: rgb(70, 70, 70);
+            --text-muted: rgb(105, 105, 105);
+            --accent-green: rgb(0, 148, 90);
+            --border-main: rgb(165, 165, 165);
+            --border-faint: rgba(0, 0, 0, 0.1);
+            --exc-txt: rgb(196, 48, 43);
+            --exc-brd: rgb(196, 48, 43);
+            --inc-txt: rgb(0, 148, 90);
+            --inc-brd: rgb(0, 148, 90);
+        }
+
+        [data-theme="light"] body {
+            background-color: rgb(248, 247, 244);
+            color: rgb(70, 70, 70);
+        }
+
+        /* Lighter, warmer map tiles for light mode */
+        [data-theme="light"] .leaflet-layer,
+        [data-theme="light"] .leaflet-control-zoom-in,
+        [data-theme="light"] .leaflet-control-zoom-out,
+        [data-theme="light"] .leaflet-control-attribution {
+            filter: hue-rotate(0deg) brightness(160%) contrast(72%) saturate(45%) invert(1);
+        }
+
+        /* Make hardcoded SVG icon strokes readable in light mode */
+        [data-theme="light"] .map-btn svg {
+            /* Turns the light grey SVG into rgb(105, 105, 105) */
+            filter: invert(72%) sepia(5%) saturate(6%) hue-rotate(6deg) brightness(90%) contrast(94%);
         }
 
         [data-theme="dark"], body {
@@ -112,19 +150,26 @@
             position: absolute; top: 10px; right: 10px; z-index: 1000;
             display: flex; gap: 6px;
         }
-
         .map-btn {
+            -webkit-appearance: none;
+            appearance: none;
             background-color: var(--bg-light);
             border: 1px solid var(--border-main);
             color: var(--text-main);
-            padding: 3px 8px; font-size: 10px;
+            font-size: 8px;
             cursor: pointer;
             transition: 0.2s;
-            display: inline-block; text-align: center;
+            display: inline-block;
+            text-align: center;
             font-family: var(--font-mono);
+            outline: none;          /* ← kills the default focus ring */
         }
         .map-btn:hover {
+            background-color: var(--bg-hover);   /* ← subtle, not full inversion */
+            color: var(--text-main);  
             border: 1px solid var(--text-main);
+            outline: none;
+
         }
         .glow-active {
                     filter: drop-shadow(0 0 1px #fa9822) drop-shadow(0 0 4px #fa9822);
@@ -184,6 +229,9 @@
             color-scheme: dark;
         }
 
+        [data-theme="light"] input[type="date"] {
+            color-scheme: light;
+        }
 
 
         /* ── SEARCH INPUT ── */
@@ -326,6 +374,35 @@
             font-weight: bold;
         }
 
+        /* ── SECONDARY STATS BAR ── */
+        #secondary-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* Changed to 3 equal columns */
+            border-bottom: 1px solid var(--border-main);
+            flex-shrink: 0;
+            background: var(--bg-light);
+        }
+        .sec-stat-cell {
+            padding: 5px 8px;
+            overflow: hidden;
+        }
+        /* Only add a right border to items that aren't the last one */
+        .sec-stat-cell:not(:last-child) {
+            border-right: 1px solid var(--border-faint);
+        }
+        .sec-stat-label {
+            color: var(--border-main);
+            font-size: 8px;
+        }
+        .sec-stat-value {
+            font-size: 10px;
+            font-family: var(--font-mono);
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
 
         #visible-routes-count {
             color: var(--accent-green);
@@ -345,11 +422,15 @@
             padding: 7px 6px; 
             text-align: left;
             background: var(--bg-light);
-            font-family: var(--font-sans); font-weight: bold; font-size: 10px;
-            border-bottom: 1px solid var(--border-faint);
+            border-bottom: 1px solid var(--border-main);
             position: sticky; top: 0; z-index: 10;
             color: var(--text-main);
+            letter-spacing: 0px;
             
+            color: var(--border-main);
+            font-size: 8px;
+            font-family: var(--border-main);
+            letter-spacing: -0.7px;
         }
 
         td {
@@ -370,6 +451,10 @@
         /* Targets the 3rd, 7th, 11th rows */
         .flight-row:nth-child(4n+3) td {
             background-color: rgb(36, 36, 36); /* Slightly lighter than bg-dark */
+        }
+
+        [data-theme="light"] .flight-row:nth-child(4n+3) td {
+            background-color: rgb(225, 225, 225);
         }
         
         .flight-row td:first-child b { font-weight: normal; }
@@ -461,15 +546,33 @@
                 <span style="letter-spacing: 0px;">darkeyes</span>
         </div>
         <div class="header-stats">
-            <span id="visible-flight-time" title="Total Flight Time">0h 0m</span>
-            <span class="stat-divider">FT |</span>
-            <span id="visible-unique-dest" title="Unique Destinations">0</span>
+            <span style="color: var(--text-main);"id="visible-flight-time" title="Total Flight Time">0h 0m</span>
+            <span class="stat-divider">Flight Time |</span>
+            <span style="color: var(--text-main);" id="visible-unique-dest" title="Unique Destinations">0</span>
             <span class="stat-divider">Unique Dest |</span>
-            <span id="visible-routes-count" title="Total Visible Routes">0</span>
+            <span  id="visible-routes-count" title="Total Visible Routes">0</span>
+            <span class="stat-divider">Routes</span>
         </div>
     </div>
+
+    <!-- ── SECONDARY STATS BAR ── -->
+    <div id="secondary-stats">
+        <div class="sec-stat-cell">
+            <div class="sec-stat-label">Top Airport</div>
+            <div class="sec-stat-value" id="stat-top-airport">—</div>
+        </div>
+        <div class="sec-stat-cell">
+            <div class="sec-stat-label">Top Aircraft</div>
+            <div class="sec-stat-value" id="stat-top-aircraft">—</div>
+        </div>
+        <div class="sec-stat-cell">
+            <div class="sec-stat-label">Top Livery</div>
+            <div class="sec-stat-value" id="stat-top-livery">—</div>
+        </div>
+    </div>
+
     <div id="sidebar-routes">
-        <p style="color: var(--text-muted); text-align:center; margin-top:30px; font-size:12px;">
+        <p style="color: var(--text-muted); text-align:center; margin-top:30px; font-size:9px;">
             Loading routes...
         </p>
     </div>
@@ -483,7 +586,12 @@
         <button id="left-toggle" class="map-btn" onclick="toggleLeftPanel()" title="Toggle Routes Panel"> < ROUTES </button>
 
         <button id="tp-toggle" class="map-btn" onclick="toggleTpVisibility()" title="Toggle Traffic Patterns">
-            <svg width="24" height="24" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">    <path id="Pill" fill="none" stroke="#d8d8d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M 98.821709 99.178299 C 98.821709 111.782364 88.604065 122 76 122 C 63.395931 122 53.178295 111.782364 53.178295 99.178299 L 53.178295 52.821709 C 53.178295 40.217636 63.395931 30 76 30 C 88.604065 30 98.821709 40.217636 98.821709 52.821709 L 98.821709 99.178299 Z"/>    <path id="Triangle" fill="none" stroke="#d8d8d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M 99.599998 54 L 94.199997 63 L 105 63 Z"/>    <path id="Triangle-copy" fill="none" stroke="#d8d8d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M 52.400002 99 L 57.799999 90 L 47 90 Z"/></svg>
+                    <svg width="23" height="23" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">  
+                                <path id="Pill" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 99.027512 97.369141 C 99.032455 110.081856 88.730751 120.391579 76.018036 120.396515 C 63.305321 120.401459 52.995602 110.099747 52.990662 97.387039 L 52.972485 50.630859 C 52.967545 37.918144 63.269249 27.608421 75.981964 27.603485 C 88.694679 27.598541 99.004402 37.900246 99.009338 50.612961 L 99.027512 97.369141 Z"/>
+                        <path id="Triangle" fill="none" stroke="#d8d8d9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" d="M 52.499622 92.999252 L 62.295155 76 L 42.704094 76 Z"/>
+                        <path id="Triangle-copy" fill="none" stroke="#d8d8d9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" d="M 99.500374 55.000748 L 89.704842 72 L 109.295906 72 Z"/>
+                        <path id="path1-copy-copy" fill="#d8d8d9" fill-rule="evenodd" stroke="#d8d8d9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 116 116 L 36 36"/>
+                    </svg>
         </button>
 
 
@@ -532,7 +640,16 @@
             </svg>
         </button>
 
+
+        <!-- ── THEME TOGGLE ── -->
+        <button id="theme-toggle" class="map-btn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+            <svg id="theme-icon" style="width: 20; height: 20;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+                <path transform="scale(1.2), translate(-8, -8)" d="M 98 42 A 42 42 0 1 0 98 110 A 28 28 0 1 1 98 42 Z" fill="#d8d8d9"/>
+            </svg>
+        </button>
+
         <button id="sidebar-toggle" class="map-btn" onclick="toggleSidebar()" title="Toggle Filter Panel">FILTERS (0) ></button>
+
     </div>
 
     <div id="map"></div>
@@ -589,6 +706,45 @@ function backToMain() {
     window.location.href = "https://www.flightsmart.tools";
 }
 
+// ═══════════════════════════════════════════════════════════
+// LIGHT / DARK THEME TOGGLE
+// ═══════════════════════════════════════════════════════════
+var _sunSVG = '<circle cx="76" cy="76" r="22" fill="none" stroke="#d8d8d9" stroke-width="15"/>'
+    + '<line x1="76" y1="20" x2="76" y2="36" stroke="#d8d8d9" stroke-width="15" stroke-linecap="round"/>'
+    + '<line x1="76" y1="116" x2="76" y2="132" stroke="#d8d8d9" stroke-width="15" stroke-linecap="round"/>'
+    + '<line x1="20" y1="76" x2="36" y2="76" stroke="#d8d8d9" stroke-width="15" stroke-linecap="round"/>'
+    + '<line x1="116" y1="76" x2="132" y2="76" stroke="#d8d8d9" stroke-width="15" stroke-linecap="round"/>'
+    + '<line x1="37" y1="37" x2="48" y2="48" stroke="#d8d8d9" stroke-width="15" stroke-linecap="round"/>'
+    + '<line x1="104" y1="104" x2="115" y2="115" stroke="#d8d8d9" stroke-width="15" stroke-linecap="round"/>'
+    + '<line x1="115" y1="37" x2="104" y2="48" stroke="#d8d8d9" stroke-width="15" stroke-linecap="round"/>'
+    + '<line x1="48" y1="104" x2="37" y2="115" stroke="#d8d8d9" stroke-width="15" stroke-linecap="round"/>';
+
+var _moonSVG = '<path transform="scale(1.2), translate(-8, -8)" d="M 98 42 A 42 42 0 1 0 98 110 A 28 28 0 1 1 98 42 Z" fill="#d8d8d9"/>';
+
+function _updateThemeIcon(theme) {
+    var icon = document.getElementById('theme-icon');
+    if (!icon) return;
+    // Show the moon in dark mode (current state); show the sun in light mode (current state)
+    icon.innerHTML = theme === 'dark' ? _moonSVG : _sunSVG;
+}
+
+window.toggleTheme = function() {
+    // Target documentElement instead of document.body
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('flightsmart-theme', next); } catch(e) {}
+    _updateThemeIcon(next);
+};
+
+// ── Apply saved theme immediately, before map init ──
+var _savedTheme = null;
+try { _savedTheme = localStorage.getItem('flightsmart-theme'); } catch(e) {}
+var _initTheme = _savedTheme || 'dark';
+// Target documentElement instead of document.body
+document.documentElement.setAttribute('data-theme', _initTheme);
+_updateThemeIcon(_initTheme);
+
 
 // ═══════════════════════════════════════════════════════════
 // MAP SETUP & THEMES
@@ -606,7 +762,6 @@ var esriDarkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/serv
     attribution: '', maxZoom: 16
 });
 
-document.body.setAttribute('data-theme', 'dark');
 esriDarkBase.addTo(map);
 
 var googleSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlxVfQ2tN8yza3eILYJ-KO9A3h5w_IygXl0fgKAmLNWyovhQkGbfO_u15d3NDf6pOaPn8guj1qVIoF/pub?output=csv";
@@ -634,7 +789,7 @@ const modeIcons = {
         <path id="Circle" fill="#d8d8d9" fill-rule="evenodd" stroke="none" d="M 111.661758 76.456955 C 111.661758 56.540329 95.516144 40.394707 75.599518 40.394707 C 55.682888 40.394707 39.53727 56.540329 39.53727 76.456955 C 39.53727 96.373581 55.682888 112.519196 75.599518 112.519196 C 95.516144 112.519196 111.661758 96.373581 111.661758 76.456955 Z"/>
         <path id="Path" fill="#99a7b6" fill-rule="evenodd" stroke="none" visibility="hidden" d="M 42 62 L 90 110 C 90 110 66.369377 119.32692 50 102 C 33.630623 84.673088 42 62 42 62 Z"/>
         <path id="Path-copy-2" fill="#99a7b6" fill-rule="evenodd" stroke="none" visibility="hidden" d="M 109 91 L 61 43 C 61 43 84.630623 33.67308 101 51 C 117.369377 68.326912 109 91 109 91 Z"/>
-        <text id="A" xml:space="preserve" x="111" y="144" font-family="B612" font-size="50" font-weight="700" fill="#d8d8d9" letter-spacing="-4">A</text>
+        <text id="A" xml:space="preserve" x="111" y="144" font-family="B612" font-size="42" font-weight="700" fill="#d8d8d9" letter-spacing="-4">A</text>
         <path id="path1" fill="#99a7b6" fill-rule="evenodd" stroke="#99a7b6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 115 116 L 35 36"/>
     </svg>`,
 
@@ -657,7 +812,7 @@ const modeIcons = {
 
 
 const glowIcons = {
-    'auto': `<svg style="width: 24px; height: 24px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+    'auto': `<svg style="width: 22px; height: 22px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
                 <text id="A" xml:space="preserve" x="110" y="147" font-family="B612" font-size="50" font-weight="700" fill="#d8d8d9" letter-spacing="-4">A</text>
                 <filter id="glow-filter-auto" x="0" y="0" width="152" height="152" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
                     <feGaussianBlur stdDeviation="27"/>
@@ -672,7 +827,7 @@ const glowIcons = {
                 <path fill="none" stroke="#d8d8d9" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-filter-auto)" d="M 124 30 L 35 119"/>
             </svg>`,
              
-    'on': `<svg style="width: 24px; height: 24px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+    'on': `<svg style="width: 22px; height: 22px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
                 <filter id="glow-filter-on" x="0" y="0" width="152" height="152" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
                     <feGaussianBlur stdDeviation="27"/>
                     <feOffset dx="-0" dy="0" result="offsetblur"/>
@@ -686,7 +841,7 @@ const glowIcons = {
                 <path fill="none" stroke="#d8d8d9" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-filter-on)" d="M 124 30 L 35 119"/>
             </svg>`,
            
-    'off': `<svg style="width: 24px; height: 24px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+    'off': `<svg style="width: 22px; height: 22px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
                 <path fill="none" stroke="#d8d8d9" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" d="M 124 30 L 35 119"/>
             </svg>`
 };
@@ -716,10 +871,24 @@ const labelIcons = {
 };
 
 const tpIcons = {
-    'off': `<svg width="24" height="24" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">    <image id="Pill" x="50" y="27" width="52" height="98" xlink:href="data:image/png;base64, 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"/>    <path id="Triangle" fill="none" stroke="#d8d8d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M 99.599998 54 L 94.199997 63 L 105 63 Z"/>    <path id="Triangle-copy" fill="none" stroke="#d8d8d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M 52.400002 99 L 57.799999 90 L 47 90 Z"/>    <image id="path1-copy" x="29" y="30" width="92" height="92" xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAFwAAABcCAYAAADj79JYAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAXKADAAQAAAABAAAAXAAAAABhCMkfAAADpklEQVR4Ae3dzYvTQBQA8Mw0sBQp7rF0QSjSeuilR/Gw6FFQDx560at78y8RvAniXus/IF4Fj4oHuws9lKALq8KeRWWFdON7/djG3bSZTCbJfLzAkunMmwz5MU0zaZfHvMUWBMFWGJ49gZePGfN6WB1F3hh2Q9/n+51O5y/W0ZZPgGH3yWSyA7hvodhPOhy0fQb0B4D+Pamd6sQFGM7s6fTsA3RJxI4d6mg69W/3etePY3VUzCjAwzDagz5p2HjYdq0Wvh+Pv1zLOAaFxwQ4XKkfxV6nFQk9TSilnS8/IFPi4s2EHtfIWIYZLrURuhSb5/HFrZ9Md0KXUIMZzl5L9Ft2IfSlhOCe+z57BbEjwfikMEJPUllTx3EFWavx+9B+tCZGpLrNefju4ODkikiwyzGzD01cQeKiBiCk0eFuZ6de/3nLZUyRcz+/S8EVZE70ehRFd+GvJjKwqzGzZynxk8eVJK4ooa4drxcpA/YJ5+xZo9F42Wq1/oj0cS3mEjgC5EQPGWPf4BLzvNvtvoBy5BrqpvNNBM+LvhqQvTk8HD0cDAbTVZ3bpbXg6tC9T9vbV+80m83fblPPz34juEL0r6en3m6/f+OH6+ip4ArR6Xk6YAqBE7q696UwOKGrQc8ETuj50TODE3o+dClwQpdHlwYndDn0XOCEnh09NzihZ0NXAk7o4ujKwAldDF0pOKGnoysHJ/TN6IWAE/p69MLACT0ZvVBwQr+MXjg4of+PXgo4oa/QSwMn9Dl6qeCEnuErttWbIn8pz+9eYqMb+R1p6TN8CeYqemXgCO8ieqXgLqJXDu4auhbgLqFrA+4KulbgLqBrB247upbgNqNrC24rutbgNqJrD24buhHgNqEbA24LulHgNqAbB246upHgJqMbC24qutHgJqIbD24auhXgJqFbA24KulXgJqBbB647upXgOqNbC64rutXgOqJbD64buhPgOqE7A64LulPgOqA7B141upPgVaI7C14VutPgVaA7D142OoGjOGxl/fsLgc+9S0Mn8Bg4Foue6QR+AbxodAJPAC8SncDXgBeFTuAbwFWiQ+qeXcwmQ+Ap4ArRR4B+k8AFwFWhQ967pwQuCK4CHcA/EngGcAXov84zVWUc19nwvBm9CFxi6siiY+5SApcAxy6S6EO6hkuCL7tlePYyuy2kGb6Uk9zjTMdFDXTflAR2BLnp7mHuUprhktAXuwVBsBWG0R6mrQfcHrYv8k0PfZ/vIzbW/QM4FBO15Nj/TQAAAABJRU5ErkJggg=="/>    <g id="hidden-airport-icon">        <path id="Circle" fill="#d8d8d9" fill-rule="evenodd" stroke="none" visibility="hidden" d="M 111.661758 76.456955 C 111.661758 56.540329 95.516144 40.394707 75.599518 40.394707 C 55.682888 40.394707 39.53727 56.540329 39.53727 76.456955 C 39.53727 96.373581 55.682888 112.519196 75.599518 112.519196 C 95.516144 112.519196 111.661758 96.373581 111.661758 76.456955 Z"/>        <path id="Path" fill="#d8d8d9" fill-rule="evenodd" stroke="none" visibility="hidden" d="M 42 62 L 90 110 C 90 110 66.369377 119.32692 50 102 C 33.630623 84.673088 42 62 42 62 Z"/>        <path id="Path-copy-2" fill="#d8d8d9" fill-rule="evenodd" stroke="none" visibility="hidden" d="M 109 91 L 61 43 C 61 43 84.630623 33.67308 101 51 C 117.369377 68.326912 109 91 109 91 Z"/>        <text id="A" visibility="hidden" xml:space="preserve" x="110" y="147" font-family="B612" font-size="50" font-weight="700" fill="#d8d8d9" letter-spacing="-4">A</text>        <path id="path1" fill="#d8d8d9" fill-rule="evenodd" stroke="#d8d8d9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 115 116 L 35 36"/>    </g></svg>`,
-
-    'on': `<svg width="24" height="24" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">    <path id="Pill" fill="none" stroke="#d8d8d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M 98.821709 99.178299 C 98.821709 111.782364 88.604065 122 76 122 C 63.395931 122 53.178295 111.782364 53.178295 99.178299 L 53.178295 52.821709 C 53.178295 40.217636 63.395931 30 76 30 C 88.604065 30 98.821709 40.217636 98.821709 52.821709 L 98.821709 99.178299 Z"/>    <path id="Triangle" fill="none" stroke="#d8d8d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M 99.599998 54 L 94.199997 63 L 105 63 Z"/>    <path id="Triangle-copy" fill="none" stroke="#d8d8d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M 52.400002 99 L 57.799999 90 L 47 90 Z"/></svg>`
+    'off': `<svg width="23" height="23" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">    
+            <path id="Path" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 58 36 C 58 36 61 28 78 28 C 97 28 99 51 99 51 L 99 68"/>
+    <path id="path1" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 52 80 L 52 103 C 52 103 58 121 75 121 C 88.147575 121 92 114 92 114"/>
+    <path id="path2" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 42 77 L 52 95 L 59 84 L 49 75 L 43 75 L 42 77 Z"/>
+    <path id="Path-copy-2" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 110 72 L 100 54 L 93 65 L 103 74 L 109 74 L 110 72 Z"/>
+    <path id="path1-copy-copy" fill="#d8d8d9" fill-rule="evenodd" stroke="#d8d8d9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M 116 116 L 36 36"/>
+</svg>
+`,
+    'on': `<svg width="23" height="23" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">  
+             <path id="Pill" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 99.027512 97.369141 C 99.032455 110.081856 88.730751 120.391579 76.018036 120.396515 C 63.305321 120.401459 52.995602 110.099747 52.990662 97.387039 L 52.972485 50.630859 C 52.967545 37.918144 63.269249 27.608421 75.981964 27.603485 C 88.694679 27.598541 99.004402 37.900246 99.009338 50.612961 L 99.027512 97.369141 Z"/>
+    <path id="Triangle" fill="none" stroke="#d8d8d9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" d="M 52.499622 92.999252 L 62.295155 76 L 42.704094 76 Z"/>
+    <path id="Triangle-copy" fill="none" stroke="#d8d8d9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" d="M 99.500374 55.000748 L 89.704842 72 L 109.295906 72 Z"/>
+    <path id="path1-copy-copy" fill="#d8d8d9" fill-rule="evenodd" stroke="#d8d8d9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 116 116 L 36 36"/>
+</svg>
+`
 };
+
+
 
 
 window.cycleCircleMode = function() {
@@ -739,7 +908,7 @@ window.updateCircles = function() {
     if (circleMode === 'hide') {
         baseR = 0; op = 0; 
     } else if (circleMode === 'show') {
-        baseR = 1; op = 1;           // Min size is 2
+        baseR = 1; op = 1;
     } else {
         var isZoomedIn = map.getZoom() > 3;
         baseR = isZoomedIn ? 2 : 0;
@@ -747,8 +916,8 @@ window.updateCircles = function() {
     }
     
     airportMarkers.forEach(function(marker) {
-        var scaledPart = Math.sqrt(marker.flightCount) * .9;           // Scale factor of 1.1 
-        var cappedScaledPart = Math.min(scaledPart, 3);                 // Max size is 4
+        var scaledPart = Math.sqrt(marker.flightCount) * .9;
+        var cappedScaledPart = Math.min(scaledPart, 3);
         var finalRadius = baseR === 0 ? 0 : baseR + cappedScaledPart;
         
         marker.setRadius(finalRadius);
@@ -756,7 +925,6 @@ window.updateCircles = function() {
     });
 };
 
-// NEW: GLOW LOGIC
 window.cycleGlowMode = function() {
     if (glowMode === 'auto') glowMode = 'on';
     else if (glowMode === 'on') glowMode = 'off';
@@ -780,14 +948,12 @@ window.toggleAirportLabels = function() {
 window.updateGlows = function() {
     const btn = document.getElementById('glow-toggle');
     if (btn) {
-        // Swap the SVG based on the current glowMode
         btn.innerHTML = glowIcons[glowMode];
     }
 
     flightLayers.forEach(function(item, idx) {
         if (!item || !item.layers) return;
         
-        // Fast checks without querying the DOM!
         var isSelected = (window.selectedFlightIndex === idx);
         var isHovered = (window.hoveredFlightIndex === idx);
         var isActive = isSelected || isHovered;
@@ -1011,11 +1177,7 @@ function toggleFilterState(filterKey, value, currentMode) {
 function toggleTpVisibility() {
     tpVisible = !tpVisible;
     var btn = document.getElementById('tp-toggle');
-    
-    // Swap the inner SVG based on the dictionary
     btn.innerHTML = tpIcons[tpVisible ? 'on' : 'off'];
-    
-    // Toggle the opacity of the layers
     tpLayers.forEach(function(l) {
         l.setStyle({ opacity: tpVisible ? 0.5 : 0 });
     });
@@ -1029,30 +1191,26 @@ window.renderAllActiveFilters = function() {
     var hasFilters = false;
     let filterCount = 0; 
 
-    // Updated to accept mainText and subText
     function createGlobalChip(mainText, subText, modeClass, onRemove, onToggle) {
         var chip = document.createElement('div');
         chip.className = 'tag-chip mode-' + modeClass;
         chip.style.alignItems = 'center';
 
-        // Create a column container for the text
         var labelContainer = document.createElement('div');
         labelContainer.style.display = 'flex';
         labelContainer.style.flexDirection = 'column';
         labelContainer.style.flex = '1';
         labelContainer.style.overflow = 'hidden';
-        labelContainer.style.gap = '2px'; // Space between ICAO and name
+        labelContainer.style.gap = '2px';
         
-        // Line 1: Main Text (ICAO / Tag Name)
         var mainSpan = document.createElement('span');
         mainSpan.textContent = mainText;
         mainSpan.style.whiteSpace = 'nowrap';
         mainSpan.style.overflow = 'hidden';
         mainSpan.style.textOverflow = 'ellipsis';
-        mainSpan.style.fontWeight = 'bold'; // Makes the ICAO pop a bit more
+        mainSpan.style.fontWeight = 'bold';
         labelContainer.appendChild(mainSpan);
 
-        // Line 2: Sub Text (Full Airport Name, Date Range, etc.)
         if (subText) {
             var subSpan = document.createElement('span');
             subSpan.textContent = subText;
@@ -1066,7 +1224,6 @@ window.renderAllActiveFilters = function() {
 
         chip.appendChild(labelContainer);
 
-        // Actions (SWP, X)
         var actionsDiv = document.createElement('div');
         actionsDiv.className = 'chip-actions';
 
@@ -1088,13 +1245,11 @@ window.renderAllActiveFilters = function() {
         return chip;
     }
 
-    // 1. Check Date Range
     var sd = document.getElementById('start-date').value;
     var ed = document.getElementById('end-date').value;
     if (sd || ed) {
         hasFilters = true;
         filterCount++;
-        // Splitting Date into Main (Date Range) and Sub (Actual dates)
         var dateSubText = (sd || 'Any') + ' > ' + (ed || 'Any');
         container.appendChild(createGlobalChip('Date Range', dateSubText, 'include', function() {
             document.getElementById('start-date').value = '';
@@ -1104,7 +1259,6 @@ window.renderAllActiveFilters = function() {
         }, null));
     }
 
-    // 2. Check Tag Categories (Aircraft, Airline, Airport)
     ['aircraft', 'airline', 'airport'].forEach(function(key) {
         var state = filterState[key];
         
@@ -1118,11 +1272,10 @@ window.renderAllActiveFilters = function() {
                 var mainText = fullLabel;
                 var subText = null;
 
-                // If it's an airport, split the ICAO and the Full Name
                 if (key === 'airport' && fullLabel.includes(' - ')) {
                     var parts = fullLabel.split(' - ');
-                    mainText = parts[0]; // The ICAO (e.g., VCBI)
-                    subText = parts.slice(1).join(' - '); // The Name (e.g., Bandaranaike...)
+                    mainText = parts[0];
+                    subText = parts.slice(1).join(' - ');
                 }
 
                 container.appendChild(createGlobalChip(mainText, subText, mode, function() {
@@ -1131,12 +1284,10 @@ window.renderAllActiveFilters = function() {
             });
         }
 
-        // Render both Includes and Excludes
         renderTags(state.includes, 'include');
         renderTags(state.excludes, 'exclude');
     });
 
-    // 3. Update the Button Text
     const sidebarToggle = document.getElementById('sidebar-toggle');
     if (sidebarToggle) {
         sidebarToggle.textContent = `FILTERS (${filterCount}) >`;
@@ -1186,46 +1337,32 @@ function makeContinuous(pts) {
 
 function makeRoundedRectPoints(lat, lon, halfH, halfW, cornerR, n) {
     var pts = [];
-    
-    // Define the 4 corners with their specific arc start/end angles
-    // Angles: 0 = East, PI/2 = North, PI = West, 3PI/2 = South
     var corners = [
-        { cy: lat + halfH - cornerR, cx: lon + halfW - cornerR, a0: 0,           a1: Math.PI/2 },   // NE
-        { cy: lat + halfH - cornerR, cx: lon - halfW + cornerR, a0: Math.PI/2,  a1: Math.PI },     // NW
-        { cy: lat - halfH + cornerR, cx: lon - halfW + cornerR, a0: Math.PI,    a1: 3*Math.PI/2 }, // SW
-        { cy: lat - halfH + cornerR, cx: lon + halfW - cornerR, a0: 3*Math.PI/2, a1: 2*Math.PI }   // SE
+        { cy: lat + halfH - cornerR, cx: lon + halfW - cornerR, a0: 0,           a1: Math.PI/2 },
+        { cy: lat + halfH - cornerR, cx: lon - halfW + cornerR, a0: Math.PI/2,  a1: Math.PI },
+        { cy: lat - halfH + cornerR, cx: lon - halfW + cornerR, a0: Math.PI,    a1: 3*Math.PI/2 },
+        { cy: lat - halfH + cornerR, cx: lon + halfW - cornerR, a0: 3*Math.PI/2, a1: 2*Math.PI }
     ];
 
     corners.forEach(function(c) {
         for (var i = 0; i <= n; i++) {
             var a = c.a0 + (i / n) * (c.a1 - c.a0);
-            // Lon (X) uses Cos, Lat (Y) uses Sin
             pts.push([c.cy + cornerR * Math.sin(a), c.cx + cornerR * Math.cos(a)]);
         }
     });
 
-    pts.push(pts[0]); // Close the polygon
+    pts.push(pts[0]);
     return pts;
 }
 
 function getTpSize() {
     var z = map.getZoom();
-    
-    // 1. THE BASE MULTIPLIER
-    // Adjust the "0.003" to change the overall size at all zoom levels.
     var scale = Math.pow(2, 10 - z) * 0.004; 
-
-    // 2. THE CLAMPING LIMITS
-    // 0.004 is the absolute smallest it will get (when zoomed far in).
-    // 0.18 is the absolute largest it will get (when zoomed far out).
     scale = Math.max(0.004, Math.min(scale, 0.08)); 
-
-    // 3. THE ASPECT RATIO
-    // Adjust these multipliers to change the actual shape of the oval.
     return { 
-        halfH: scale * 2.5,   // North/South length
-        halfW: scale * 1.2,   // East/West width
-        cornerR: scale * 1.0  // Roundness of the corners
+        halfH: scale * 2.5,
+        halfW: scale * 1.2,
+        cornerR: scale * 1.0
     }
 }
 
@@ -1238,6 +1375,7 @@ function getAircraftDetails(rawName) {
     else if (n.includes('embraer'))     mfr='Embraer';
     else if (n.includes('bombardier'))  mfr='Bombardier';
     else if (n.includes('cessna'))      mfr='Cessna';
+    else if (n.includes('mcdonnell douglas'))      mfr='McDonnell Douglas';
     if (mfr==='Airbus') {
         if      (n.match(/a318|a319|a320|a321/)) family='A320 Family';
         else if (n.includes('a220'))             family='A220 Family';
@@ -1255,10 +1393,7 @@ function getAircraftDetails(rawName) {
         if (n.match(/e170|e175|e190|e195/)) family='E-Jet Family';
     } else if (mfr==='Bombardier') {
         if (n.includes('cl350')||n.includes('challenger')) family='Challenger Family';
-    } else if (mfr==='Cessna') {
-        if      (n.includes('c208')||n.includes('caravan'))  family='208 Caravan Family';
-        else if (n.includes('c172')||n.includes('skyhawk'))  family='172 Skyhawk Family';
-    }
+    } 
     return { mfr, family, specific };
 }
 
@@ -1273,18 +1408,13 @@ function formatAircraft(name) {
 }
 
 window.selectedFlightIndex = null;
-window.hoveredFlightIndex = null; // NEW: tracks hover state efficiently
+window.hoveredFlightIndex = null;
 
 
-// Toggle UI visibility with the 'm' key
 document.addEventListener('keydown', function(e) {
-    // Prevent the shortcut from triggering if the user is typing in an input field
     if (e.target.tagName.toLowerCase() === 'input') return;
-
     if (e.key.toLowerCase() === 'm') {
         document.body.classList.toggle('ui-hidden');
-        
-        // Invalidate map size so Leaflet recalculates and fills the freed-up screen space
         setTimeout(function(){ 
             if (typeof map !== 'undefined') map.invalidateSize(); 
         }, 200);
@@ -1306,7 +1436,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Sidebar & Panel Toggles
 function toggleSidebar() {
     var sb=document.getElementById('sidebar');
     sb.style.display = sb.style.display==='none' ? 'flex' : 'none';
@@ -1326,8 +1455,6 @@ function toggleLeftPanel() {
 function getIcaoCode(name) {
     if (!name) return 'UNKN';
     var n = name.toLowerCase();
-    
-    // Airbus
     if (n.includes('a318')) return 'A318';
     if (n.includes('a319')) return 'A319';
     if (n.includes('a320')) return 'A320';
@@ -1339,8 +1466,6 @@ function getIcaoCode(name) {
     if (n.includes('a350')) return 'A359';
     if (n.includes('a380')) return 'A388';
     if (n.includes('a220')) return 'BCS3';
-    
-    // Boeing
     if (n.includes('737-700')) return 'B737';
     if (n.includes('737-800')) return 'B738';
     if (n.includes('737-8')) return 'B38M';
@@ -1356,8 +1481,6 @@ function getIcaoCode(name) {
     if (n.includes('787-8')) return 'B788';
     if (n.includes('787-9')) return 'B789';
     if (n.includes('787-10')) return 'B78X';
-    
-    // Regional / Commuter
     if (n.includes('e175')) return 'E75S';
     if (n.includes('e190')) return 'E190';
     if (n.includes('crj-200') || n.includes('crj200')) return 'CRJ2';
@@ -1365,11 +1488,8 @@ function getIcaoCode(name) {
     if (n.includes('crj-900') || n.includes('crj900')) return 'CRJ9';
     if (n.includes('crj-1000') || n.includes('crj1000')) return 'CRJX';
     if (n.includes('dash 8') || n.includes('q400')) return 'DH8D';
-
-    // General Aviation / Misc
-    if (n.includes('Challenger 350') || n.includes('Challenger 350')) return 'CL35';
-    if (n.includes('Citation X') || n.includes('Citation X')) return 'CITX';
-    
+    if (n.includes('Challenger 350') || n.includes('challenger 350')) return 'CL35';
+    if (n.includes('Citation X') || n.includes('citation x')) return 'CITX';
     if (n.includes('c172') || n.includes('skyhawk')) return 'C172';
     if (n.includes('c208') || n.includes('caravan')) return 'C208';
     if (n.includes('sr22')) return 'SR22';
@@ -1377,17 +1497,12 @@ function getIcaoCode(name) {
     if (n.includes('xcub')) return 'CC19';
     if (n.includes('md-11')) return 'MD11';
     if (n.includes('dc-10')) return 'DC10';
-    if (n.includes('Challenger 350') || n.includes('Challenger 350')) return 'CL35';
-    
-    // Military
     if (n.includes('c-130')) return 'C130';
     if (n.includes('c-17')) return 'C17';
     if (n.includes('f/a-18')) return 'F18';
     if (n.includes('f-22')) return 'F22';
     if (n.includes('a-10')) return 'A10';
     if (n.includes('spitfire')) return 'SPIT';
-    
-    // Fallback: If no match is found, just return a 4-letter slice of the formatted name
     var fallback = formatAircraft(name).replace(/\s/g, '');
     return fallback.length > 4 ? fallback.substring(0, 4).toUpperCase() : fallback.toUpperCase();
 }
@@ -1395,10 +1510,13 @@ function getIcaoCode(name) {
 
 function truncateText(str, maxLength) {
     if (!str) return '—';
-    if (str.length > maxLength) {
-        return str.substring(0, maxLength) + '...';
+    if (str.length <= maxLength) return str;
+    let truncated = str.substring(0, maxLength);
+    let lastSpaceIndex = truncated.lastIndexOf(' ');
+    if (lastSpaceIndex > -1) {
+        truncated = truncated.substring(0, lastSpaceIndex);
     }
-    return str;
+    return truncated; 
 }
 
 window.closeAllFlightDetails = function() {
@@ -1421,8 +1539,8 @@ window.closeAllFlightDetails = function() {
     });
 
     window.selectedFlightIndex = null;
-    window.hoveredFlightIndex = null; // Important! Clear hover state on reset
-    window.updateGlows(); // Let the global function sync all the CSS
+    window.hoveredFlightIndex = null;
+    window.updateGlows();
 };
 
 
@@ -1432,13 +1550,31 @@ function renderVisibleRoutes(filteredFlights) {
     var timeSpan = document.getElementById('visible-flight-time');
     var destSpan = document.getElementById('visible-unique-dest');
 
+    // ── TOP STATS ──────────────────────────────────────────
+    (function() {
+        function topByCount(vals) {
+            if (!vals.length) return '—';
+            var counts = {};
+            vals.forEach(function(v) { if (v) counts[v] = (counts[v] || 0) + 1; });
+            return Object.keys(counts).reduce(function(a, b) { return counts[a] > counts[b] ? a : b; });
+        }
+        var airports = [];
+        filteredFlights.forEach(function(f) {
+            if (f.departure) airports.push(f.departure);
+            if (f.arrival)   airports.push(f.arrival);
+        });
+        var el;
+        if ((el = document.getElementById('stat-top-airport')))  el.textContent = topByCount(airports);
+        if ((el = document.getElementById('stat-top-aircraft'))) el.textContent = topByCount(filteredFlights.map(function(f){ return formatAircraft(f.aircraft); }));
+        if ((el = document.getElementById('stat-top-livery')))   el.textContent = topByCount(filteredFlights.map(function(f){ return f.livery; }));
+    })();
+    // ── END TOP STATS ──────────────────────────────────────
+
     var totalMinutes = 0;
     var uniqueDest = new Set();
 
-
     countSpan.textContent = filteredFlights.length;
     filteredFlights.forEach(function(f) {
-        // Calculate Total Flight Time (parsing HH:MM)
         if (f.duration) {
             var timeParts = f.duration.split(':');
             if (timeParts.length === 2) {
@@ -1449,7 +1585,6 @@ function renderVisibleRoutes(filteredFlights) {
                 }
             }
         }
-        // Calculate Unique Destinations
         if (f.arrival) {
             uniqueDest.add(f.arrival);
         }
@@ -1457,16 +1592,11 @@ function renderVisibleRoutes(filteredFlights) {
 
     var totalHrs = Math.floor(totalMinutes / 60);
     var totalMins = totalMinutes % 60;
-    
-    // Updated timeString format to "Xh Ym"
     var timeString = totalHrs + 'h ' + totalMins + 'm';
 
-    // 3. Update DOM headers
     countSpan.textContent = filteredFlights.length;
     timeSpan.textContent = timeString;
     destSpan.textContent = uniqueDest.size;
-
-
 
     if (filteredFlights.length === 0) {
         container.innerHTML = '<p style="color:var(--text-muted);text-align:center;margin-top:30px;font-size:12px;">No data.</p>';
@@ -1483,26 +1613,39 @@ function renderVisibleRoutes(filteredFlights) {
 var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width: 90px;">Route</th><th style="width: 45px;">Aircraft</th><th style="width: 150px;">Livery</th></tr></thead><tbody>';
     
     filteredFlights.forEach(function(item, idx) {
-        var hasFilteredAirport = filterState.airport.includes.has(item.departure) || filterState.airport.includes.has(item.arrival);
-        var pair = [item.departure, item.arrival].sort();
+       var pair = [item.departure, item.arrival].sort();
         var key = pair[0] + '-' + pair[1];
         var isDuplicateOrBidirectional = routeCounts[key] > 1;
         
-        var routeColor = 'var(--text-main)'; 
+        var depColor = 'var(--text-main)';
+        var arrColor = 'var(--text-main)';
         
-        if (isDuplicateOrBidirectional) {
-            routeColor = '#5ba4ff';           
-        } else if (hasFilteredAirport) {
-            routeColor = 'var(--accent-green)';  
+        var depIsFiltered = filterState.airport.includes.has(item.departure);
+        var arrIsFiltered = filterState.airport.includes.has(item.arrival);
+
+        var spokeColor = isDuplicateOrBidirectional ? '#5ba4ff' : 'var(--accent-green)';
+
+        if (depIsFiltered || arrIsFiltered) {
+            if (depIsFiltered && !arrIsFiltered) {
+                depColor = 'var(--text-main)';
+                arrColor = spokeColor;
+            } else if (!depIsFiltered && arrIsFiltered) {
+                arrColor = 'var(--text-main)';
+                depColor = spokeColor;
+            } else {
+                depColor = spokeColor;
+                arrColor = spokeColor;
+            }
+        } else if (isDuplicateOrBidirectional) {
+            depColor = '#5ba4ff';
+            arrColor = '#5ba4ff';
         }
 
-        // Main Row (Now uses getIcaoCode)
         html += '<tr class="flight-row" data-index="'+idx+'">';
         html += '<td>'+escapeHtml(item.date||'—')+'</td>'; 
-        html += '<td style="white-space: nowrap;"><b style="color: ' + routeColor + ';">' + escapeHtml(item.departure) + '</b> <span style="color:var(--text-muted); margin: 0 4px;">></span> <b style="color: ' + routeColor + ';">' + escapeHtml(item.arrival) + '</b></td>';
+        html += '<td style="white-space: nowrap;"><b style="color: ' + depColor + ';">' + escapeHtml(item.departure) + '</b> <span style="color:var(--text-muted); margin: 0 4px;">></span> <b style="color: ' + arrColor + ';">' + escapeHtml(item.arrival) + '</b></td>';
         html += '<td>'+escapeHtml(getIcaoCode(item.aircraft))+'</td>'; 
 
-        // --- NEW COLOR BOX LOGIC ---
         var c1 = 'transparent', c2 = 'transparent', c3 = 'transparent';
         if (window.liveryColorMap && window.liveryColorMap[item.livery]) {
             var colors = window.liveryColorMap[item.livery];
@@ -1519,22 +1662,31 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
         html += '<td style="letter-spacing: -0.5px;" title="' + escapeHtml(item.livery || '') + '">' + colorBox + escapeHtml(truncateText(item.livery, 22)) + '</td>';
         html += '</tr>';
 
-        // Hidden Details Row (Keeps formatAircraft for the full read-out)
         html += '<tr class="details-row" id="details-'+idx+'" style="display:none;">';
         html += '<td colspan="4">';
-        html += `
-            <div style="font-size: 10px; line-height: 1.8; color: var(--text-main);">
-                <div style="display: grid; grid-template-columns: 50px 1fr 50px 1fr; gap: 2px 4px;">
-                    <span style="color: var(--text-muted);">DATE</span><span>${escapeHtml(item.date)}</span>
-                    <span style="color: var(--text-muted);">TIME</span><span>${escapeHtml(item.duration || 'N/A')}</span>
-                    <span style="color: var(--text-muted);">MODEL</span><span>${escapeHtml(formatAircraft(item.aircraft))}</span>
-                    <span style="color: var(--text-muted);">LDGS</span><span>${escapeHtml(item.ldgs || 'N/A')}</span>
-                    <span style="color: var(--text-muted);">LIVRY</span><span style="grid-column: span 3;">${escapeHtml(item.livery)}</span>
-                    
-                    ${item.remarks ? `<span style="grid-column: span 4;">${escapeHtml(item.remarks)}</span>` : ''}
+        (function() {
+            var depAp = window.airportData && window.airportData[item.departure];
+            var arrAp = window.airportData && window.airportData[item.arrival];
+            var depLabel = item.departure + (depAp && depAp.municipality ? ' · ' + depAp.municipality : depAp && depAp.name ? ' · ' + depAp.name : '');
+            var arrLabel = item.arrival   + (arrAp && arrAp.municipality ? ' · ' + arrAp.municipality : arrAp && arrAp.name ? ' · ' + arrAp.name : '');
+            html += `
+                <div style="font-size: 10px; line-height: 1.8; color: var(--text-main);">
+                    <div style="display: grid; grid-template-columns: 50px 1fr 50px 1fr; gap: 2px 4px;">
+                        <span style="color: var(--text-muted);">DATE</span><span style="grid-column: span 3;">${escapeHtml(item.date)}</span>
+                        <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
+                        <span style="color: var(--text-muted);">DEP</span><span style="grid-column: span 3;">${escapeHtml(depLabel)}</span>
+                        <span style="color: var(--text-muted);">ARR</span><span style="grid-column: span 3;">${escapeHtml(arrLabel)}</span>
+                        <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
+                        <span style="color: var(--text-muted);">MODEL</span><span>${escapeHtml(formatAircraft(item.aircraft))}</span>
+                        <span style="color: var(--text-muted);">LIVRY</span><span>${escapeHtml(item.livery, 18)}</span>
+                        <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
+                        <span style="color: var(--text-muted);">TIME</span><span>${escapeHtml(item.duration || 'N/A')}</span>
+                        <span style="color: var(--text-muted);">LDGS</span><span>${escapeHtml(item.ldgs || 'N/A')}</span>
+                        ${item.remarks ? `<span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span><span style="color: var(--text-muted);">RMK</span><span style="grid-column: span 3; font-family: 'Shadows Into Light', cursive; letter-spacing: 1px;">${escapeHtml(item.remarks)}</span>` : ''}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        })();
         html += '</td></tr>';
     });
     html += '</tbody></table>';
@@ -1546,7 +1698,7 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
         
         row.addEventListener('mouseenter', function(){
             this.classList.add('active-row'); 
-            window.hoveredFlightIndex = idx; // Tell the map this index is hovered
+            window.hoveredFlightIndex = idx;
             if (flightLayers[idx]) {
                 flightLayers[idx].layers.forEach(function(l) { 
                     l.setStyle({color:'#fa9822',weight:1,opacity:1}).bringToFront();
@@ -1557,7 +1709,7 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
 
         row.addEventListener('mouseleave', function(){
             if (window.hoveredFlightIndex === idx) {
-                window.hoveredFlightIndex = null; // Clear the hover tracker
+                window.hoveredFlightIndex = null;
             }
 
             if (window.selectedFlightIndex !== idx) {
@@ -1581,7 +1733,7 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
                 detailsRow.style.display = 'table-row';
                 this.classList.add('active-row'); 
                 window.selectedFlightIndex = idx;
-                window.hoveredFlightIndex = idx; // Mark as hovered since the mouse is currently here
+                window.hoveredFlightIndex = idx;
                 if (flightLayers[idx]) {
                     flightLayers[idx].layers.forEach(function(l) { 
                         l.setStyle({color:'#fa9822',weight:1,opacity:1}).bringToFront();
@@ -1601,14 +1753,10 @@ Papa.parse(googleSheetUrl, {
     complete: function(sheetResults) {
         var flights = [];
         
-        // 1. Alias dictionary to catch historical codes and update them 
-        // to modern OurAirports codes on the fly.
         var codeAliases = {
-            'EGOD': 'EGFD', // Llanbedr Airfield changed its ICAO
+            'EGOD': 'EGFD',
             'NZIR': 'NZWD', 
             'O5U': '05U', 
-            
-            // You can add future changed codes here like: 'OLD': 'NEW'
         };
         
 
@@ -1650,23 +1798,22 @@ Papa.parse(googleSheetUrl, {
             download: true, header: true,
             complete: function(airportResults) {
                 document.getElementById('loading').style.display='none';
-                var airportData = {};
+                window.airportData = {};
+                var airportData = window.airportData;
                 airportResults.data.forEach(function(row) {
                     if (!row.ident) return;
                     
-                    // Map OurAirports continent codes to full names
                     var continentMap = {
                         'NA': 'North America', 'SA': 'South America', 
                         'EU': 'Europe', 'AS': 'Asia', 
                         'AF': 'Africa', 'OC': 'Oceania', 'AN': 'Antarctica'
                     };
 
-                    // Convert ISO country code to Full Name (e.g., "US" -> "United States")
                     var countryName = row.iso_country;
                     if (row.iso_country) {
                         try {
                             countryName = new Intl.DisplayNames(['en'], {type: 'region'}).of(row.iso_country);
-                        } catch(e) { /* Fallback to raw code if translation fails */ }
+                        } catch(e) { }
                     }
 
                     var apObj = { 
@@ -1674,23 +1821,20 @@ Papa.parse(googleSheetUrl, {
                         lon: parseFloat(row.longitude_deg), 
                         name: row.name || row.ident,
                         continent: continentMap[row.continent] || 'Unknown Region',
-                        country: countryName
+                        country: countryName,
+                        municipality: (row.municipality || '').trim()
                     };
                     
-                    // 1. Index by OurAirports primary ident (e.g., SPIM)
                     airportData[row.ident.trim().toUpperCase()] = apObj;
                     
-                    // 2. Index by modern ICAO / GPS code (e.g., SPJC)
                     if (row.gps_code && row.gps_code.trim() !== '') {
                         airportData[row.gps_code.trim().toUpperCase()] = apObj;
                     }
                     
-                    // 3. Index by IATA as a fallback (e.g., LIM)
                     if (row.iata_code && row.iata_code.trim() !== '') {
                         airportData[row.iata_code.trim().toUpperCase()] = apObj;
                     }
 
-                    // 4. Index by local codes just to be safe
                     if (row.local_code && row.local_code.trim() !== '') {
                         airportData[row.local_code.trim().toUpperCase()] = apObj;
                     }
@@ -1704,7 +1848,6 @@ Papa.parse(googleSheetUrl, {
                     if (d.mfr) mfrSet.add(d.mfr); if (d.family) famSet.add(d.family); if (d.specific) spcSet.add(d.specific);
                     if (f.livery) airlineSet.add(f.livery);
                     
-                    // Track Airports, Regions, and Countries
                     if (f.departure) {
                         apSet.add(f.departure);
                         if (airportData[f.departure]) {
@@ -1729,18 +1872,18 @@ Papa.parse(googleSheetUrl, {
 
                 var airlineOptions = Array.from(airlineSet).sort().map(function(v){ return {value:v, label:v, badge:null}; });
                 
-                // Build Airport Options with prefixed Regions and Countries
                 var airportOptions = [];
                 Array.from(regSet).sort().forEach(function(v){ if(v) airportOptions.push({value:'reg:'+v, label:v, badge:'Region'}); });
                 Array.from(ctySet).sort().forEach(function(v){ if(v) airportOptions.push({value:'cty:'+v, label:v, badge:'Country'}); });
                 Array.from(apSet).sort().forEach(function(icao){
-                    var ap=airportData[icao]; 
-                    airportOptions.push({value:icao, label: ap ? icao+' - '+ap.name : icao, badge:'Airport'});
+                    var ap=airportData[icao];
+                    var label = icao;
+                    if (ap) {
+                        label = icao + ' - ' + ap.name;
+                        if (ap.municipality) label += ' (' + ap.municipality + ')';
+                    }
+                    airportOptions.push({value:icao, label: label, badge:'Airport'});
                 });
-
-
-
-
 
                 tagInputs.aircraft = new TagInput('aircraft', document.getElementById('aircraft-wrapper'), aircraftOptions);
                 tagInputs.airline  = new TagInput('airline',  document.getElementById('airline-wrapper'),  airlineOptions);
@@ -1762,8 +1905,7 @@ Papa.parse(googleSheetUrl, {
                     drawnLayers.clearLayers();
                     flightLayers=[];
                     airportMarkers = [];
-                    tpLayers = [];       // ← add this
-
+                    tpLayers = [];
 
                     airportLabelGroup.clearLayers();
 
@@ -1821,7 +1963,7 @@ Papa.parse(googleSheetUrl, {
                                                     '0 0 5px rgb(30,30,30);' +
                                                 '">' + escapeHtml(id) + '</div>',
                                             iconSize: [0, 0],
-                                            iconAnchor: [-5, 5]   // nudge label to the right of the dot
+                                            iconAnchor: [-5, 5]
                                         }),
                                         interactive: false,
                                         zIndexOffset: -100
@@ -1841,15 +1983,15 @@ Papa.parse(googleSheetUrl, {
                         var isTP = (f.remarks && /\bTP\s+at\b/i.test(f.remarks)) || (f.departure === f.arrival);
                         if (isTP) {
                             var sz = getTpSize();
-                            var tpLat = dep.lat + sz.halfH * 0.2;  // offset north so it sits above the dot
-                            var tpLon = dep.lon + sz.halfW * 0.6;  // offset east
+                            var tpLat = dep.lat + sz.halfH * 0.2;
+                            var tpLon = dep.lon + sz.halfW * 0.6;
                             var rectPts = makeRoundedRectPoints(tpLat, tpLon, sz.halfH, sz.halfW, sz.cornerR, 12);
                             mapOffsets.forEach(function(offset) {
                                 var shifted = rectPts.map(function(p) { return [p[0], p[1] + offset]; });
                                 var rectLine = L.polyline(shifted, { color: '#64c49a', weight: 1, opacity: 0.5, interactive: false });
                                 drawnLayers.addLayer(rectLine);
                                 linesForFlight.push(rectLine);
-                                tpLayers.push(rectLine);  // track for toggle
+                                tpLayers.push(rectLine);
                             });
                         }
 
@@ -1858,7 +2000,6 @@ Papa.parse(googleSheetUrl, {
                             var shiftedPts = continuousPts.map(function(p) { return [p[0], p[1] + offset]; });
                             var line = L.polyline(shiftedPts, { color: '#64c49a', weight: 1, opacity: 0.5, interactive: false });
                             
-                            // UPDATED: Ensure it receives the glow class upon rendering if glowMode is 'on'
                             line.on('add', function() {
                                 if (glowMode === 'on' && line.getElement()) {
                                     line.getElement().classList.add('glow-path');
@@ -1872,7 +2013,7 @@ Papa.parse(googleSheetUrl, {
                     });
                     
                     window.updateCircles();
-                    window.updateGlows(); // Synchronize glows globally after map draw
+                    window.updateGlows();
                 }
 
                 window.applyFiltersGlobal = function() {
@@ -1919,16 +2060,14 @@ Papa.parse(googleSheetUrl, {
                             var depAp = airportData[f.departure] || {};
                             var arrAp = airportData[f.arrival] || {};
 
-                            // Use arrays to track exactly WHICH filters matched
                             var depMatches = [];
                             var arrMatches = [];
                             var isExcludedDep = false, isExcludedArr = false;
 
-                            // Helper to check if a filter value matches an airport object
                             function checkApMatch(v, icao, apObj) {
                                 if (v.startsWith('reg:') && apObj.continent === v.slice(4)) return true;
                                 if (v.startsWith('cty:') && apObj.country === v.slice(4)) return true;
-                                if (v === icao) return true; // Standard ICAO match
+                                if (v === icao) return true;
                                 return false;
                             }
 
@@ -1947,11 +2086,8 @@ Papa.parse(googleSheetUrl, {
 
                             if (apf.includes.size > 0) {
                                 if (strictMatch && apf.includes.size >= 2) {
-                                    // 1. Both ends must match AT LEAST one filter
                                     if (depMatches.length === 0 || arrMatches.length === 0) return false;
                                     
-                                    // 2. The flight must connect TWO DIFFERENT filters
-                                    // (e.g., EGLL to India, NOT India to India)
                                     var crossedFilters = false;
                                     for (var i = 0; i < depMatches.length; i++) {
                                         for (var j = 0; j < arrMatches.length; j++) {
@@ -1964,10 +2100,8 @@ Papa.parse(googleSheetUrl, {
                                     if (!crossedFilters) return false;
                                     
                                 } else if (strictMatch && apf.includes.size === 1) {
-                                    // Only 1 filter active, both ends must match it (e.g., domestic flights)
                                     if (depMatches.length === 0 || arrMatches.length === 0) return false;
                                 } else {
-                                    // Not strict: Match on either end of the route
                                     if (depMatches.length === 0 && arrMatches.length === 0) return false;
                                 }
                             }
@@ -1991,7 +2125,6 @@ Papa.parse(googleSheetUrl, {
                     window.applyFiltersGlobal();
                 };
 
-                // --- NEW LIVERY CSV FETCH ---
                 Papa.parse('/Infinite Flight Aircraft Livery List.csv', {
                     download: true,
                     header: true,
@@ -2007,20 +2140,17 @@ Papa.parse(googleSheetUrl, {
                             }
                         });
                         
-                        // Fire the renders after the colors are loaded
                         window.renderAllActiveFilters();
                         renderMap(flights);
                         renderVisibleRoutes(flights);
                     },
                     error: function(err) {
                         console.error('Could not load livery colors:', err);
-                        // Fallback: render without colors if the file fails to load
                         window.renderAllActiveFilters();
                         renderMap(flights);
                         renderVisibleRoutes(flights);
                     }
                 });
-                // --- END NEW LIVERY CSV FETCH ---
 
             },
             error: function(err) { document.getElementById('loading').innerText='ERR: APT DATA'; console.error(err); }
@@ -2029,14 +2159,23 @@ Papa.parse(googleSheetUrl, {
     error: function(err) { document.getElementById('loading').innerText='ERR: FLT DATA'; console.error(err); }
 });
 
-map.on('zoomend', window.updateCircles);
-map.on('click', function() { window.closeAllFlightDetails(); });
 map.on('zoomend', function() {
     window.updateCircles();
-    // Redraw TP shapes at new zoom size
-    if (window.applyFiltersGlobal) window.applyFiltersGlobal();
-});
+    
+    var savedSelection = window.selectedFlightIndex;
+    var sidebarContainer = document.getElementById('sidebar-routes');
+    var savedScroll = sidebarContainer ? sidebarContainer.scrollTop : 0;
 
+    if (window.applyFiltersGlobal) window.applyFiltersGlobal();
+    
+    if (savedSelection !== null) {
+        var row = document.querySelector('.flight-row[data-index="' + savedSelection + '"]');
+        if (row) row.click();
+    }
+    if (sidebarContainer) {
+        sidebarContainer.scrollTop = savedScroll;
+    }
+});
 
 
 </script>
