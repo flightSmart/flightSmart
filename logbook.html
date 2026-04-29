@@ -84,11 +84,8 @@
         }
 
         /* Lighter, warmer map tiles for light mode */
-        [data-theme="light"] .leaflet-layer,
-        [data-theme="light"] .leaflet-control-zoom-in,
-        [data-theme="light"] .leaflet-control-zoom-out,
-        [data-theme="light"] .leaflet-control-attribution {
-            filter: hue-rotate(0deg) brightness(160%) contrast(72%) saturate(45%) invert(1);
+        [data-theme="light"] .leaflet-layer {
+            filter: hue-rotate(000deg) brightness(100%) contrast(100%) saturate(00%); 
         }
 
         /* Make hardcoded SVG icon strokes readable in light mode */
@@ -101,6 +98,24 @@
             background-color: var(--bg-dark);
             color: var(--text-main);
         }
+
+        /* ── AIRPORT LABELS ON MAP ── */
+        .map-airport-label {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: rgb(180, 180, 180);
+            white-space: nowrap;
+            pointer-events: none;
+            /* Default dark mode shadow */
+            text-shadow: 0 0 3px rgb(30, 30, 30), 0 0 3px rgb(30, 30, 30), 0 0 5px rgb(30, 30, 30);
+        }
+
+        [data-theme="light"] .map-airport-label {
+            color: rgb(70, 70, 70); /* Darker text so it reads well */
+            /* Clean white halo for light mode */
+            text-shadow: 0 0 3px rgb(255, 255, 255), 0 0 3px rgb(255, 255, 255), 0 0 5px rgb(255, 255, 255);
+        }
+
 
         /* ── GLOBAL RESET ── */
         *, *::before, *::after { 
@@ -135,7 +150,7 @@
         .leaflet-control-zoom-in,
         .leaflet-control-zoom-out,
         .leaflet-control-attribution {
-            filter: hue-rotate(000deg) brightness(100%) contrast(100%) saturate(20%);
+            filter: hue-rotate(000deg) brightness(100%) contrast(100%) saturate(00%); 
         }
 
         #loading {
@@ -162,7 +177,7 @@
             display: inline-block;
             text-align: center;
             font-family: var(--font-mono);
-            outline: none;          /* ← kills the default focus ring */
+            outline: none;         /* ← kills the default focus ring */
         }
         .map-btn:hover {
             background-color: var(--bg-hover);   /* ← subtle, not full inversion */
@@ -295,7 +310,7 @@
             display: flex; align-items: center; justify-content: space-between;
             color: var(--text-main); transition: background 0.1s;
         }
-        .dropdown-opt:hover { background: var(--bg-hover); color: var(--accent-green); }
+        .dropdown-opt:hover { background: var(--bg-hover); }
 
         .opt-badge { font-size: 10px; color: var(--text-muted); }
 
@@ -403,6 +418,16 @@
             text-overflow: ellipsis;
         }
 
+        .stat-arrow {
+            width: 9px;
+            height: 9px;
+            color: var(--border-main);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .stat-arrow:hover {
+            color: var(--text-main);
+        }
 
         #visible-routes-count {
             color: var(--accent-green);
@@ -550,24 +575,47 @@
             <span class="stat-divider">Flight Time |</span>
             <span style="color: var(--text-main);" id="visible-unique-dest" title="Unique Destinations">0</span>
             <span class="stat-divider">Unique Dest |</span>
-            <span  id="visible-routes-count" title="Total Visible Routes">0</span>
+            <span id="visible-routes-count" title="Total Visible Routes">0</span>
             <span class="stat-divider">Routes</span>
         </div>
     </div>
 
-    <!-- ── SECONDARY STATS BAR ── -->
     <div id="secondary-stats">
         <div class="sec-stat-cell">
             <div class="sec-stat-label">Top Airport</div>
-            <div class="sec-stat-value" id="stat-top-airport">—</div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="sec-stat-value" style="flex: 1; min-width: 0; padding-right: 5px;">
+                    <span id="rank-top-airport" style="color:var(--border-main); font-size:8px; margin-right:2px; display:none;">1.</span><span id="stat-top-airport">—</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;">
+                    <svg onclick="cycleStat('airport', -1)" class="stat-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    <svg onclick="cycleStat('airport', 1)" class="stat-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+            </div>
         </div>
         <div class="sec-stat-cell">
             <div class="sec-stat-label">Top Aircraft</div>
-            <div class="sec-stat-value" id="stat-top-aircraft">—</div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="sec-stat-value" style="flex: 1; min-width: 0; padding-right: 5px;">
+                    <span id="rank-top-aircraft" style="color:var(--border-main); font-size:8px; margin-right:2px; display:none;">1.</span><span id="stat-top-aircraft">—</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;">
+                    <svg onclick="cycleStat('aircraft', -1)" class="stat-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    <svg onclick="cycleStat('aircraft', 1)" class="stat-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+            </div>
         </div>
         <div class="sec-stat-cell">
             <div class="sec-stat-label">Top Livery</div>
-            <div class="sec-stat-value" id="stat-top-livery">—</div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="sec-stat-value" style="flex: 1; min-width: 0; padding-right: 5px;">
+                    <span id="rank-top-livery" style="color:var(--border-main); font-size:8px; margin-right:2px; display:none;">1.</span><span id="stat-top-livery">—</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;">
+                    <svg onclick="cycleStat('livery', -1)" class="stat-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    <svg onclick="cycleStat('livery', 1)" class="stat-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -641,7 +689,6 @@
         </button>
 
 
-        <!-- ── THEME TOGGLE ── -->
         <button id="theme-toggle" class="map-btn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
             <svg id="theme-icon" style="width: 20; height: 20;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
                 <path transform="scale(1.2), translate(-8, -8)" d="M 98 42 A 42 42 0 1 0 98 110 A 28 28 0 1 1 98 42 Z" fill="#d8d8d9"/>
@@ -735,6 +782,11 @@ window.toggleTheme = function() {
     document.documentElement.setAttribute('data-theme', next);
     try { localStorage.setItem('flightsmart-theme', next); } catch(e) {}
     _updateThemeIcon(next);
+    
+    // Smoothly swap the tile layer URL without flickering
+    if (typeof mapBaseLayer !== 'undefined') {
+        mapBaseLayer.setUrl(next === 'light' ? lightTileUrl : darkTileUrl);
+    }
 };
 
 // ── Apply saved theme immediately, before map init ──
@@ -758,13 +810,20 @@ var map = L.map('map', {
     worldCopyJump: true 
 }).setView([20, 0], 2);
 
-var esriDarkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '', maxZoom: 16
-});
+var darkTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+var lightTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
-esriDarkBase.addTo(map);
+// Load the correct tile URL based on the saved theme state
+var mapBaseLayer = L.tileLayer(_initTheme === 'light' ? lightTileUrl : darkTileUrl, {
+    attribution: '', maxZoom: 16
+}).addTo(map);
+
+
 
 var googleSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlxVfQ2tN8yza3eILYJ-KO9A3h5w_IygXl0fgKAmLNWyovhQkGbfO_u15d3NDf6pOaPn8guj1qVIoF/pub?output=csv";
+// YOUR ATC CSV URL HERE
+var atcSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRU1VT5H_li0QNytw6EDCNINd4jlyLuAT1CJiwyy7-EdjwqClCdPMseakuTPbJgQJ3yUDCQ-YBQ4TIz/pub?output=csv";
+
 var flightLayers = [];
 var airportMarkers = []; 
 
@@ -871,7 +930,7 @@ const labelIcons = {
 };
 
 const tpIcons = {
-    'off': `<svg width="23" height="23" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">    
+    'off': `<svg width="23" height="23" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">  
             <path id="Path" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 58 36 C 58 36 61 28 78 28 C 97 28 99 51 99 51 L 99 68"/>
     <path id="path1" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 52 80 L 52 103 C 52 103 58 121 75 121 C 88.147575 121 92 114 92 114"/>
     <path id="path2" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M 42 77 L 52 95 L 59 84 L 49 75 L 43 75 L 42 77 Z"/>
@@ -954,7 +1013,7 @@ window.updateGlows = function() {
     flightLayers.forEach(function(item, idx) {
         if (!item || !item.layers) return;
         
-        var isSelected = (window.selectedFlightIndex === idx);
+        var isSelected = window.selectedFlightIndices.has(idx);
         var isHovered = (window.hoveredFlightIndex === idx);
         var isActive = isSelected || isHovered;
 
@@ -1407,9 +1466,53 @@ function formatAircraft(name) {
     return s;
 }
 
-window.selectedFlightIndex = null;
+window.selectedFlightIndices = new Set();
 window.hoveredFlightIndex = null;
 
+window.statsData = {
+    airport: { list: [], index: 0 },
+    aircraft: { list: [], index: 0 },
+    livery: { list: [], index: 0 }
+};
+
+window.cycleStat = function(type, direction) {
+    var data = window.statsData[type];
+    if (!data.list || data.list.length === 0) return;
+
+    data.index += direction;
+    // Loop around to the start/end if they click past the bounds
+    if (data.index < 0) data.index = data.list.length - 1;
+    if (data.index >= data.list.length) data.index = 0;
+
+    window.updateStatDisplay(type);
+};
+
+window.updateStatDisplay = function(type) {
+    var data = window.statsData[type];
+    var valEl = document.getElementById('stat-top-' + type);
+    var rankEl = document.getElementById('rank-top-' + type);
+
+    if (!data.list || data.list.length === 0) {
+        if (valEl) valEl.textContent = '—';
+        if (rankEl) {
+            rankEl.textContent = '';
+            rankEl.style.display = 'none';
+        }
+        return;
+    }
+
+    var item = data.list[data.index];
+    
+    // Only put the name here so it can cleanly truncate with ...
+    if (valEl) valEl.textContent = item.name; 
+
+    if (rankEl) {
+        // Combine the rank and the count inside the gray styled span
+        rankEl.textContent = (data.index + 1) + '.[' + item.count + ']';
+        rankEl.style.display = 'inline';
+        rankEl.style.marginRight = '4px'; // Just giving it a tiny bit of breathing room
+    }
+};
 
 document.addEventListener('keydown', function(e) {
     if (e.target.tagName.toLowerCase() === 'input') return;
@@ -1538,7 +1641,7 @@ window.closeAllFlightDetails = function() {
         }
     });
 
-    window.selectedFlightIndex = null;
+    window.selectedFlightIndices.clear();
     window.hoveredFlightIndex = null;
     window.updateGlows();
 };
@@ -1550,43 +1653,66 @@ function renderVisibleRoutes(filteredFlights) {
     var timeSpan = document.getElementById('visible-flight-time');
     var destSpan = document.getElementById('visible-unique-dest');
 
-    // ── TOP STATS ──────────────────────────────────────────
+// ── TOP STATS ──────────────────────────────────────────
     (function() {
-        function topByCount(vals) {
-            if (!vals.length) return '—';
+        function getRankedList(vals) {
+            if (!vals.length) return [];
             var counts = {};
             vals.forEach(function(v) { if (v) counts[v] = (counts[v] || 0) + 1; });
-            return Object.keys(counts).reduce(function(a, b) { return counts[a] > counts[b] ? a : b; });
+            
+            var sortedKeys = Object.keys(counts).sort(function(a, b) { 
+                // Sort by count descending, then alphabetically ascending
+                if (counts[b] !== counts[a]) return counts[b] - counts[a];
+                return a.localeCompare(b);
+            });
+
+            // Map the sorted keys into an object with the name and the count
+            return sortedKeys.map(function(key) {
+                return { name: key, count: counts[key] };
+            });
         }
         var airports = [];
         filteredFlights.forEach(function(f) {
             if (f.departure) airports.push(f.departure);
             if (f.arrival)   airports.push(f.arrival);
         });
-        var el;
-        if ((el = document.getElementById('stat-top-airport')))  el.textContent = topByCount(airports);
-        if ((el = document.getElementById('stat-top-aircraft'))) el.textContent = topByCount(filteredFlights.map(function(f){ return formatAircraft(f.aircraft); }));
-        if ((el = document.getElementById('stat-top-livery')))   el.textContent = topByCount(filteredFlights.map(function(f){ return f.livery; }));
+
+        window.statsData.airport.list = getRankedList(airports);
+        window.statsData.airport.index = 0;
+
+        // Skip ATC sessions for Aircraft stats
+        window.statsData.aircraft.list = getRankedList(filteredFlights.filter(f => !f.isATC).map(function(f){ return formatAircraft(f.aircraft); }));
+        window.statsData.aircraft.index = 0;
+
+        window.statsData.livery.list = getRankedList(filteredFlights.map(function(f){ return f.livery; }));
+        window.statsData.livery.index = 0;
+
+        updateStatDisplay('airport');
+        updateStatDisplay('aircraft');
+        updateStatDisplay('livery');
     })();
     // ── END TOP STATS ──────────────────────────────────────
 
     var totalMinutes = 0;
     var uniqueDest = new Set();
+    var routeCount = 0;
 
-    countSpan.textContent = filteredFlights.length;
     filteredFlights.forEach(function(f) {
-        if (f.duration) {
-            var timeParts = f.duration.split(':');
-            if (timeParts.length === 2) {
-                var hrs = parseInt(timeParts[0], 10);
-                var mins = parseInt(timeParts[1], 10);
-                if (!isNaN(hrs) && !isNaN(mins)) {
-                    totalMinutes += (hrs * 60) + mins;
+        if (!f.isATC) {
+            routeCount++;
+            if (f.duration) {
+                var timeParts = f.duration.split(':');
+                if (timeParts.length === 2) {
+                    var hrs = parseInt(timeParts[0], 10);
+                    var mins = parseInt(timeParts[1], 10);
+                    if (!isNaN(hrs) && !isNaN(mins)) {
+                        totalMinutes += (hrs * 60) + mins;
+                    }
                 }
             }
-        }
-        if (f.arrival) {
-            uniqueDest.add(f.arrival);
+            if (f.arrival) {
+                uniqueDest.add(f.arrival);
+            }
         }
     });
 
@@ -1594,7 +1720,7 @@ function renderVisibleRoutes(filteredFlights) {
     var totalMins = totalMinutes % 60;
     var timeString = totalHrs + 'h ' + totalMins + 'm';
 
-    countSpan.textContent = filteredFlights.length;
+    countSpan.textContent = routeCount;
     timeSpan.textContent = timeString;
     destSpan.textContent = uniqueDest.size;
 
@@ -1643,8 +1769,15 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
 
         html += '<tr class="flight-row" data-index="'+idx+'">';
         html += '<td>'+escapeHtml(item.date||'—')+'</td>'; 
-        html += '<td style="white-space: nowrap;"><b style="color: ' + depColor + ';">' + escapeHtml(item.departure) + '</b> <span style="color:var(--text-muted); margin: 0 4px;">></span> <b style="color: ' + arrColor + ';">' + escapeHtml(item.arrival) + '</b></td>';
-        html += '<td>'+escapeHtml(getIcaoCode(item.aircraft))+'</td>'; 
+        
+        // MODIFIED: Formatting the Route column based on ATC session flag
+        if (item.isATC) {
+            html += '<td style="white-space: nowrap;"><b style="color: ' + depColor + ';">' + escapeHtml(item.departure) + '</b> <span style="color:var(--text-muted); font-size: 8px; margin-left: 4px;">(ATC)</span></td>';
+        } else {
+            html += '<td style="white-space: nowrap;"><b style="color: ' + depColor + ';">' + escapeHtml(item.departure) + '</b> <span style="color:var(--text-muted); margin: 0 4px;">></span> <b style="color: ' + arrColor + ';">' + escapeHtml(item.arrival) + '</b></td>';
+        }
+
+        html += '<td>'+escapeHtml(item.isATC ? '' : getIcaoCode(item.aircraft))+'</td>'; 
 
         var c1 = 'transparent', c2 = 'transparent', c3 = 'transparent';
         if (window.liveryColorMap && window.liveryColorMap[item.livery]) {
@@ -1669,23 +1802,40 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
             var arrAp = window.airportData && window.airportData[item.arrival];
             var depLabel = item.departure + (depAp && depAp.municipality ? ' · ' + depAp.municipality : depAp && depAp.name ? ' · ' + depAp.name : '');
             var arrLabel = item.arrival   + (arrAp && arrAp.municipality ? ' · ' + arrAp.municipality : arrAp && arrAp.name ? ' · ' + arrAp.name : '');
-            html += `
-                <div style="font-size: 10px; line-height: 1.8; color: var(--text-main);">
-                    <div style="display: grid; grid-template-columns: 50px 1fr 50px 1fr; gap: 2px 4px;">
-                        <span style="color: var(--text-muted);">DATE</span><span style="grid-column: span 3;">${escapeHtml(item.date)}</span>
-                        <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
-                        <span style="color: var(--text-muted);">DEP</span><span style="grid-column: span 3;">${escapeHtml(depLabel)}</span>
-                        <span style="color: var(--text-muted);">ARR</span><span style="grid-column: span 3;">${escapeHtml(arrLabel)}</span>
-                        <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
-                        <span style="color: var(--text-muted);">MODEL</span><span>${escapeHtml(formatAircraft(item.aircraft))}</span>
-                        <span style="color: var(--text-muted);">LIVRY</span><span>${escapeHtml(item.livery, 18)}</span>
-                        <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
-                        <span style="color: var(--text-muted);">TIME</span><span>${escapeHtml(item.duration || 'N/A')}</span>
-                        <span style="color: var(--text-muted);">LDGS</span><span>${escapeHtml(item.ldgs || 'N/A')}</span>
-                        ${item.remarks ? `<span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span><span style="color: var(--text-muted);">RMK</span><span style="grid-column: span 3; font-family: 'Shadows Into Light', cursive; letter-spacing: 1px;">${escapeHtml(item.remarks)}</span>` : ''}
+            
+            // MODIFIED: Conditionally render the Details expanded view based on ATC flag
+            if (item.isATC) {
+                html += `
+                    <div style="font-size: 10px; line-height: 1.8; color: var(--text-main);">
+                        <div style="display: grid; grid-template-columns: 50px 1fr 50px 1fr; gap: 2px 4px;">
+                            <span style="color: var(--text-muted);">DATE</span><span style="grid-column: span 3;">${escapeHtml(item.date)}</span>
+                            <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
+                            <span style="color: var(--text-muted);">AIRPORT</span><span style="grid-column: span 3;">${escapeHtml(depLabel)}</span>
+                            <span style="color: var(--text-muted);">STATION</span><span style="grid-column: span 3;">${escapeHtml(item.station)}</span>
+                            <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
+                            <span style="color: var(--text-muted);">TIME</span><span>${escapeHtml(item.duration || 'N/A')}</span>
+                            <span style="color: var(--text-muted);">OPS</span><span>${escapeHtml(item.ops || '0')}</span>
+<span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span><span style="color: var(--text-muted);">RMK</span><span style="grid-column: span 3; font-family: 'Shadows Into Light', cursive; letter-spacing: 1px;">${escapeHtml(item.remarks || '')}</span>                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                html += `
+                    <div style="font-size: 10px; line-height: 1.8; color: var(--text-main);">
+                        <div style="display: grid; grid-template-columns: 50px 1fr 50px 1fr; gap: 2px 4px;">
+                            <span style="color: var(--text-muted);">DATE</span><span style="grid-column: span 3;">${escapeHtml(item.date)}</span>
+                            <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
+                            <span style="color: var(--text-muted);">DEP</span><span style="grid-column: span 3;">${escapeHtml(depLabel)}</span>
+                            <span style="color: var(--text-muted);">ARR</span><span style="grid-column: span 3;">${escapeHtml(arrLabel)}</span>
+                            <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
+                            <span style="color: var(--text-muted);">MODEL</span><span>${escapeHtml(formatAircraft(item.aircraft))}</span>
+                            <span style="color: var(--text-muted);">LIVRY</span><span>${escapeHtml(item.livery, 18)}</span>
+                            <span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span>
+                            <span style="color: var(--text-muted);">TIME</span><span>${escapeHtml(item.duration || 'N/A')}</span>
+                            <span style="color: var(--text-muted);">LDGS</span><span>${escapeHtml(item.ldgs || 'N/A')}</span>
+<span style="grid-column: span 4; border-bottom: 1px solid var(--border-faint); margin: 1px 0;"></span><span style="color: var(--text-muted);">RMK</span><span style="grid-column: span 3; font-family: 'Shadows Into Light', cursive; letter-spacing: 1px;">${escapeHtml(item.remarks || '')}</span>                        </div>
+                    </div>
+                `;
+            }
         })();
         html += '</td></tr>';
     });
@@ -1712,7 +1862,7 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
                 window.hoveredFlightIndex = null;
             }
 
-            if (window.selectedFlightIndex !== idx) {
+            if (!window.selectedFlightIndices.has(idx)) {
                 this.classList.remove('active-row');
                 if (flightLayers[idx]) {
                     flightLayers[idx].layers.forEach(function(l) { 
@@ -1726,21 +1876,30 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
         row.addEventListener('click', function(){
             var detailsRow = document.getElementById('details-'+idx);
             var isCurrentlyOpen = detailsRow.style.display !== 'none';
-            
-            window.closeAllFlightDetails();
 
             if (!isCurrentlyOpen) {
+                // Open the specific row
                 detailsRow.style.display = 'table-row';
                 this.classList.add('active-row'); 
-                window.selectedFlightIndex = idx;
+                window.selectedFlightIndices.add(idx);
                 window.hoveredFlightIndex = idx;
                 if (flightLayers[idx]) {
                     flightLayers[idx].layers.forEach(function(l) { 
                         l.setStyle({color:'#fa9822',weight:1,opacity:1}).bringToFront();
                     });
                 }
-                window.updateGlows();
+            } else {
+                // Close the specific row if clicked again
+                detailsRow.style.display = 'none';
+                this.classList.remove('active-row');
+                window.selectedFlightIndices.delete(idx);
+                if (flightLayers[idx]) {
+                    flightLayers[idx].layers.forEach(function(l) { 
+                        l.setStyle({color:'#64c49a',weight:1,opacity:0.5});
+                    });
+                }
             }
+            window.updateGlows();
         });
     });
 }
@@ -1748,238 +1907,295 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
 // ═══════════════════════════════════════════════════════════
 // DATA LOADING
 // ═══════════════════════════════════════════════════════════
-Papa.parse(googleSheetUrl, {
-    download: true, header: false,
-    complete: function(sheetResults) {
-        var flights = [];
-        
-        var codeAliases = {
-            'EGOD': 'EGFD',
-            'NZIR': 'NZWD', 
-            'O5U': '05U', 
-        };
-        
+// MODIFIED: Fetch BOTH standard flights and ATC logs concurrently
+Promise.all([
+    new Promise((resolve) => Papa.parse(googleSheetUrl, { download: true, header: false, complete: resolve, error: function(){ resolve({data:[]}); } })),
+    new Promise((resolve) => Papa.parse(atcSheetUrl, { download: true, header: false, complete: resolve, error: function(){ resolve({data:[]}); } }))
+]).then(function(results) {
+    var flightSheetResults = results[0];
+    var atcSheetResults = results[1];
 
-        var originalIndex = 0;
-        sheetResults.data.forEach(function(row){
-            if (row.length>=7 && row[5] && row[6] && row[5].trim()!=='' && row[6].trim()!=='') {
+    var flights = [];
+    
+    var codeAliases = {
+        'EGOD': 'EGFD',
+        'NZIR': 'NZWD', 
+        'O5U': '05U', 
+    };
+    
+    var originalIndex = 0;
+
+    // Process Flights
+    flightSheetResults.data.forEach(function(row){
+        if (row.length>=7 && row[5] && row[6] && row[5].trim()!=='' && row[6].trim()!=='') {
+            var rawDep = row[5].trim().toUpperCase();
+            var rawArr = row[6].trim().toUpperCase();
+
+            flights.push({
+                _rawIndex: originalIndex++,
+                isATC: false,
+                date:      (row[0]||'').trim() || 'Unknown',
+                duration:  (row[1]||'').trim(), 
+                aircraft:  ((row[2]||'').trim()+' '+(row[3]||'').trim()).trim(),
+                livery:    (row[4]&&row[4].trim()) ? row[4].trim() : 'Standard',
+                departure: codeAliases[rawDep] || rawDep,
+                arrival:   codeAliases[rawArr] || rawArr,
+                ldgs:      (row[7]||'').trim(), 
+                remarks:   (row[9]||'').trim()  
+            });
+        }
+    });
+
+    // Process ATC
+    atcSheetResults.data.forEach(function(row) {
+        // Expected Cols: 0=Date, 1=Duration, 2=Station, 3=Airport, 4=Ops Reports, 5=Additional Controllers, 6=Remarks
+        if (row.length >= 4 && row[3] && row[3].trim() !== '' && row[0].toLowerCase() !== 'date') {
+            var rawAp = row[3].trim().toUpperCase();
+            var remarksCombined = [];
+            
+            // Loop through column 5 (Additional Controllers) and beyond to catch all remarks/notes
+            for (var i = 5; i < row.length; i++) {
+                if (row[i] && row[i].trim() !== '') {
+                    remarksCombined.push(row[i].trim());
+                }
+            }
+
+            flights.push({
+                _rawIndex: originalIndex++,
+                isATC: true,
+                date:      (row[0]||'').trim() || 'Unknown',
+                duration:  (row[1]||'').trim(),
+                aircraft:  '', // Leave blank per request
+                livery:    (row[2]||'').trim(), // Station (Used for Livery rendering logic)
+                station:   (row[2]||'').trim(), 
+                departure: codeAliases[rawAp] || rawAp,
+                arrival:   codeAliases[rawAp] || rawAp, 
+                ops:       (row[4]||'').trim(),
+                remarks:   remarksCombined.join(", ") // Joins them with a comma and space
+            });
+        }
+    });
+    
+    // Unified sorting
+    flights.sort(function(a, b) {
+        var dateA = new Date(a.date);
+        var dateB = new Date(b.date);
+        if (isNaN(dateA)) return 1;
+        if (isNaN(dateB)) return -1;
+        
+        if (dateB.getTime() === dateA.getTime()) {
+            return b._rawIndex - a._rawIndex; 
+        }
+        
+        return dateB - dateA;
+    });
+
+    Papa.parse('https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv', {
+        download: true, header: true,
+        complete: function(airportResults) {
+            document.getElementById('loading').style.display='none';
+            window.airportData = {};
+            var airportData = window.airportData;
+            airportResults.data.forEach(function(row) {
+                if (!row.ident) return;
                 
-                var rawDep = row[5].trim().toUpperCase();
-                var rawArr = row[6].trim().toUpperCase();
+                var continentMap = {
+                    'NA': 'North America', 'SA': 'South America', 
+                    'EU': 'Europe', 'AS': 'Asia', 
+                    'AF': 'Africa', 'OC': 'Oceania', 'AN': 'Antarctica'
+                };
 
-                flights.push({
-                    _rawIndex: originalIndex++,
-                    date:      (row[0]||'').trim() || 'Unknown',
-                    duration:  (row[1]||'').trim(), 
-                    aircraft:  ((row[2]||'').trim()+' '+(row[3]||'').trim()).trim(),
-                    livery:    (row[4]&&row[4].trim()) ? row[4].trim() : 'Standard',
-                    departure: codeAliases[rawDep] || rawDep,
-                    arrival:   codeAliases[rawArr] || rawArr,
-                    ldgs:      (row[7]||'').trim(), 
-                    remarks:   (row[9]||'').trim()  
-                });
-            }
-        });
-        
-        flights.sort(function(a, b) {
-            var dateA = new Date(a.date);
-            var dateB = new Date(b.date);
-            if (isNaN(dateA)) return 1;
-            if (isNaN(dateB)) return -1;
-            
-            if (dateB.getTime() === dateA.getTime()) {
-                return b._rawIndex - a._rawIndex; 
-            }
-            
-            return dateB - dateA;
-        });
+                var countryName = row.iso_country;
+                if (row.iso_country) {
+                    try {
+                        countryName = new Intl.DisplayNames(['en'], {type: 'region'}).of(row.iso_country);
+                    } catch(e) { }
+                }
 
-        Papa.parse('https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv', {
-            download: true, header: true,
-            complete: function(airportResults) {
-                document.getElementById('loading').style.display='none';
-                window.airportData = {};
-                var airportData = window.airportData;
-                airportResults.data.forEach(function(row) {
-                    if (!row.ident) return;
-                    
-                    var continentMap = {
-                        'NA': 'North America', 'SA': 'South America', 
-                        'EU': 'Europe', 'AS': 'Asia', 
-                        'AF': 'Africa', 'OC': 'Oceania', 'AN': 'Antarctica'
-                    };
+                var apObj = { 
+                    lat: parseFloat(row.latitude_deg), 
+                    lon: parseFloat(row.longitude_deg), 
+                    name: row.name || row.ident,
+                    continent: continentMap[row.continent] || 'Unknown Region',
+                    country: countryName,
+                    municipality: (row.municipality || '').trim()
+                };
+                
+                airportData[row.ident.trim().toUpperCase()] = apObj;
+                
+                if (row.gps_code && row.gps_code.trim() !== '') {
+                    airportData[row.gps_code.trim().toUpperCase()] = apObj;
+                }
+                
+                if (row.iata_code && row.iata_code.trim() !== '') {
+                    airportData[row.iata_code.trim().toUpperCase()] = apObj;
+                }
 
-                    var countryName = row.iso_country;
-                    if (row.iso_country) {
-                        try {
-                            countryName = new Intl.DisplayNames(['en'], {type: 'region'}).of(row.iso_country);
-                        } catch(e) { }
-                    }
+                if (row.local_code && row.local_code.trim() !== '') {
+                    airportData[row.local_code.trim().toUpperCase()] = apObj;
+                }
+            });
 
-                    var apObj = { 
-                        lat: parseFloat(row.latitude_deg), 
-                        lon: parseFloat(row.longitude_deg), 
-                        name: row.name || row.ident,
-                        continent: continentMap[row.continent] || 'Unknown Region',
-                        country: countryName,
-                        municipality: (row.municipality || '').trim()
-                    };
-                    
-                    airportData[row.ident.trim().toUpperCase()] = apObj;
-                    
-                    if (row.gps_code && row.gps_code.trim() !== '') {
-                        airportData[row.gps_code.trim().toUpperCase()] = apObj;
-                    }
-                    
-                    if (row.iata_code && row.iata_code.trim() !== '') {
-                        airportData[row.iata_code.trim().toUpperCase()] = apObj;
-                    }
+            var mfrSet=new Set(), famSet=new Set(), spcSet=new Set(), airlineSet=new Set();
+            var apSet=new Set(), regSet=new Set(), ctySet=new Set();
 
-                    if (row.local_code && row.local_code.trim() !== '') {
-                        airportData[row.local_code.trim().toUpperCase()] = apObj;
-                    }
-                });
-
-                var mfrSet=new Set(), famSet=new Set(), spcSet=new Set(), airlineSet=new Set();
-                var apSet=new Set(), regSet=new Set(), ctySet=new Set();
-
-                flights.forEach(function(f){
+            flights.forEach(function(f){
+                // Only compile aircraft stats for real flights
+                if (!f.isATC) {
                     var d=getAircraftDetails(f.aircraft);
                     if (d.mfr) mfrSet.add(d.mfr); if (d.family) famSet.add(d.family); if (d.specific) spcSet.add(d.specific);
-                    if (f.livery) airlineSet.add(f.livery);
-                    
-                    if (f.departure) {
-                        apSet.add(f.departure);
-                        if (airportData[f.departure]) {
-                            regSet.add(airportData[f.departure].continent);
-                            ctySet.add(airportData[f.departure].country);
-                        }
-                    }
-                    if (f.arrival) {
-                        apSet.add(f.arrival);
-                        if (airportData[f.arrival]) {
-                            regSet.add(airportData[f.arrival].continent);
-                            ctySet.add(airportData[f.arrival].country);
-                        }
-                    }
-                });
-
-
-                var aircraftOptions=[];
-                Array.from(mfrSet).sort().forEach(function(v){ aircraftOptions.push({value:'mfr:'+v, label:v, badge:'Manufacturer'}); });
-                Array.from(famSet).sort().forEach(function(v){ aircraftOptions.push({value:'fam:'+v, label:v, badge:'Family'}); });
-                Array.from(spcSet).sort().forEach(function(v){ aircraftOptions.push({value:'spc:'+v, label:v, badge:'Type'}); });
-
-                var airlineOptions = Array.from(airlineSet).sort().map(function(v){ return {value:v, label:v, badge:null}; });
+                }
                 
-                var airportOptions = [];
-                Array.from(regSet).sort().forEach(function(v){ if(v) airportOptions.push({value:'reg:'+v, label:v, badge:'Region'}); });
-                Array.from(ctySet).sort().forEach(function(v){ if(v) airportOptions.push({value:'cty:'+v, label:v, badge:'Country'}); });
-                Array.from(apSet).sort().forEach(function(icao){
-                    var ap=airportData[icao];
-                    var label = icao;
-                    if (ap) {
-                        label = icao + ' - ' + ap.name;
-                        if (ap.municipality) label += ' (' + ap.municipality + ')';
-                    }
-                    airportOptions.push({value:icao, label: label, badge:'Airport'});
-                });
-
-                tagInputs.aircraft = new TagInput('aircraft', document.getElementById('aircraft-wrapper'), aircraftOptions);
-                tagInputs.airline  = new TagInput('airline',  document.getElementById('airline-wrapper'),  airlineOptions);
-                tagInputs.airport  = new TagInput('airport',  document.getElementById('airport-wrapper'),  airportOptions);
-
-                ['start-date','end-date'].forEach(function(id){
-                    document.getElementById(id).addEventListener('change', function(){
-                        if (window.renderAllActiveFilters) window.renderAllActiveFilters();
-                        if (window.applyFiltersGlobal) window.applyFiltersGlobal();
-                    });
-                });
-
-                var drawnLayers = L.layerGroup().addTo(map);
+                if (f.livery) airlineSet.add(f.livery); // Treat ATC station as livery
                 
-                airportLabelGroup = L.layerGroup();
+                if (f.departure) {
+                    apSet.add(f.departure);
+                    if (airportData[f.departure]) {
+                        regSet.add(airportData[f.departure].continent);
+                        ctySet.add(airportData[f.departure].country);
+                    }
+                }
+                if (f.arrival) {
+                    apSet.add(f.arrival);
+                    if (airportData[f.arrival]) {
+                        regSet.add(airportData[f.arrival].continent);
+                        ctySet.add(airportData[f.arrival].country);
+                    }
+                }
+            });
 
-                function renderMap(filteredFlights) {
-                    window.closeAllFlightDetails(); 
-                    drawnLayers.clearLayers();
-                    flightLayers=[];
-                    airportMarkers = [];
-                    tpLayers = [];
 
-                    airportLabelGroup.clearLayers();
+            var aircraftOptions=[];
+            Array.from(mfrSet).sort().forEach(function(v){ aircraftOptions.push({value:'mfr:'+v, label:v, badge:'Manufacturer'}); });
+            Array.from(famSet).sort().forEach(function(v){ aircraftOptions.push({value:'fam:'+v, label:v, badge:'Family'}); });
+            Array.from(spcSet).sort().forEach(function(v){ aircraftOptions.push({value:'spc:'+v, label:v, badge:'Type'}); });
 
-                    var counts={};
-                    filteredFlights.forEach(function(f){
-                        if (airportData[f.departure]&&airportData[f.arrival]) {
-                            counts[f.departure]=(counts[f.departure]||0)+1;
-                            counts[f.arrival]  =(counts[f.arrival]||0)+1;
-                        }
-                    });
+            var airlineOptions = Array.from(airlineSet).sort().map(function(v){ return {value:v, label:v, badge:null}; });
+            
+            var airportOptions = [];
+            Array.from(regSet).sort().forEach(function(v){ if(v) airportOptions.push({value:'reg:'+v, label:v, badge:'Region'}); });
+            Array.from(ctySet).sort().forEach(function(v){ if(v) airportOptions.push({value:'cty:'+v, label:v, badge:'Country'}); });
+            Array.from(apSet).sort().forEach(function(icao){
+                var ap=airportData[icao];
+                var label = icao;
+                if (ap) {
+                    label = icao + ' - ' + ap.name;
+                    if (ap.municipality) label += ' (' + ap.municipality + ')';
+                }
+                airportOptions.push({value:icao, label: label, badge:'Airport'});
+            });
 
-                    var drawn={};
-                    var mapOffsets = [-360, 0, 360];
+            tagInputs.aircraft = new TagInput('aircraft', document.getElementById('aircraft-wrapper'), aircraftOptions);
+            tagInputs.airline  = new TagInput('airline',  document.getElementById('airline-wrapper'),  airlineOptions);
+            tagInputs.airport  = new TagInput('airport',  document.getElementById('airport-wrapper'),  airportOptions);
 
-                    filteredFlights.forEach(function(f){
-                        var dep=airportData[f.departure], arr=airportData[f.arrival];
-                        if (!dep||!arr) { flightLayers.push(null); return; }
+            ['start-date','end-date'].forEach(function(id){
+                document.getElementById(id).addEventListener('change', function(){
+                    if (window.renderAllActiveFilters) window.renderAllActiveFilters();
+                    if (window.applyFiltersGlobal) window.applyFiltersGlobal();
+                });
+            });
 
-                        [f.departure,f.arrival].forEach(function(id){
-                            if (drawn[id]) return;
-                            var cnt=counts[id]||0;
+            var drawnLayers = L.layerGroup().addTo(map);
+            
+            airportLabelGroup = L.layerGroup();
 
-                            mapOffsets.forEach(function(offset) {
-                                var marker=L.circleMarker([airportData[id].lat, airportData[id].lon + offset],{
-                                    stroke: false, fillColor:'#7b8794', radius: 0, fillOpacity: 0
-                                });
-                                marker.flightCount = cnt; 
-                                airportMarkers.push(marker); 
+            function renderMap(filteredFlights) {
+                window.closeAllFlightDetails(); 
+                drawnLayers.clearLayers();
+                flightLayers=[];
+                airportMarkers = [];
+                tpLayers = [];
 
-                                marker.on('mouseover', function() {
-                                    document.getElementById('hover-airport-id').innerText = id;
-                                    document.getElementById('hover-airport-count').innerText = cnt + ' RTES';
-                                    document.getElementById('airport-hover-info').style.display = 'block';
-                                });
-                                marker.on('mouseout', function() { document.getElementById('airport-hover-info').style.display = 'none'; });
-                                marker.on('click', function() { tagInputs.airport.addTag(id, 'include'); });
-                                drawnLayers.addLayer(marker);
+                airportLabelGroup.clearLayers();
+
+                var counts={};
+                filteredFlights.forEach(function(f){
+                    if (airportData[f.departure]&&airportData[f.arrival]) {
+                        counts[f.departure]=(counts[f.departure]||0)+1;
+                        counts[f.arrival]  =(counts[f.arrival]||0)+1;
+                    }
+                });
+
+                var drawn={};
+                var mapOffsets = [-360, 0, 360];
+
+                filteredFlights.forEach(function(f){
+                    var dep=airportData[f.departure], arr=airportData[f.arrival];
+                    if (!dep||!arr) { flightLayers.push(null); return; }
+
+                    [f.departure,f.arrival].forEach(function(id){
+                        if (drawn[id]) return;
+                        var cnt=counts[id]||0;
+
+                        mapOffsets.forEach(function(offset) {
+                            var marker=L.circleMarker([airportData[id].lat, airportData[id].lon + offset],{
+                                stroke: false, fillColor:'#7b8794', radius: 0, fillOpacity: 0
                             });
+                            marker.flightCount = cnt; 
+                            airportMarkers.push(marker); 
 
-                            mapOffsets.forEach(function(offset) {
-                                var labelMarker = L.marker(
-                                    [airportData[id].lat, airportData[id].lon + offset],
-                                    {
-                                        icon: L.divIcon({
-                                            className: '',
-                                            html: '<div style="' +
-                                                'font-family:\'B612 Mono\',monospace;' +
-                                                'font-size:9px;' +
-                                                'color:rgb(180,180,180);' +
-                                                'white-space:nowrap;' +
-                                                'pointer-events:none;' +
-                                                'text-shadow:' +
-                                                    '0 0 3px rgb(30,30,30),' +
-                                                    '0 0 3px rgb(30,30,30),' +
-                                                    '0 0 5px rgb(30,30,30);' +
-                                                '">' + escapeHtml(id) + '</div>',
-                                            iconSize: [0, 0],
-                                            iconAnchor: [-5, 5]
-                                        }),
-                                        interactive: false,
-                                        zIndexOffset: -100
-                                    }
-                                );
-                                airportLabelGroup.addLayer(labelMarker);
+                            marker.on('mouseover', function() {
+                                document.getElementById('hover-airport-id').innerText = id;
+                                document.getElementById('hover-airport-count').innerText = cnt + ' RTES';
+                                document.getElementById('airport-hover-info').style.display = 'block';
                             });
-
-                            drawn[id]=true;
+                            marker.on('mouseout', function() { document.getElementById('airport-hover-info').style.display = 'none'; });
+                            marker.on('click', function() { tagInputs.airport.addTag(id, 'include'); });
+                            drawnLayers.addLayer(marker);
                         });
-                        
 
-                        var rawPts = greatCirclePoints(dep.lat, dep.lon, arr.lat, arr.lon, 50);
-                        var continuousPts = makeContinuous(rawPts);
-                        var linesForFlight = [];
+                        mapOffsets.forEach(function(offset) {
+                            var labelMarker = L.marker(
+                                [airportData[id].lat, airportData[id].lon + offset],
+                                {
+                                    icon: L.divIcon({
+                                        className: '',
+                                        html: '<div class="map-airport-label">' + escapeHtml(id) + '</div>',
+                                        iconSize: [0, 0],
+                                        iconAnchor: [-5, 5]
+                                    }),
+                                    interactive: false,
+                                    zIndexOffset: -100
+                                }
+                            
+                            );
+                            airportLabelGroup.addLayer(labelMarker);
+                        });
 
+                        drawn[id]=true;
+                    });
+                    
+
+                    var rawPts = greatCirclePoints(dep.lat, dep.lon, arr.lat, arr.lon, 50);
+                    var continuousPts = makeContinuous(rawPts);
+                    var linesForFlight = [];
+
+                    if (f.isATC) {
+                        // Draw a thin, wide stroked circle around the airport for ATC
+                        mapOffsets.forEach(function(offset) {
+                        // Use L.circle instead of L.circleMarker so it scales with zoom
+                        var circle = L.circle([dep.lat, dep.lon + offset], {
+                            radius: 20000, // Roughly 43 nautical miles (typical airspace size)
+                                color: '#64c49a', // Matches standard flight path green
+                                weight: 1,
+                                fillColor: 'transparent', 
+                                fillOpacity: 0,
+                                opacity: 0.5,
+                                interactive: false
+                            });
+                            
+                            circle.on('add', function() {
+                                if (glowMode === 'on' && circle.getElement()) {
+                                    circle.getElement().classList.add('glow-path');
+                                }
+                            });
+
+                            drawnLayers.addLayer(circle);
+                            linesForFlight.push(circle);
+                        });
+                    } else {
+                        // Standard Flight & Traffic Pattern Logic
                         var isTP = (f.remarks && /\bTP\s+at\b/i.test(f.remarks)) || (f.departure === f.arrival);
                         if (isTP) {
                             var sz = getTpSize();
@@ -1989,12 +2205,18 @@ Papa.parse(googleSheetUrl, {
                             mapOffsets.forEach(function(offset) {
                                 var shifted = rectPts.map(function(p) { return [p[0], p[1] + offset]; });
                                 var rectLine = L.polyline(shifted, { color: '#64c49a', weight: 1, opacity: 0.5, interactive: false });
+                                
+                                rectLine.on('add', function() {
+                                    if (glowMode === 'on' && rectLine.getElement()) {
+                                        rectLine.getElement().classList.add('glow-path');
+                                    }
+                                });
+                                
                                 drawnLayers.addLayer(rectLine);
                                 linesForFlight.push(rectLine);
                                 tpLayers.push(rectLine);
                             });
                         }
-
 
                         mapOffsets.forEach(function(offset) {
                             var shiftedPts = continuousPts.map(function(p) { return [p[0], p[1] + offset]; });
@@ -2009,169 +2231,189 @@ Papa.parse(googleSheetUrl, {
                             drawnLayers.addLayer(line);
                             linesForFlight.push(line);
                         });
-                        flightLayers.push({flight:f, layers: linesForFlight});
-                    });
-                    
-                    window.updateCircles();
-                    window.updateGlows();
-                }
+                    }
 
-                window.applyFiltersGlobal = function() {
-                    var sd = document.getElementById('start-date').value ? new Date(document.getElementById('start-date').value) : null;
-                    var ed = document.getElementById('end-date').value   ? new Date(document.getElementById('end-date').value)   : null;
-                    if (sd) sd.setHours(0,0,0,0);
-                    if (ed) ed.setHours(23,59,59,999);
-                    
-                    var strictMatch = document.getElementById('airport-strict-match').checked;
 
-                    var result = flights.filter(function(f){
-                        if (sd || ed) {
-                            var fd=new Date(f.date);
-                            if (sd && fd<sd) return false;
-                            if (ed && fd>ed) return false;
-                        }
-
-                        var acf = filterState.aircraft;
-                        if (acf.includes.size > 0 || acf.excludes.size > 0) {
-                            var d = getAircraftDetails(f.aircraft);
-                            var isIncluded = false, isExcluded = false;
-                            function checkMatch(v) {
-                                if (v.startsWith('mfr:') && d.mfr === v.slice(4)) return true;
-                                if (v.startsWith('fam:') && d.family === v.slice(4)) return true;
-                                if (v.startsWith('spc:') && d.specific === v.slice(4)) return true;
-                                return false;
-                            }
-                            acf.includes.forEach(function(v){ if(checkMatch(v)) isIncluded = true; });
-                            acf.excludes.forEach(function(v){ if(checkMatch(v)) isExcluded = true; });
-                            if (acf.excludes.size > 0 && isExcluded) return false;
-                            if (acf.includes.size > 0 && !isIncluded) return false;
-                        }
-
-                        var alf = filterState.airline;
-                        if (alf.includes.size > 0 || alf.excludes.size > 0) {
-                            var isIncAl = alf.includes.has(f.livery);
-                            var isExcAl = alf.excludes.has(f.livery);
-                            if (alf.excludes.size > 0 && isExcAl) return false;
-                            if (alf.includes.size > 0 && !isIncAl) return false;
-                        }
-
-                        var apf = filterState.airport;
-                        if (apf.includes.size > 0 || apf.excludes.size > 0) {
-                            var depAp = airportData[f.departure] || {};
-                            var arrAp = airportData[f.arrival] || {};
-
-                            var depMatches = [];
-                            var arrMatches = [];
-                            var isExcludedDep = false, isExcludedArr = false;
-
-                            function checkApMatch(v, icao, apObj) {
-                                if (v.startsWith('reg:') && apObj.continent === v.slice(4)) return true;
-                                if (v.startsWith('cty:') && apObj.country === v.slice(4)) return true;
-                                if (v === icao) return true;
-                                return false;
-                            }
-
-                            apf.includes.forEach(function(v){
-                                if (checkApMatch(v, f.departure, depAp)) depMatches.push(v);
-                                if (checkApMatch(v, f.arrival, arrAp)) arrMatches.push(v);
-                            });
-
-                            apf.excludes.forEach(function(v){
-                                if (checkApMatch(v, f.departure, depAp)) isExcludedDep = true;
-                                if (checkApMatch(v, f.arrival, arrAp)) isExcludedArr = true;
-                            });
-
-                            var isExcAp = isExcludedDep || isExcludedArr;
-                            if (apf.excludes.size > 0 && isExcAp) return false;
-
-                            if (apf.includes.size > 0) {
-                                if (strictMatch && apf.includes.size >= 2) {
-                                    if (depMatches.length === 0 || arrMatches.length === 0) return false;
-                                    
-                                    var crossedFilters = false;
-                                    for (var i = 0; i < depMatches.length; i++) {
-                                        for (var j = 0; j < arrMatches.length; j++) {
-                                            if (depMatches[i] !== arrMatches[j]) {
-                                                crossedFilters = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    if (!crossedFilters) return false;
-                                    
-                                } else if (strictMatch && apf.includes.size === 1) {
-                                    if (depMatches.length === 0 || arrMatches.length === 0) return false;
-                                } else {
-                                    if (depMatches.length === 0 && arrMatches.length === 0) return false;
-                                }
-                            }
-                        }
-                        return true;
-                    });
-
-                    renderMap(result);
-                    renderVisibleRoutes(result); 
-                };
-
-                window.resetFilters = function() {
-                    document.getElementById('start-date').value='';
-                    document.getElementById('end-date').value='';
-                    document.getElementById('airport-strict-match').checked = false;
-                    filterHistory = [];
-                    ['aircraft','airline','airport'].forEach(function(key){
-                        filterState[key].includes.clear(); filterState[key].excludes.clear();
-                    });
-                    window.renderAllActiveFilters();
-                    window.applyFiltersGlobal();
-                };
-
-                Papa.parse('/Infinite Flight Aircraft Livery List.csv', {
-                    download: true,
-                    header: true,
-                    complete: function(liveryResults) {
-                        liveryResults.data.forEach(function(row) {
-                            var name = row["Infinite Flight Livery Name"];
-                            if (name) {
-                                window.liveryColorMap[name.trim()] = [
-                                    row["Color 1"], 
-                                    row["Color 2"], 
-                                    row["Color 3"]
-                                ];
+                    mapOffsets.forEach(function(offset) {
+                        var shiftedPts = continuousPts.map(function(p) { return [p[0], p[1] + offset]; });
+                        var line = L.polyline(shiftedPts, { color: '#64c49a', weight: 1, opacity: 0.5, interactive: false });
+                        
+                        line.on('add', function() {
+                            if (glowMode === 'on' && line.getElement()) {
+                                line.getElement().classList.add('glow-path');
                             }
                         });
-                        
-                        window.renderAllActiveFilters();
-                        renderMap(flights);
-                        renderVisibleRoutes(flights);
-                    },
-                    error: function(err) {
-                        console.error('Could not load livery colors:', err);
-                        window.renderAllActiveFilters();
-                        renderMap(flights);
-                        renderVisibleRoutes(flights);
+
+                        drawnLayers.addLayer(line);
+                        linesForFlight.push(line);
+                    });
+                    flightLayers.push({flight:f, layers: linesForFlight});
+                });
+                
+                window.updateCircles();
+                window.updateGlows();
+            }
+
+            window.applyFiltersGlobal = function() {
+                var sd = document.getElementById('start-date').value ? new Date(document.getElementById('start-date').value) : null;
+                var ed = document.getElementById('end-date').value   ? new Date(document.getElementById('end-date').value)   : null;
+                if (sd) sd.setHours(0,0,0,0);
+                if (ed) ed.setHours(23,59,59,999);
+                
+                var strictMatch = document.getElementById('airport-strict-match').checked;
+
+                var result = flights.filter(function(f){
+                    if (sd || ed) {
+                        var fd=new Date(f.date);
+                        if (sd && fd<sd) return false;
+                        if (ed && fd>ed) return false;
                     }
+
+                    var acf = filterState.aircraft;
+                    // If it's an ATC session, it usually has no aircraft. Handle filter logic:
+                    if (acf.includes.size > 0 || acf.excludes.size > 0) {
+                        if (f.isATC) return false; // Hide ATC sessions if specifically filtering for aircraft attributes.
+                        
+                        var d = getAircraftDetails(f.aircraft);
+                        var isIncluded = false, isExcluded = false;
+                        function checkMatch(v) {
+                            if (v.startsWith('mfr:') && d.mfr === v.slice(4)) return true;
+                            if (v.startsWith('fam:') && d.family === v.slice(4)) return true;
+                            if (v.startsWith('spc:') && d.specific === v.slice(4)) return true;
+                            return false;
+                        }
+                        acf.includes.forEach(function(v){ if(checkMatch(v)) isIncluded = true; });
+                        acf.excludes.forEach(function(v){ if(checkMatch(v)) isExcluded = true; });
+                        if (acf.excludes.size > 0 && isExcluded) return false;
+                        if (acf.includes.size > 0 && !isIncluded) return false;
+                    }
+
+                    var alf = filterState.airline;
+                    if (alf.includes.size > 0 || alf.excludes.size > 0) {
+                        var isIncAl = alf.includes.has(f.livery);
+                        var isExcAl = alf.excludes.has(f.livery);
+                        if (alf.excludes.size > 0 && isExcAl) return false;
+                        if (alf.includes.size > 0 && !isIncAl) return false;
+                    }
+
+                    var apf = filterState.airport;
+                    if (apf.includes.size > 0 || apf.excludes.size > 0) {
+                        var depAp = airportData[f.departure] || {};
+                        var arrAp = airportData[f.arrival] || {};
+
+                        var depMatches = [];
+                        var arrMatches = [];
+                        var isExcludedDep = false, isExcludedArr = false;
+
+                        function checkApMatch(v, icao, apObj) {
+                            if (v.startsWith('reg:') && apObj.continent === v.slice(4)) return true;
+                            if (v.startsWith('cty:') && apObj.country === v.slice(4)) return true;
+                            if (v === icao) return true;
+                            return false;
+                        }
+
+                        apf.includes.forEach(function(v){
+                            if (checkApMatch(v, f.departure, depAp)) depMatches.push(v);
+                            if (checkApMatch(v, f.arrival, arrAp)) arrMatches.push(v);
+                        });
+
+                        apf.excludes.forEach(function(v){
+                            if (checkApMatch(v, f.departure, depAp)) isExcludedDep = true;
+                            if (checkApMatch(v, f.arrival, arrAp)) isExcludedArr = true;
+                        });
+
+                        var isExcAp = isExcludedDep || isExcludedArr;
+                        if (apf.excludes.size > 0 && isExcAp) return false;
+
+                        if (apf.includes.size > 0) {
+                            if (strictMatch && apf.includes.size >= 2) {
+                                if (depMatches.length === 0 || arrMatches.length === 0) return false;
+                                
+                                var crossedFilters = false;
+                                for (var i = 0; i < depMatches.length; i++) {
+                                    for (var j = 0; j < arrMatches.length; j++) {
+                                        if (depMatches[i] !== arrMatches[j]) {
+                                            crossedFilters = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!crossedFilters) return false;
+                                
+                            } else if (strictMatch && apf.includes.size === 1) {
+                                if (depMatches.length === 0 || arrMatches.length === 0) return false;
+                            } else {
+                                if (depMatches.length === 0 && arrMatches.length === 0) return false;
+                            }
+                        }
+                    }
+                    return true;
                 });
 
-            },
-            error: function(err) { document.getElementById('loading').innerText='ERR: APT DATA'; console.error(err); }
-        });
-    },
-    error: function(err) { document.getElementById('loading').innerText='ERR: FLT DATA'; console.error(err); }
+                renderMap(result);
+                renderVisibleRoutes(result); 
+            };
+
+            window.resetFilters = function() {
+                document.getElementById('start-date').value='';
+                document.getElementById('end-date').value='';
+                document.getElementById('airport-strict-match').checked = false;
+                filterHistory = [];
+                ['aircraft','airline','airport'].forEach(function(key){
+                    filterState[key].includes.clear(); filterState[key].excludes.clear();
+                });
+                window.renderAllActiveFilters();
+                window.applyFiltersGlobal();
+            };
+
+            Papa.parse('/Infinite Flight Aircraft Livery List.csv', {
+                download: true,
+                header: true,
+                complete: function(liveryResults) {
+                    liveryResults.data.forEach(function(row) {
+                        var name = row["Infinite Flight Livery Name"];
+                        if (name) {
+                            window.liveryColorMap[name.trim()] = [
+                                row["Color 1"], 
+                                row["Color 2"], 
+                                row["Color 3"]
+                            ];
+                        }
+                    });
+                    
+                    window.renderAllActiveFilters();
+                    renderMap(flights);
+                    renderVisibleRoutes(flights);
+                },
+                error: function(err) {
+                    console.error('Could not load livery colors:', err);
+                    window.renderAllActiveFilters();
+                    renderMap(flights);
+                    renderVisibleRoutes(flights);
+                }
+            });
+
+        },
+        error: function(err) { document.getElementById('loading').innerText='ERR: APT DATA'; console.error(err); }
+    });
 });
 
 map.on('zoomend', function() {
     window.updateCircles();
     
-    var savedSelection = window.selectedFlightIndex;
+    // Copy the currently open flights before resetting
+    var savedSelections = new Set(window.selectedFlightIndices);
     var sidebarContainer = document.getElementById('sidebar-routes');
     var savedScroll = sidebarContainer ? sidebarContainer.scrollTop : 0;
 
     if (window.applyFiltersGlobal) window.applyFiltersGlobal();
     
-    if (savedSelection !== null) {
-        var row = document.querySelector('.flight-row[data-index="' + savedSelection + '"]');
+    // Re-click all previously opened flights to restore them
+    savedSelections.forEach(function(idx) {
+        var row = document.querySelector('.flight-row[data-index="' + idx + '"]');
         if (row) row.click();
-    }
+    });
+    
     if (sidebarContainer) {
         sidebarContainer.scrollTop = savedScroll;
     }
