@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Shadows+Into+Light&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <link rel="icon" type="image/x-icon" href="/images/flightSmartLogoTransparent.png">
+    <link rel="icon" type="image/x-icon" href="/images/favicon_logbook.png">
     
     <style>
         /* ═══════════════════════════════════════════════════════════
@@ -642,6 +642,10 @@
                     </svg>
         </button>
 
+        <button id="atc-toggle" class="map-btn" onclick="toggleAtcVisibility()" title="Toggle ATC Circles">
+            <svg width="23" height="23" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">    <g id="Group">        <path id="Path" fill="#d8d8d9" stroke="none" d="M 67.599998 76.880005 C 67.598991 80.102402 69.416084 83.049652 72.295609 84.496101 C 75.175133 85.942551 78.624329 85.640671 81.208809 83.716003 C 83.793289 81.791328 85.07077 78.573235 84.510002 75.400002 L 119 69.32 C 120.232033 69.10791 121.317101 68.385132 121.987541 67.329956 C 122.657974 66.274773 122.851364 64.985443 122.519997 63.779999 C 117.962547 47.656944 105.349884 35.063217 89.220001 30.529999 C 88.021866 30.198082 86.739403 30.384911 85.685768 31.044861 C 84.632126 31.704811 83.904297 32.777145 83.68 34 L 77.599998 68.490005 C 75.117508 68.037659 72.562515 68.714386 70.62941 70.336258 C 68.696304 71.958145 67.585907 74.356674 67.599998 76.880005 Z"/>        <path id="path1" fill="#d8d8d9" stroke="none" d="M 76.120003 123.830002 C 100.182892 123.862526 120.361122 105.667976 122.809998 81.729996 C 122.9459 80.489807 122.541496 79.251106 121.699997 78.330002 C 120.865547 77.402756 119.677437 76.872284 118.43 76.869995 C 118.168457 76.870575 117.907463 76.893997 117.650002 76.940002 C 115.676987 77.300156 114.19207 78.940948 114.029999 80.940002 C 111.935295 100.873779 94.775711 115.789612 74.744431 115.088646 C 54.713154 114.387688 38.638172 98.308868 37.941986 78.27742 C 37.245804 58.245979 52.165722 41.089951 72.099998 39 C 74.434875 38.778275 76.187729 36.767799 76.089203 34.424492 C 75.990677 32.081192 74.075249 30.224945 71.730003 30.199997 L 71.270004 30.199997 C 46.452591 32.822418 28.023293 54.401497 29.316767 79.323532 C 30.610243 104.245567 51.174454 123.80085 76.130005 123.839996 Z"/>        <path id="path2" fill="#d8d8d9" stroke="none" d="M 69.739998 58.620003 C 71.211967 58.088326 72.282478 56.803719 72.540001 55.260002 C 72.761368 53.964676 72.39489 52.638016 71.540001 51.639999 C 70.719002 50.645859 69.499298 50.067139 68.209999 50.059998 C 67.72654 50.059601 67.246475 50.140739 66.790001 50.300003 C 54.375217 54.641174 46.614216 66.992691 48.089478 80.061584 C 49.564743 93.130486 59.883926 103.441048 72.954048 104.905388 C 86.024178 106.369728 98.369209 98.598404 102.699997 86.18 C 103.163589 84.866768 102.954376 83.409729 102.139999 82.279999 C 101.310555 81.107491 99.966209 80.407387 98.529999 80.400002 C 98.268463 80.400772 98.007492 80.424194 97.75 80.470001 C 96.206284 80.727524 94.921677 81.798027 94.389999 83.270004 C 91.411247 91.794395 82.932579 97.125244 73.959351 96.115494 C 64.98613 95.105736 57.904263 88.023865 56.894508 79.050644 C 55.884754 70.077423 61.215603 61.598755 69.739998 58.620003 Z"/>    </g>    <g id="ptIcon" opacity="0.386558">        <path id="Pill" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 99.027512 99.369141 C 99.032455 112.081856 88.730751 122.391579 76.018036 122.396515 C 63.305321 122.401459 52.995602 112.099747 52.990662 99.387039 L 52.972485 52.630859 C 52.967545 39.918144 63.269249 29.608421 75.981964 29.603485 C 88.694679 29.598541 99.004402 39.900246 99.009338 52.612961 L 99.027512 99.369141 Z"/>        <path id="Triangle" fill="none" stroke="#d8d8d9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 52.499622 94.999252 L 62.295155 78 L 42.704094 78 Z"/>        <path id="Triangle-copy" fill="none" stroke="#d8d8d9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 99.500374 57.000748 L 89.704842 74 L 109.295906 74 Z"/>        <path id="path1-copy-copy" fill="#d8d8d9" fill-rule="evenodd" stroke="#d8d8d9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 116 118 L 36 38"/>    </g></svg>
+        </button>
+
 
         <button id="label-toggle" class="map-btn" onclick="toggleAirportLabels()" title="Toggle ICAO Labels">
             <svg width="24" height="24" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -721,6 +725,8 @@
             <div class="filter-header-row"><span class="filter-label">Airline / Livery</span></div>
             <div class="tag-input-wrapper" id="airline-wrapper"></div>
         </div>
+        
+
 
         <div class="filter-section">
             <div class="filter-header-row"><span class="filter-label">Airport</span></div>
@@ -730,6 +736,17 @@
                 Only show strict matches
             </label>
         </div>
+
+        <div class="filter-section">
+            <div class="filter-header-row"><span class="filter-label">IFATC Sessions</span></div>
+            <div class="tag-input-wrapper">
+                <div class="tag-input-row">
+                    <button id="btn-ifatc-inc" class="action-btn btn-inc" style="flex: 1;">INC</button>
+                    <button id="btn-ifatc-exc" class="action-btn btn-exc" style="flex: 1;">EXC</button>
+                </div>
+            </div>
+        </div>
+
 
         <button class="reset-btn" onclick="resetFilters()">Reset All Filters</button> 
     </div>
@@ -832,6 +849,9 @@ var labelsVisible = false;
 
 var tpLayers = [];      // all TP oval polylines
 var tpVisible = true;   // toggle state
+
+var atcCircleLayers = [];     // ADDED: array to hold the ATC circles
+var atcCircleVisible = true;  // ADDED: state for ATC circles
 
 // ═══════════════════════════════════════════════════════════
 // CIRCLE & GLOW VISIBILITY LOGIC
@@ -947,7 +967,10 @@ const tpIcons = {
 `
 };
 
-
+const atcIcons = {
+    'off': `<svg width="23" height="23" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">    <g id="Group">        <path id="Path" fill="none" stroke="#d8d8d9" stroke-width="9" d="M 97 114 C 66.877312 136.088776 16.646446 99.222343 38 58"/>        <path id="Path-copy" fill="none" stroke="#d8d8d9" stroke-width="9" d="M 83 101 C 80.193924 103.100372 46.737446 101.168808 53 72"/>        <path id="Path-copy-2" fill="none" stroke="#d8d8d9" stroke-width="9" d="M 57 40 C 59.321007 37.157486 68.349915 34.097412 75 36"/>        <path id="Path-copy-3" fill="none" stroke="#d8d8d9" stroke-width="9" d="M 117 78 C 118.900581 81.139229 117.889694 89.521637 113.868996 95.14991"/>        <path id="path1" fill="#d8d8d9" fill-rule="evenodd" stroke="#d8d8d9" stroke-width="9" d="M 84 60 L 93 69 L 117 64 C 117 64 111.761688 49.327278 105 44 C 98.063332 38.534866 89 36 89 36 L 84 60 Z"/>        <path id="path1-copy-copy" fill="#d8d8d9" fill-rule="evenodd" stroke="#d8d8d9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M 116 116 L 36 36"/>    </g></svg>`,
+    'on': `<svg width="23" height="23" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">    <g id="Group">        <path id="Path" fill="#d8d8d9" stroke="none" d="M 67.599998 76.880005 C 67.598991 80.102402 69.416084 83.049652 72.295609 84.496101 C 75.175133 85.942551 78.624329 85.640671 81.208809 83.716003 C 83.793289 81.791328 85.07077 78.573235 84.510002 75.400002 L 119 69.32 C 120.232033 69.10791 121.317101 68.385132 121.987541 67.329956 C 122.657974 66.274773 122.851364 64.985443 122.519997 63.779999 C 117.962547 47.656944 105.349884 35.063217 89.220001 30.529999 C 88.021866 30.198082 86.739403 30.384911 85.685768 31.044861 C 84.632126 31.704811 83.904297 32.777145 83.68 34 L 77.599998 68.490005 C 75.117508 68.037659 72.562515 68.714386 70.62941 70.336258 C 68.696304 71.958145 67.585907 74.356674 67.599998 76.880005 Z"/>        <path id="path1" fill="#d8d8d9" stroke="none" d="M 76.120003 123.830002 C 100.182892 123.862526 120.361122 105.667976 122.809998 81.729996 C 122.9459 80.489807 122.541496 79.251106 121.699997 78.330002 C 120.865547 77.402756 119.677437 76.872284 118.43 76.869995 C 118.168457 76.870575 117.907463 76.893997 117.650002 76.940002 C 115.676987 77.300156 114.19207 78.940948 114.029999 80.940002 C 111.935295 100.873779 94.775711 115.789612 74.744431 115.088646 C 54.713154 114.387688 38.638172 98.308868 37.941986 78.27742 C 37.245804 58.245979 52.165722 41.089951 72.099998 39 C 74.434875 38.778275 76.187729 36.767799 76.089203 34.424492 C 75.990677 32.081192 74.075249 30.224945 71.730003 30.199997 L 71.270004 30.199997 C 46.452591 32.822418 28.023293 54.401497 29.316767 79.323532 C 30.610243 104.245567 51.174454 123.80085 76.130005 123.839996 Z"/>        <path id="path2" fill="#d8d8d9" stroke="none" d="M 69.739998 58.620003 C 71.211967 58.088326 72.282478 56.803719 72.540001 55.260002 C 72.761368 53.964676 72.39489 52.638016 71.540001 51.639999 C 70.719002 50.645859 69.499298 50.067139 68.209999 50.059998 C 67.72654 50.059601 67.246475 50.140739 66.790001 50.300003 C 54.375217 54.641174 46.614216 66.992691 48.089478 80.061584 C 49.564743 93.130486 59.883926 103.441048 72.954048 104.905388 C 86.024178 106.369728 98.369209 98.598404 102.699997 86.18 C 103.163589 84.866768 102.954376 83.409729 102.139999 82.279999 C 101.310555 81.107491 99.966209 80.407387 98.529999 80.400002 C 98.268463 80.400772 98.007492 80.424194 97.75 80.470001 C 96.206284 80.727524 94.921677 81.798027 94.389999 83.270004 C 91.411247 91.794395 82.932579 97.125244 73.959351 96.115494 C 64.98613 95.105736 57.904263 88.023865 56.894508 79.050644 C 55.884754 70.077423 61.215603 61.598755 69.739998 58.620003 Z"/>    </g>    <g id="ptIcon" opacity="0.386558">        <path id="Pill" fill="none" stroke="#d8d8d9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 99.027512 99.369141 C 99.032455 112.081856 88.730751 122.391579 76.018036 122.396515 C 63.305321 122.401459 52.995602 112.099747 52.990662 99.387039 L 52.972485 52.630859 C 52.967545 39.918144 63.269249 29.608421 75.981964 29.603485 C 88.694679 29.598541 99.004402 39.900246 99.009338 52.612961 L 99.027512 99.369141 Z"/>        <path id="Triangle" fill="none" stroke="#d8d8d9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 52.499622 94.999252 L 62.295155 78 L 42.704094 78 Z"/>        <path id="Triangle-copy" fill="none" stroke="#d8d8d9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 99.500374 57.000748 L 89.704842 74 L 109.295906 74 Z"/>        <path id="path1-copy-copy" fill="#d8d8d9" fill-rule="evenodd" stroke="#d8d8d9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" visibility="hidden" d="M 116 118 L 36 38"/>    </g></svg>`
+};
 
 
 window.cycleCircleMode = function() {
@@ -1048,7 +1071,8 @@ window.updateGlows = function() {
 var filterState = {
     aircraft: { includes: new Set(), excludes: new Set() },
     airline:  { includes: new Set(), excludes: new Set() },
-    airport:  { includes: new Set(), excludes: new Set() }
+    airport:  { includes: new Set(), excludes: new Set() },
+    ifatc:    { includes: new Set(), excludes: new Set() }
 };
 var filterHistory = [];
 var tagInputs = {};
@@ -1242,6 +1266,15 @@ function toggleTpVisibility() {
     });
 }
 
+function toggleAtcVisibility() {
+    atcCircleVisible = !atcCircleVisible;
+    var btn = document.getElementById('atc-toggle');
+    btn.innerHTML = atcIcons[atcCircleVisible ? 'on' : 'off'];
+    atcCircleLayers.forEach(function(l) {
+        l.setStyle({ opacity: atcCircleVisible ? 0.5 : 0 });
+    });
+}
+
 window.renderAllActiveFilters = function() {
     var container = document.getElementById('active-filters-list');
     if (!container) return;
@@ -1317,28 +1350,41 @@ window.renderAllActiveFilters = function() {
             if (window.applyFiltersGlobal) window.applyFiltersGlobal();
         }, null));
     }
-
-    ['aircraft', 'airline', 'airport'].forEach(function(key) {
+    ['aircraft', 'airline', 'airport', 'ifatc'].forEach(function(key) {
         var state = filterState[key];
         
         function renderTags(set, mode) {
             set.forEach(function(val) {
                 hasFilters = true;
                 filterCount++; 
-                var opt = tagInputs[key].options.find(function(o) { return o.value === val; });
-                var fullLabel = opt ? opt.label : val;
                 
-                var mainText = fullLabel;
-                var subText = null;
+                var mainText, subText = null;
 
-                if (key === 'airport' && fullLabel.includes(' - ')) {
-                    var parts = fullLabel.split(' - ');
-                    mainText = parts[0];
-                    subText = parts.slice(1).join(' - ');
+                if (key === 'ifatc') {
+                    mainText = "IFATC Session";
+                } else {
+                    var opt = tagInputs[key].options.find(function(o) { return o.value === val; });
+                    var fullLabel = opt ? opt.label : val;
+                    mainText = fullLabel;
+
+                    if (key === 'airport' && fullLabel.includes(' - ')) {
+                        var parts = fullLabel.split(' - ');
+                        mainText = parts[0];
+                        subText = parts.slice(1).join(' - ');
+                    }
                 }
 
                 container.appendChild(createGlobalChip(mainText, subText, mode, function() {
-                    tagInputs[key].removeTag(val, mode);
+                    // Custom remove handler for IFATC
+                    if (key === 'ifatc') {
+                        if (mode === 'include') filterState.ifatc.includes.delete(val);
+                        else filterState.ifatc.excludes.delete(val);
+                        filterHistory = filterHistory.filter(function(h) { return !(h.key === key && h.value === val); });
+                        window.renderAllActiveFilters();
+                        if (window.applyFiltersGlobal) window.applyFiltersGlobal();
+                    } else {
+                        tagInputs[key].removeTag(val, mode);
+                    }
                 }, function() { toggleFilterState(key, val, mode); }));
             });
         }
@@ -1397,7 +1443,7 @@ function makeContinuous(pts) {
 function makeRoundedRectPoints(lat, lon, halfH, halfW, cornerR, n) {
     var pts = [];
     var corners = [
-        { cy: lat + halfH - cornerR, cx: lon + halfW - cornerR, a0: 0,           a1: Math.PI/2 },
+        { cy: lat + halfH - cornerR, cx: lon + halfW - cornerR, a0: 0,             a1: Math.PI/2 },
         { cy: lat + halfH - cornerR, cx: lon - halfW + cornerR, a0: Math.PI/2,  a1: Math.PI },
         { cy: lat - halfH + cornerR, cx: lon - halfW + cornerR, a0: Math.PI,    a1: 3*Math.PI/2 },
         { cy: lat - halfH + cornerR, cx: lon + halfW - cornerR, a0: 3*Math.PI/2, a1: 2*Math.PI }
@@ -1636,7 +1682,10 @@ window.closeAllFlightDetails = function() {
     flightLayers.forEach(function(item) {
         if (item && item.layers) {
             item.layers.forEach(function(l) {
-                l.setStyle({ color: '#64c49a', weight: 1, opacity: 0.5 });
+                var targetOp = 0.5;
+                if (l.isTp && !tpVisible) targetOp = 0;
+                if (l.isAtc && !atcCircleVisible) targetOp = 0;
+                l.setStyle({ color: '#64c49a', weight: 1, opacity: targetOp });
             });
         }
     });
@@ -1866,7 +1915,10 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
                 this.classList.remove('active-row');
                 if (flightLayers[idx]) {
                     flightLayers[idx].layers.forEach(function(l) { 
-                        l.setStyle({color:'#64c49a',weight:1,opacity:0.5});
+                        var targetOp = 0.5;
+                        if (l.isTp && !tpVisible) targetOp = 0;
+                        if (l.isAtc && !atcCircleVisible) targetOp = 0;
+                        l.setStyle({color:'#64c49a', weight:1, opacity: targetOp});
                     });
                 }
             }
@@ -1895,7 +1947,10 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
                 window.selectedFlightIndices.delete(idx);
                 if (flightLayers[idx]) {
                     flightLayers[idx].layers.forEach(function(l) { 
-                        l.setStyle({color:'#64c49a',weight:1,opacity:0.5});
+                        var targetOp = 0.5;
+                        if (l.isTp && !tpVisible) targetOp = 0;
+                        if (l.isAtc && !atcCircleVisible) targetOp = 0;
+                        l.setStyle({color:'#64c49a', weight:1, opacity: targetOp});
                     });
                 }
             }
@@ -2088,6 +2143,27 @@ Promise.all([
             tagInputs.aircraft = new TagInput('aircraft', document.getElementById('aircraft-wrapper'), aircraftOptions);
             tagInputs.airline  = new TagInput('airline',  document.getElementById('airline-wrapper'),  airlineOptions);
             tagInputs.airport  = new TagInput('airport',  document.getElementById('airport-wrapper'),  airportOptions);
+            
+            // Connect IFATC Buttons
+            document.getElementById('btn-ifatc-inc').addEventListener('click', function() {
+                filterState.ifatc.includes.add('true');
+                filterState.ifatc.excludes.delete('true');
+                filterHistory = filterHistory.filter(function(h) { return !(h.key === 'ifatc' && h.value === 'true'); });
+                filterHistory.push({ key: 'ifatc', value: 'true', mode: 'include' });
+                window.renderAllActiveFilters();
+                window.applyFiltersGlobal();
+            });
+
+            document.getElementById('btn-ifatc-exc').addEventListener('click', function() {
+                filterState.ifatc.excludes.add('true');
+                filterState.ifatc.includes.delete('true');
+                filterHistory = filterHistory.filter(function(h) { return !(h.key === 'ifatc' && h.value === 'true'); });
+                filterHistory.push({ key: 'ifatc', value: 'true', mode: 'exclude' });
+                window.renderAllActiveFilters();
+                window.applyFiltersGlobal();
+            });
+
+
 
             ['start-date','end-date'].forEach(function(id){
                 document.getElementById(id).addEventListener('change', function(){
@@ -2106,6 +2182,7 @@ Promise.all([
                 flightLayers=[];
                 airportMarkers = [];
                 tpLayers = [];
+                atcCircleLayers = [];
 
                 airportLabelGroup.clearLayers();
 
@@ -2181,10 +2258,11 @@ Promise.all([
                                 weight: 1,
                                 fillColor: 'transparent', 
                                 fillOpacity: 0,
-                                opacity: 0.5,
+                                opacity: atcCircleVisible ? 0.5 : 0,
                                 interactive: false
                             });
                             
+                            circle.isAtc = true; // Flag for hover visibility toggling
                             circle.on('add', function() {
                                 if (glowMode === 'on' && circle.getElement()) {
                                     circle.getElement().classList.add('glow-path');
@@ -2193,19 +2271,38 @@ Promise.all([
 
                             drawnLayers.addLayer(circle);
                             linesForFlight.push(circle);
+                            atcCircleLayers.push(circle);
                         });
                     } else {
                         // Standard Flight & Traffic Pattern Logic
-                        var isTP = (f.remarks && /\bTP\s+at\b/i.test(f.remarks)) || (f.departure === f.arrival);
+                        // Standard Flight & Traffic Pattern Logic
+                        var tpMatch = f.remarks ? f.remarks.match(/\bTP\s+at\s+([A-Z0-9]{3,4})\b/i) : null;
+                        var isTP = tpMatch || (f.departure === f.arrival);
+
                         if (isTP) {
                             var sz = getTpSize();
-                            var tpLat = dep.lat + sz.halfH * 0.2;
-                            var tpLon = dep.lon + sz.halfW * 0.6;
+                            
+                            // Default to the departure airport
+                            var targetAp = dep; 
+
+                            // If the remarks specify an airport (e.g., "TP at KSAN"), use that airport's data instead
+                            if (tpMatch && tpMatch[1]) {
+                                var extractedIcao = tpMatch[1].toUpperCase();
+                                if (airportData[extractedIcao]) {
+                                    targetAp = airportData[extractedIcao];
+                                }
+                            }
+
+                            // Draw the rectangle using the targeted airport's coordinates
+                            var tpLat = targetAp.lat + sz.halfH * 0.2;
+                            var tpLon = targetAp.lon + sz.halfW * 0.6;
                             var rectPts = makeRoundedRectPoints(tpLat, tpLon, sz.halfH, sz.halfW, sz.cornerR, 12);
+                            
                             mapOffsets.forEach(function(offset) {
                                 var shifted = rectPts.map(function(p) { return [p[0], p[1] + offset]; });
-                                var rectLine = L.polyline(shifted, { color: '#64c49a', weight: 1, opacity: 0.5, interactive: false });
+                                var rectLine = L.polyline(shifted, { color: '#64c49a', weight: 1, opacity: tpVisible ? 0.5 : 0, interactive: false });
                                 
+                                rectLine.isTp = true; // Flag for hover visibility toggling
                                 rectLine.on('add', function() {
                                     if (glowMode === 'on' && rectLine.getElement()) {
                                         rectLine.getElement().classList.add('glow-path');
@@ -2217,7 +2314,6 @@ Promise.all([
                                 tpLayers.push(rectLine);
                             });
                         }
-
                         mapOffsets.forEach(function(offset) {
                             var shiftedPts = continuousPts.map(function(p) { return [p[0], p[1] + offset]; });
                             var line = L.polyline(shiftedPts, { color: '#64c49a', weight: 1, opacity: 0.5, interactive: false });
@@ -2268,6 +2364,11 @@ Promise.all([
                         if (sd && fd<sd) return false;
                         if (ed && fd>ed) return false;
                     }
+                    
+                    var ifatcF = filterState.ifatc;
+                    if (ifatcF.includes.size > 0 && !f.isATC) return false;
+                    if (ifatcF.excludes.size > 0 && f.isATC) return false;
+
 
                     var acf = filterState.aircraft;
                     // If it's an ATC session, it usually has no aircraft. Handle filter logic:
@@ -2359,7 +2460,7 @@ Promise.all([
                 document.getElementById('end-date').value='';
                 document.getElementById('airport-strict-match').checked = false;
                 filterHistory = [];
-                ['aircraft','airline','airport'].forEach(function(key){
+                ['aircraft','airline','airport','ifatc'].forEach(function(key){
                     filterState[key].includes.clear(); filterState[key].excludes.clear();
                 });
                 window.renderAllActiveFilters();
