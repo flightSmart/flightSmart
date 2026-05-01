@@ -107,13 +107,13 @@
             white-space: nowrap;
             pointer-events: none;
             /* Default dark mode shadow */
-            text-shadow: 0 0 3px rgb(30, 30, 30), 0 0 3px rgb(30, 30, 30), 0 0 5px rgb(30, 30, 30);
+            text-shadow: 0 0 1px rgb(30, 30, 30), 0 0 1px rgb(30, 30, 30), 0 0 1px rgb(30, 30, 30);
         }
 
         [data-theme="light"] .map-airport-label {
             color: rgb(70, 70, 70); /* Darker text so it reads well */
             /* Clean white halo for light mode */
-            text-shadow: 0 0 3px rgb(255, 255, 255), 0 0 3px rgb(255, 255, 255), 0 0 5px rgb(255, 255, 255);
+            text-shadow: 0 0 1px rgb(255, 255, 255), 0 0 1px rgb(255, 255, 255), 0 0 1px rgb(255, 255, 255);
         }
 
 
@@ -574,7 +574,7 @@
             <span style="color: var(--text-main);"id="visible-flight-time" title="Total Flight Time">0h 0m</span>
             <span class="stat-divider">Flight Time |</span>
             <span style="color: var(--text-main);" id="visible-unique-dest" title="Unique Destinations">0</span>
-            <span class="stat-divider">Unique Dest |</span>
+            <span class="stat-divider">Airports |</span>
             <span id="visible-routes-count" title="Total Visible Routes">0</span>
             <span class="stat-divider">Routes</span>
         </div>
@@ -1743,10 +1743,15 @@ function renderVisibleRoutes(filteredFlights) {
     // ── END TOP STATS ──────────────────────────────────────
 
     var totalMinutes = 0;
-    var uniqueDest = new Set();
+    var uniqueAirports = new Set(); // Changed variable name for clarity
     var routeCount = 0;
 
     filteredFlights.forEach(function(f) {
+        // 1. Add BOTH departures and arrivals to the Set, regardless of ATC status
+        if (f.departure) uniqueAirports.add(f.departure);
+        if (f.arrival) uniqueAirports.add(f.arrival);
+
+        // 2. Keep the route counting and flight time logic restricted to non-ATC flights
         if (!f.isATC) {
             routeCount++;
             if (f.duration) {
@@ -1759,9 +1764,6 @@ function renderVisibleRoutes(filteredFlights) {
                     }
                 }
             }
-            if (f.arrival) {
-                uniqueDest.add(f.arrival);
-            }
         }
     });
 
@@ -1771,7 +1773,7 @@ function renderVisibleRoutes(filteredFlights) {
 
     countSpan.textContent = routeCount;
     timeSpan.textContent = timeString;
-    destSpan.textContent = uniqueDest.size;
+    destSpan.textContent = uniqueAirports.size;
 
     if (filteredFlights.length === 0) {
         container.innerHTML = '<p style="color:var(--text-muted);text-align:center;margin-top:30px;font-size:12px;">No data.</p>';
