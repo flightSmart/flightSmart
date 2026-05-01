@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight TODO Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://fonts.googleapis.com/css?family=B612+Mono' rel='stylesheet'>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Shadows+Into+Light&display=swap" rel="stylesheet">    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="/images/favicon_logbook.png">
+    
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           FLIGHTSMART THEME OVERRIDE
+        ═══════════════════════════════════════════════════════════ */
+        :root {
+            --bg-dark: rgb(30, 30, 30);
+            --bg-light: rgb(50, 50, 50);
+            --bg-hover: rgb(60, 60, 60);
+            --text-main: rgb(224, 225, 226);
+            --text-muted: rgb(150, 150, 150);
+            --accent-green: rgb(100, 195, 153);
+            --accent-orange: rgb(250, 152, 34);
+            --border-main: rgb(131, 131, 131);
+            --border-faint: rgba(232, 232, 232, 0.275);
+            --font-mono: 'B612 Mono', monospace;
+            --font-sans: Helvetica, sans-serif;
+        }
+
+        [data-theme="light"] {
+            --bg-dark: rgb(220, 220, 220);
+            --bg-light: rgb(225, 225, 225);
+            --bg-hover: rgb(218, 217, 213);
+            --text-main: rgb(70, 70, 70);
+            --text-muted: rgb(105, 105, 105);
+            --accent-green: rgb(0, 148, 90);
+            --border-main: rgb(165, 165, 165);
+            --border-faint: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: var(--font-mono);
+            display: flex; flex-direction: row; 
+            overflow: hidden; height: 100vh;
+            letter-spacing: -0.5px;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+        }
+
+        /* ── POPUP STYLING ── */
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background: var(--bg-dark) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--border-main);
+            font-family: var(--font-mono);
+            border-radius: 0px;
+        }
+        .leaflet-popup-content { margin: 12px; }
+
+        /* ── PANELS ── */
+        #left-panel {
+            width: 450px; height: 100%;
+            background: var(--bg-dark);
+            display: flex; flex-direction: column; flex-shrink: 0;
+            border-right: 1px solid var(--border-main);
+            z-index: 2000;
+        }
+
+        #map-container { flex-grow: 1; height: 100%; position: relative; }
+        #map { width: 100%; height: 100%; background: var(--bg-dark); }
+
+        .leaflet-layer { filter: hue-rotate(0deg) brightness(100%) contrast(100%) saturate(0%); }
+        [data-theme="light"] .leaflet-layer { filter: none; }
+
+        #loading {
+            position: absolute; top: 10px; left: 50px; z-index: 1000;
+            background: var(--bg-light); padding: 9px 14px; 
+            border: 1px solid var(--border-main);
+            color: var(--text-main); font-size: 10px;
+        }
+
+        .map-overlay-btns {
+            position: absolute; top: 10px; right: 10px; z-index: 1000;
+            display: flex; gap: 6px;
+        }
+        
+        .map-btn {
+            background-color: var(--bg-light); border: 1px solid var(--border-main);
+            color: var(--text-main); font-size: 8px; cursor: pointer;
+            padding: 5px 10px; font-family: var(--font-mono);
+        }
+
+        #routes-label {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 15px; background: var(--bg-light);
+            border-bottom: 1px solid var(--border-main); font-size: 10px;
+        }
+        
+        #sidebar-routes { padding: 0; overflow-y: auto; flex-grow: 1; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
+        th {
+            padding: 7px 6px; text-align: left; background: var(--bg-light);
+            border-bottom: 1px solid var(--border-main); color: var(--border-main); font-size: 8px;
+        }
+        td {
+            padding: 8px 6px; border-bottom: 1px solid var(--border-faint);
+            vertical-align: top;
+        }
+
+        /* ── MULTI-LINE REMARKS ── */
+        .target-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .notes-cell {
+            white-space: normal; 
+            word-wrap: break-word;
+            line-height: 1.4;
+            color: var(--text-muted);
+        }
+
+        .flight-row:hover td { background-color: var(--bg-hover) !important; cursor: pointer; }
+        .active-row td { background-color: rgba(250, 152, 34, 0.4) !important; border-top: 1px solid var(--accent-orange); border-bottom: 1px solid var(--accent-orange); }
+
+        .map-airport-label {
+            font-family: var(--font-mono); font-size: 9px; color: rgb(180, 180, 180);
+            text-shadow: 0 0 3px rgb(30, 30, 30); pointer-events: none;
+        }
+
+        [data-theme="light"] .map-airport-label {
+            color: rgb(50, 50, 50);
+            text-shadow: 0 0 3px rgb(255, 255, 255), 0 0 5px rgb(255, 255, 255);
+        }
+    </style>
+</head>
+<body>
+
+<div id="left-panel">
+    <div id="routes-label">
+        <span>FLIGHT TODO LIST</span>
+        <div style="font-family: var(--font-mono); font-weight: normal;">
+            <span id="visible-unique-dest">0</span> <span style="color: var(--text-muted);">Dests |</span>
+            <span id="visible-routes-count">0</span> <span style="color: var(--text-muted);">Items</span>
+        </div>
+    </div>
+    <div id="sidebar-routes">
+        <p style="color: var(--text-muted); text-align:center; margin-top:30px; font-size:9px;">Loading TODOs...</p>
+    </div>
+</div>
+
+<div id="map-container">
+    <div id="loading">Loading data...</div>
+    <div class="map-overlay-btns">
+        <button class="map-btn" onclick="toggleLeftPanel()"> < LIST </button>
+        <button class="map-btn" onclick="toggleTheme()"> THEME </button>
+    </div>
+    <div id="map"></div>
+</div>
+
+<script>
+var map = L.map('map', { zoomControl: false, worldCopyJump: true }).setView([20, 0], 2);
+var darkTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+var lightTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+var mapBaseLayer = L.tileLayer(darkTileUrl, { maxZoom: 16 }).addTo(map);
+
+var drawnLayers = L.layerGroup().addTo(map);
+var airportLabelGroup = L.layerGroup().addTo(map);
+
+// FIX: Change pubhtml to pub?output=csv
+var todoSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbDzElsl07EkMoZQIZej_FZjKEZlTYjNDh3OtpohmLlr5rI6BtU29qMAwpVa9DAP6adc4-_bnFvnn3/pub?output=csv"; 
+var geojsonUrl = "https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json";
+var airportsUrl = "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv";
+
+function toggleTheme() {
+    var curr = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = curr === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    mapBaseLayer.setUrl(next === 'light' ? lightTileUrl : darkTileUrl);
+}
+
+function toggleLeftPanel() {
+    var lp = document.getElementById('left-panel');
+    lp.style.display = lp.style.display === 'none' ? 'flex' : 'none';
+    map.invalidateSize();
+}
+
+Promise.all([
+    new Promise(res => Papa.parse(todoSheetUrl, { download: true, complete: res, error: () => res({data:[]}) })),
+    fetch(geojsonUrl).then(r => r.json()),
+    new Promise(res => Papa.parse(airportsUrl, { download: true, header: true, complete: res }))
+]).then(results => {
+    var sheetData = results[0].data;
+    var geojson = results[1];
+    var airportRes = results[2].data;
+
+    window.airportData = {};
+    airportRes.forEach(r => { if(r.ident) window.airportData[r.ident.toUpperCase()] = r; });
+
+    window.countryFeatures = {};
+    geojson.features.forEach(f => {
+        var name = (f.properties.name || f.properties.ADMIN || "").toLowerCase();
+        window.countryFeatures[name] = f;
+    });
+
+    window.todos = [];
+    window.uniqueDestinations = new Set();
+
+    sheetData.forEach((row, idx) => {
+        if(idx === 0 || !row[1]) return; // Skip header or empty target
+        var target = row[1].trim();
+        var icao = (target.length === 4 && window.airportData[target.toUpperCase()]) ? target.toUpperCase() : null;
+        var countryMatch = (!icao && window.countryFeatures[target.toLowerCase()]) ? window.countryFeatures[target.toLowerCase()].properties.name : null;
+
+        if (icao || countryMatch) window.uniqueDestinations.add(icao || countryMatch);
+        
+        window.todos.push({
+            idx: idx,
+            target: target,
+            notes: row[2] || "",
+            icao: icao,
+            country: countryMatch
+        });
+    });
+
+    document.getElementById('visible-unique-dest').innerText = window.uniqueDestinations.size;
+    document.getElementById('visible-routes-count').innerText = window.todos.length;
+    document.getElementById('loading').style.display = 'none';
+
+    renderMap();
+    renderList();
+});
+
+function renderMap() {
+    drawnLayers.clearLayers();
+    airportLabelGroup.clearLayers();
+    var highlightedCountries = new Set();
+    var countryDisplayName = new Intl.DisplayNames(['en'], {type: 'region'});
+
+    todos.forEach(t => {
+        if (t.country) highlightedCountries.add(t.country);
+        if (t.icao) {
+            var ap = airportData[t.icao];
+            var lat = parseFloat(ap.latitude_deg), lon = parseFloat(ap.longitude_deg);
+            
+            // Get actual country name from airport data
+            var apCountry = "Unknown";
+            try { apCountry = countryDisplayName.of(ap.iso_country); } catch(e) {}
+
+            [-360, 0, 360].forEach(offset => {
+                var marker = L.circleMarker([lat, lon + offset], {
+                    radius: 6, weight: 1, color: 'var(--bg-dark)', fillColor: 'var(--accent-orange)', fillOpacity: 0.9
+                });
+
+                var wiki = ap.wikipedia_link || `https://en.wikipedia.org/wiki/Special:Search?search=${t.icao}+Airport`;
+                var city = ap.municipality || "Unknown City";
+                
+                var popupContent = `
+                    <div style="font-size: 11px; line-height: 1.4;">
+                        <b style="color: var(--accent-orange); font-size: 13px;">${ap.name}</b><br>
+                        <span style="color: var(--text-main);">${city}, ${apCountry}</span>
+                        <hr style="border: 0; border-top: 1px solid var(--border-faint); margin: 8px 0;">
+                        <a href="${wiki}" target="_blank" style="color: var(--accent-green); text-decoration: none;">Wikipedia: Routes & Operators ↗</a>
+                    </div>`;
+
+                marker.bindPopup(popupContent);
+                marker.on('click', () => { panToItem(t.idx); marker.openPopup(); });
+                drawnLayers.addLayer(marker);
+
+                var label = L.marker([lat, lon + offset], {
+                    icon: L.divIcon({ className: '', html: `<div class="map-airport-label">${t.icao}</div>`, iconAnchor: [-10, 5] }),
+                    interactive: false
+                });
+                airportLabelGroup.addLayer(label);
+            });
+        }
+    });
+
+    highlightedCountries.forEach(c => {
+        var feature = Object.values(window.countryFeatures).find(f => (f.properties.name || f.properties.ADMIN) === c);
+        if (feature) {
+            [-360, 0, 360].forEach(offset => {
+                L.geoJSON(feature, {
+                    coordsToLatLng: coords => L.latLng(coords[1], coords[0] + offset),
+                    style: { fillColor: 'var(--accent-green)', color: 'var(--accent-green)', weight: 1, fillOpacity: 0.2 }
+                }).addTo(drawnLayers);
+            });
+        }
+    });
+}
+
+function renderList() {
+    var container = document.getElementById('sidebar-routes');
+    var html = '<table><thead><tr><th style="width:35%;">Target</th><th>Notes</th></tr></thead><tbody>';
+    todos.forEach(t => {
+        var color = (t.icao || t.country) ? 'var(--accent-green)' : 'var(--text-main)';
+        html += `
+            <tr class="flight-row" id="row-${t.idx}" onclick="panToItem(${t.idx})">
+                <td class="target-cell"><b style="color:${color}">${t.target}</b></td>
+                <td class="notes-cell">${t.notes}</td>
+            </tr>`;
+    });
+    container.innerHTML = html + '</tbody></table>';
+}
+
+function panToItem(idx) {
+    var t = todos.find(x => x.idx === idx);
+    document.querySelectorAll('.flight-row').forEach(r => r.classList.remove('active-row'));
+    document.getElementById(`row-${idx}`).classList.add('active-row');
+
+    if (t.icao) {
+        var ap = airportData[t.icao];
+        map.flyTo([ap.latitude_deg, ap.longitude_deg], 7);
+    } else if (t.country) {
+        var feat = Object.values(window.countryFeatures).find(f => (f.properties.name || f.properties.ADMIN) === t.country);
+        map.flyToBounds(L.geoJSON(feat).getBounds(), { padding: [50, 50], maxZoom: 5 });
+    }
+}
+</script>
+</body>
+</html>
