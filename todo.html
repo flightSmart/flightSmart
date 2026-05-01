@@ -64,7 +64,7 @@
 
         /* ── PANELS ── */
         #left-panel {
-            width: 450px; height: 100%;
+            width: 400px; height: 100%;
             background: var(--bg-dark);
             display: flex; flex-direction: column; flex-shrink: 0;
             border-right: 1px solid var(--border-main);
@@ -101,6 +101,15 @@
             border-bottom: 1px solid var(--border-main); font-size: 10px;
         }
         
+        /* Filter Status Bar */
+        #filter-status {
+            display: none; justify-content: space-between; align-items: center;
+            padding: 8px 15px; background: rgba(250, 152, 34, 0.15);
+            border-bottom: 1px solid var(--accent-orange); font-size: 10px;
+            color: var(--accent-orange); cursor: pointer; font-weight: bold;
+        }
+        #filter-status:hover { background: rgba(250, 152, 34, 0.3); }
+
         #sidebar-routes { padding: 0; overflow-y: auto; flex-grow: 1; }
 
         table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
@@ -114,7 +123,10 @@
         }
 
         /* ── MULTI-LINE REMARKS ── */
-        .target-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .target-cell { 
+            white-space: normal; /* Allows wrapping */
+            line-height: 1.4;
+        }
         .notes-cell {
             white-space: normal; 
             word-wrap: break-word;
@@ -134,6 +146,27 @@
             color: rgb(50, 50, 50);
             text-shadow: 0 0 3px rgb(255, 255, 255), 0 0 5px rgb(255, 255, 255);
         }
+        
+        /* Map Hover States for Interactivity */
+        path.leaflet-interactive { cursor: pointer; transition: fill-opacity 0.2s ease-in-out; }
+        path.leaflet-interactive:hover { fill-opacity: 0.5 !important; }
+
+
+        /* ── TYPE FILTERS ── */
+        .type-filter-btn {
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .type-filter-btn:hover {
+            background-color: var(--bg-hover);
+        }
+        .type-filter-btn.active {
+            background-color: var(--accent-orange);
+            color: var(--bg-dark);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -142,12 +175,29 @@
     <div id="routes-label">
         <span>FLIGHT TODO LIST</span>
         <div style="font-family: var(--font-mono); font-weight: normal;">
-            <span id="visible-unique-dest">0</span> <span style="color: var(--text-muted);">Dests |</span>
-            <span id="visible-routes-count">0</span> <span style="color: var(--text-muted);">Items</span>
         </div>
     </div>
+
+<div id="routes-label">
+    <span class="type-filter-btn active" onclick="setTypeFilter('ALL')">ALL</span>
+    <div style="font-family: var(--font-mono); font-weight: normal;"></div>
+    <span class="type-filter-btn" onclick="setTypeFilter('GA')">GA</span>
+    <div style="font-family: var(--font-mono); font-weight: normal;"></div>
+    <span class="type-filter-btn" onclick="setTypeFilter('MIL')">MIL</span>
+    <div style="font-family: var(--font-mono); font-weight: normal;"></div>
+    <span class="type-filter-btn" onclick="setTypeFilter('SH')">SH</span>
+    <div style="font-family: var(--font-mono); font-weight: normal;"></div>
+    <span class="type-filter-btn" onclick="setTypeFilter('MH')">MH</span>
+    <div style="font-family: var(--font-mono); font-weight: normal;"></div>
+    <span class="type-filter-btn" onclick="setTypeFilter('LH')">LH</span>
+</div>
+
+    <div id="filter-status" onclick="setFilter(null, null)">
+        <span id="filter-text">Showing All</span>
+        <span>CLEAR ✕</span>
+    </div>
     <div id="sidebar-routes">
-        <p style="color: var(--text-muted); text-align:center; margin-top:30px; font-size:9px;">Loading TODOs...</p>
+        <p style="color: var(--text-muted); text-align:center; margin-top:30px; font-size:9px;">Loading...</p>
     </div>
 </div>
 
@@ -169,10 +219,19 @@ var mapBaseLayer = L.tileLayer(darkTileUrl, { maxZoom: 16 }).addTo(map);
 var drawnLayers = L.layerGroup().addTo(map);
 var airportLabelGroup = L.layerGroup().addTo(map);
 
-// FIX: Change pubhtml to pub?output=csv
 var todoSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbDzElsl07EkMoZQIZej_FZjKEZlTYjNDh3OtpohmLlr5rI6BtU29qMAwpVa9DAP6adc4-_bnFvnn3/pub?output=csv"; 
 var geojsonUrl = "https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json";
 var airportsUrl = "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv";
+
+var currentFilter = { type: null, value: null };
+var currentTypeFilter = 'ALL'; // ADD THIS LINE
+var countryDisplayName = new Intl.DisplayNames(['en'], {type: 'region'});
+
+function isSameCountry(name1, name2) {
+    if (!name1 || !name2) return false;
+    var n1 = name1.toLowerCase(), n2 = name2.toLowerCase();
+    return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+}
 
 function toggleTheme() {
     var curr = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -185,6 +244,48 @@ function toggleLeftPanel() {
     var lp = document.getElementById('left-panel');
     lp.style.display = lp.style.display === 'none' ? 'flex' : 'none';
     map.invalidateSize();
+}
+
+function setTypeFilter(type) {
+    currentTypeFilter = type;
+    
+    // Update button visual states
+    document.querySelectorAll('.type-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.innerText === type) btn.classList.add('active');
+    });
+
+    // Reset map interactions and re-render
+    setFilter(null, null); 
+    renderMap();
+    renderList();
+}
+
+
+// Clear filter when clicking empty space on map
+map.on('click', function() {
+    setFilter(null, null);
+});
+
+// Clear filter when pressing Escape
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        setFilter(null, null);
+    }
+});
+
+function setFilter(type, value) {
+    currentFilter = { type: type, value: value };
+    var fs = document.getElementById('filter-status');
+    if (type) {
+        fs.style.display = 'flex';
+        var txt = type === 'airport' ? `FILTER: Airport ${value}` : `FILTER: Country ${value.toUpperCase()}`;
+        document.getElementById('filter-text').innerText = txt;
+    } else {
+        fs.style.display = 'none';
+        document.querySelectorAll('.flight-row').forEach(r => r.classList.remove('active-row'));
+    }
+    renderList();
 }
 
 Promise.all([
@@ -207,85 +308,113 @@ Promise.all([
 
     window.todos = [];
     window.uniqueDestinations = new Set();
+    window.highlightedCountries = new Set();
 
     sheetData.forEach((row, idx) => {
-        if(idx === 0 || !row[1]) return; // Skip header or empty target
-        var target = row[1].trim();
-        var icao = (target.length === 4 && window.airportData[target.toUpperCase()]) ? target.toUpperCase() : null;
-        var countryMatch = (!icao && window.countryFeatures[target.toLowerCase()]) ? window.countryFeatures[target.toLowerCase()].properties.name : null;
+        if(idx === 0 || !row[1]) return;
+        
+        // Split the target string by commas and clean up spaces
+        var rawTargets = row[1].split(',').map(s => s.trim()).filter(s => s);
+        
+        var icaos = [];
+        var countries = [];
 
-        if (icao || countryMatch) window.uniqueDestinations.add(icao || countryMatch);
+        // Identify every item in the cell
+        rawTargets.forEach(target => {
+            var icao = (target.length === 4 && window.airportData[target.toUpperCase()]) ? target.toUpperCase() : null;
+            var countryMatch = (!icao && window.countryFeatures[target.toLowerCase()]) ? window.countryFeatures[target.toLowerCase()].properties.name : null;
+
+            if (icao) { icaos.push(icao); window.uniqueDestinations.add(icao); }
+            if (countryMatch) { countries.push(countryMatch); window.uniqueDestinations.add(countryMatch); window.highlightedCountries.add(countryMatch); }
+        });
         
         window.todos.push({
             idx: idx,
-            target: target,
+            targetsArray: rawTargets,
             notes: row[2] || "",
-            icao: icao,
-            country: countryMatch
+            flightType: (row[3] || "").trim().toUpperCase(), // ADD THIS LINE to capture Column D
+            icaos: icaos,
+            countries: countries
         });
     });
 
-    document.getElementById('visible-unique-dest').innerText = window.uniqueDestinations.size;
-    document.getElementById('visible-routes-count').innerText = window.todos.length;
     document.getElementById('loading').style.display = 'none';
 
     renderMap();
     renderList();
 });
-
 function renderMap() {
     drawnLayers.clearLayers();
     airportLabelGroup.clearLayers();
-    var highlightedCountries = new Set();
-    var countryDisplayName = new Intl.DisplayNames(['en'], {type: 'region'});
 
-    todos.forEach(t => {
-        if (t.country) highlightedCountries.add(t.country);
-        if (t.icao) {
-            var ap = airportData[t.icao];
-            var lat = parseFloat(ap.latitude_deg), lon = parseFloat(ap.longitude_deg);
-            
-            // Get actual country name from airport data
-            var apCountry = "Unknown";
-            try { apCountry = countryDisplayName.of(ap.iso_country); } catch(e) {}
+    // 1. Apply Type Filter
+    var visibleTodos = todos.filter(t => currentTypeFilter === 'ALL' || t.flightType === currentTypeFilter);
+    
+    // 2. Identify currently active countries
+    var visibleCountries = new Set();
+    visibleTodos.forEach(t => t.countries.forEach(c => visibleCountries.add(c)));
 
-            [-360, 0, 360].forEach(offset => {
-                var marker = L.circleMarker([lat, lon + offset], {
-                    radius: 6, weight: 1, color: 'var(--bg-dark)', fillColor: 'var(--accent-orange)', fillOpacity: 0.9
-                });
-
-                var wiki = ap.wikipedia_link || `https://en.wikipedia.org/wiki/Special:Search?search=${t.icao}+Airport`;
-                var city = ap.municipality || "Unknown City";
-                
-                var popupContent = `
-                    <div style="font-size: 11px; line-height: 1.4;">
-                        <b style="color: var(--accent-orange); font-size: 13px;">${ap.name}</b><br>
-                        <span style="color: var(--text-main);">${city}, ${apCountry}</span>
-                        <hr style="border: 0; border-top: 1px solid var(--border-faint); margin: 8px 0;">
-                        <a href="${wiki}" target="_blank" style="color: var(--accent-green); text-decoration: none;">Wikipedia: Routes & Operators ↗</a>
-                    </div>`;
-
-                marker.bindPopup(popupContent);
-                marker.on('click', () => { panToItem(t.idx); marker.openPopup(); });
-                drawnLayers.addLayer(marker);
-
-                var label = L.marker([lat, lon + offset], {
-                    icon: L.divIcon({ className: '', html: `<div class="map-airport-label">${t.icao}</div>`, iconAnchor: [-10, 5] }),
-                    interactive: false
-                });
-                airportLabelGroup.addLayer(label);
-            });
-        }
-    });
-
-    highlightedCountries.forEach(c => {
+    // 3. Draw Countries FIRST
+    visibleCountries.forEach(c => {
         var feature = Object.values(window.countryFeatures).find(f => (f.properties.name || f.properties.ADMIN) === c);
         if (feature) {
             [-360, 0, 360].forEach(offset => {
                 L.geoJSON(feature, {
                     coordsToLatLng: coords => L.latLng(coords[1], coords[0] + offset),
                     style: { fillColor: 'var(--accent-green)', color: 'var(--accent-green)', weight: 1, fillOpacity: 0.2 }
+                }).on('click', function(e) {
+                    setFilter('country', c);
+                    L.DomEvent.stopPropagation(e);
                 }).addTo(drawnLayers);
+            });
+        }
+    });
+
+    // 4. Draw Airports SECOND
+    visibleTodos.forEach(t => {
+        if (t.icaos && t.icaos.length > 0) {
+            t.icaos.forEach(icao => {
+                var ap = airportData[icao];
+                var lat = parseFloat(ap.latitude_deg), lon = parseFloat(ap.longitude_deg);
+                
+                var apCountry = "Unknown";
+                try { apCountry = countryDisplayName.of(ap.iso_country); } catch(e) {}
+
+                [-360, 0, 360].forEach(offset => {
+                    var marker = L.circleMarker([lat, lon + offset], {
+                        radius: 6, weight: 1, color: 'var(--bg-dark)', fillColor: 'var(--accent-orange)', fillOpacity: 0.9
+                    });
+
+                    var wiki = ap.wikipedia_link || `https://en.wikipedia.org/wiki/Special:Search?search=${icao}+Airport`;
+                    var city = ap.municipality || "Unknown City";
+                    
+                    var isTargetCountry = Array.from(visibleCountries).some(c => isSameCountry(c, apCountry));
+                    var countryBadge = isTargetCountry ? `<div style="margin-top: 5px;"><span style="background: var(--accent-green); color: var(--bg-dark); padding: 2px 5px; border-radius: 3px; font-weight: bold; font-size: 9px;">TODO: ${apCountry.toUpperCase()}</span></div>` : '';
+
+                    var popupContent = `
+                        <div style="font-size: 11px; line-height: 1.4;">
+                            <b style="color: var(--accent-orange); font-size: 13px;">${ap.name}</b><br>
+                            <span style="color: var(--text-main);">${city}, ${apCountry}</span>
+                            ${countryBadge}
+                            <hr style="border: 0; border-top: 1px solid var(--border-faint); margin: 8px 0;">
+                            <a href="${wiki}" target="_blank" style="color: var(--accent-green); text-decoration: none;">Wikipedia: Routes & Operators ↗</a>
+                        </div>`;
+
+                    marker.bindPopup(popupContent);
+                    marker.on('click', (e) => { 
+                        setFilter('airport', icao);
+                        panToItem(t.idx, false); 
+                        marker.openPopup(); 
+                        L.DomEvent.stopPropagation(e);
+                    });
+                    drawnLayers.addLayer(marker);
+
+                    var label = L.marker([lat, lon + offset], {
+                        icon: L.divIcon({ className: '', html: `<div class="map-airport-label">${icao}</div>`, iconAnchor: [-10, 5] }),
+                        interactive: false
+                    });
+                    airportLabelGroup.addLayer(label);
+                });
             });
         }
     });
@@ -293,30 +422,89 @@ function renderMap() {
 
 function renderList() {
     var container = document.getElementById('sidebar-routes');
-    var html = '<table><thead><tr><th style="width:35%;">Target</th><th>Notes</th></tr></thead><tbody>';
-    todos.forEach(t => {
-        var color = (t.icao || t.country) ? 'var(--accent-green)' : 'var(--text-main)';
+    var html = '<table><thead><tr><th style="width:15%;">Target</th><th>Notes</th></tr></thead><tbody>';
+    
+    // 1. Apply Type Filter
+    var baseTodos = todos.filter(t => currentTypeFilter === 'ALL' || t.flightType === currentTypeFilter);
+    var filteredTodos = baseTodos;
+
+    // 2. Apply Map Selection Filter
+    if (currentFilter.type === 'airport') {
+        var ap = airportData[currentFilter.value];
+        var apCountryName = "Unknown";
+        try { apCountryName = countryDisplayName.of(ap.iso_country); } catch(e) {}
+
+        filteredTodos = baseTodos.filter(t => {
+            if (t.icaos.includes(currentFilter.value)) return true;
+            if (t.countries.some(c => isSameCountry(c, apCountryName))) return true;
+            return false;
+        });
+    } else if (currentFilter.type === 'country') {
+        filteredTodos = baseTodos.filter(t => {
+            if (t.countries.some(c => isSameCountry(c, currentFilter.value))) return true;
+            return t.icaos.some(icao => {
+                var ap = airportData[icao];
+                var apCountryName = "Unknown";
+                try { apCountryName = countryDisplayName.of(ap.iso_country); } catch(e) {}
+                return isSameCountry(apCountryName, currentFilter.value);
+            });
+        });
+    }
+
+    // 3. Render List
+    filteredTodos.forEach(t => {
+        var color = (t.icaos.length > 0 || t.countries.length > 0) ? 'var(--accent-green)' : 'var(--text-main)';
+        var multiLineTarget = t.targetsArray.join('<br>'); 
         html += `
-            <tr class="flight-row" id="row-${t.idx}" onclick="panToItem(${t.idx})">
-                <td class="target-cell"><b style="color:${color}">${t.target}</b></td>
+            <tr class="flight-row" id="row-${t.idx}" onclick="panToItem(${t.idx}, true)">
+                <td class="target-cell"><b style="color:${color}">${multiLineTarget}</b></td>
                 <td class="notes-cell">${t.notes}</td>
             </tr>`;
     });
     container.innerHTML = html + '</tbody></table>';
 }
 
-function panToItem(idx) {
+function panToItem(idx, shouldFilter) {
     var t = todos.find(x => x.idx === idx);
     document.querySelectorAll('.flight-row').forEach(r => r.classList.remove('active-row'));
-    document.getElementById(`row-${idx}`).classList.add('active-row');
+    var rowNode = document.getElementById(`row-${idx}`);
+    if(rowNode) rowNode.classList.add('active-row');
 
-    if (t.icao) {
-        var ap = airportData[t.icao];
-        map.flyTo([ap.latitude_deg, ap.longitude_deg], 7);
-    } else if (t.country) {
-        var feat = Object.values(window.countryFeatures).find(f => (f.properties.name || f.properties.ADMIN) === t.country);
-        map.flyToBounds(L.geoJSON(feat).getBounds(), { padding: [50, 50], maxZoom: 5 });
+    if (shouldFilter) {
+        if (t.icaos.length === 1) setFilter('airport', t.icaos[0]);
+        else if (t.icaos.length > 1) setFilter(null, null); // Show the whole route
+        else if (t.countries.length > 0) setFilter('country', t.countries[0]);
     }
+
+    var bounds = L.latLngBounds();
+    var hasBounds = false;
+
+    // if (t.icaos && t.icaos.length > 0) {
+    //     t.icaos.forEach(icao => {
+    //         var ap = airportData[icao];
+    //         bounds.extend([ap.latitude_deg, ap.longitude_deg]);
+    //         hasBounds = true;
+    //     });
+    // }
+    
+    // if (t.countries && t.countries.length > 0) {
+    //     t.countries.forEach(country => {
+    //         var feat = Object.values(window.countryFeatures).find(f => (f.properties.name || f.properties.ADMIN) === country);
+    //         if (feat) {
+    //             bounds.extend(L.geoJSON(feat).getBounds());
+    //             hasBounds = true;
+    //         }
+    //     });
+    // }
+
+    // if (hasBounds) {
+    //     if (t.icaos.length === 1 && t.countries.length === 0) {
+    //         map.flyToBounds(bounds, { maxZoom: 7 }); 
+    //     } else {
+    //         // Frame all markers in the route
+    //         map.flyToBounds(bounds, { padding: [50, 50], maxZoom: 5 });
+    //     }
+    // }
 }
 </script>
 </body>
