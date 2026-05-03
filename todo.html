@@ -174,6 +174,9 @@
 <div id="left-panel">
     <div id="routes-label">
         <span>FLIGHT TODO LIST</span>
+        <span> 
+            <a href="https://docs.google.com/spreadsheets/d/1WLK13WNevOgSQYBfw6t5ZXYVFseuXmvt1YAhQET9xzE/edit?usp=sharing" style="font-family: var(--font-mono); font-weight: normal; color: var(--text-main); text-decoration: underline;">LINK</a> 
+        </span>
         <div style="font-family: var(--font-mono); font-weight: normal;">
         </div>
     </div>
@@ -386,18 +389,23 @@ function renderMap() {
                     });
 
                     var wiki = ap.wikipedia_link || `https://en.wikipedia.org/wiki/Special:Search?search=${icao}+Airport`;
+                    var gmaps = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`; // <-- Added Google Maps URL
                     var city = ap.municipality || "Unknown City";
                     
                     var isTargetCountry = Array.from(visibleCountries).some(c => isSameCountry(c, apCountry));
                     var countryBadge = isTargetCountry ? `<div style="margin-top: 5px;"><span style="background: var(--accent-green); color: var(--bg-dark); padding: 2px 5px; border-radius: 3px; font-weight: bold; font-size: 9px;">TODO: ${apCountry.toUpperCase()}</span></div>` : '';
 
+                    // Wrapped the links in a flex container with a gap to keep them cleanly stacked
                     var popupContent = `
                         <div style="font-size: 11px; line-height: 1.4;">
                             <b style="color: var(--accent-orange); font-size: 13px;">${ap.name}</b><br>
                             <span style="color: var(--text-main);">${city}, ${apCountry}</span>
                             ${countryBadge}
                             <hr style="border: 0; border-top: 1px solid var(--border-faint); margin: 8px 0;">
-                            <a href="${wiki}" target="_blank" style="color: var(--accent-green); text-decoration: none;">Wikipedia: Routes & Operators ↗</a>
+                            <div style="display: flex; flex-direction: column; gap: 5px;">
+                                <a href="${wiki}" target="_blank" style="color: var(--accent-green); text-decoration: none;">Wikipedia: Routes & Operators ↗</a>
+                                <a href="${gmaps}" target="_blank" style="color: var(--accent-green); text-decoration: none;">Google Maps: Coordinates ↗</a>
+                            </div>
                         </div>`;
 
                     marker.bindPopup(popupContent);
