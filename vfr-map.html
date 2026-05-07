@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>VFR map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link href='https://fonts.googleapis.com/css?family=B612+Mono' rel='stylesheet'>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -519,7 +520,60 @@
         }
 
 
+        /* ═══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVENESS
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Prevent iOS auto-zoom on text inputs by setting font-size to 16px */
+    #search-box input[type="text"], 
+    #flight-select-container select {
+        font-size: 16px;
+        padding: 6px 8px;
+    }
 
+    /* Increase touch target sizes for text buttons */
+    #search-box button.text-btn {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+
+    /* Make icon buttons larger and easier to tap with thumbs */
+    .icon-btn {
+        width: 44px;
+        height: 44px;
+        padding: 8px;
+    }
+
+    /* Adjust map layer controls for easier tapping */
+    #map-controls {
+        left: 10px; /* Move slightly left since zooming controls might be hidden or moved */
+        flex-wrap: wrap; /* Allow wrapping if screen is very narrow */
+        max-width: calc(100vw - 20px);
+    }
+    
+    #map-controls button {
+        padding: 8px 12px;
+        font-size: 12px;
+        flex: 1; /* Make buttons share space evenly */
+    }
+
+    /* Ensure search box doesn't overflow the screen width */
+    #search-box {
+        width: calc(100% - 20px);
+        max-width: 350px; /* Keeps it from getting too wide on tablets */
+    }
+
+    /* Adjust context menu size for thumbs */
+    .context-menu-item {
+        padding: 12px 15px;
+        font-size: 14px;
+    }
+    
+    .context-menu-coords {
+        font-size: 12px;
+        padding: 8px 15px;
+    }
+}
 
     </style>
 </head>
