@@ -80,6 +80,8 @@ print <<<END
     <div class="button-container">
         <a class="ldgBtton" href="/kmlToIF.html" title="KML to IF">KML -> IF</a> 
         <a class="ldgBtton" href="/descent.html" title="TOD Calculator">TOD Calculator</a>
+            <a class="ldgBtton" href="/vfr-map.html" title="VFR Map">VFR Map</a>
+
     </div>
 </div>
 
