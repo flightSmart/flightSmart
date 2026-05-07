@@ -524,43 +524,66 @@
    MOBILE RESPONSIVENESS
 ═══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-    /* Prevent iOS auto-zoom on text inputs by setting font-size to 16px */
+    /* -- TOP SEARCH BOX UI -- */
+    #search-box {
+        width: 95%; 
+        max-width: none;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+    }
+
+    /* THE FIX: Remove the hardcoded 23px height so the box can hold the larger text */
+    .search-row {
+        height: auto; 
+        margin-bottom: 6px; /* Add breathing room between rows */
+        align-items: stretch; /* Makes input and button the same height */
+    }
+
+    /* 16px prevents iOS auto-zoom, but now it will actually fit in the box */
     #search-box input[type="text"], 
     #flight-select-container select {
         font-size: 16px;
-        padding: 6px 8px;
+        padding: 8px 10px;
+        height: auto;
     }
 
-    /* Increase touch target sizes for text buttons */
     #search-box button.text-btn {
         font-size: 14px;
-        padding: 6px 12px;
+        padding: 0 16px; /* Wider tap target horizontally */
+        height: auto;
     }
 
-    /* Make icon buttons larger and easier to tap with thumbs */
+    /* Dialed the icon buttons back slightly so they fit the box better */
+    .button-row {
+        margin-top: 10px;
+    }
+    
     .icon-btn {
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
         padding: 8px;
     }
 
-    /* Adjust map layer controls for easier tapping */
+    /* -- BOTTOM MAP CONTROLS -- */
     #map-controls {
-        left: 10px; /* Move slightly left since zooming controls might be hidden or moved */
-        flex-wrap: wrap; /* Allow wrapping if screen is very narrow */
-        max-width: calc(100vw - 20px);
+        top: auto; 
+        bottom: 25px; 
+        left: 50%;
+        transform: translateX(-50%);
+        width: 95%;
+        justify-content: center;
+        background-color: var(--bg-dark); 
+        padding: 4px;
+        border: 1px solid var(--border-main);
     }
     
     #map-controls button {
-        padding: 8px 12px;
+        padding: 10px 8px;
         font-size: 12px;
-        flex: 1; /* Make buttons share space evenly */
-    }
-
-    /* Ensure search box doesn't overflow the screen width */
-    #search-box {
-        width: calc(100% - 20px);
-        max-width: 350px; /* Keeps it from getting too wide on tablets */
+        flex: 1; 
+        text-align: center;
     }
 
     /* Adjust context menu size for thumbs */
