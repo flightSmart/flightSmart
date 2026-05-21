@@ -27,17 +27,17 @@
             --border-faint: rgba(232, 232, 232, 0.275);
             --font-mono: 'B612 Mono', monospace;
             --font-sans: 'Montserrat', Helvetica, sans-serif;
-            --exc-txt: rgb(248, 81, 73); 
+            --exc-txt: rgb(248, 81, 73);
             --exc-brd: rgb(248, 81, 73);
         }
 
         /* ── GLOBAL RESET ── */
-        *, *::before, *::after { 
-            box-sizing: border-box; 
+        *, *::before, *::after {
+            box-sizing: border-box;
         }
 
-        body { 
-            margin: 0; padding: 0; 
+        body {
+            margin: 0; padding: 0;
             font-family: var(--font-mono);
             background-color: var(--bg-dark);
             color: var(--text-main);
@@ -49,9 +49,9 @@
 
         /* ── COMPONENTS ── */
         #elevation-box {
-            position: fixed; 
+            position: fixed;
             z-index: 9999;
-            pointer-events: none; 
+            pointer-events: none;
             font-family: var(--font-mono);
             letter-spacing: -0.3px;
             color: #000;
@@ -59,7 +59,7 @@
             paint-order: stroke fill;
             font-weight: bold;
             font-size: 12px;
-            display: none; 
+            display: none;
         }
 
         #search-box {
@@ -103,10 +103,10 @@
             background-color: var(--bg-light);
             border: 1px solid var(--border-main);
             color: var(--text-main);
-            font-size: 10px; 
+            font-size: 10px;
             font-family: var(--font-mono);
-            cursor: pointer; 
-            padding: 0 10px; 
+            cursor: pointer;
+            padding: 0 10px;
             transition: 0.2s;
         }
 
@@ -130,11 +130,21 @@
 
         #search-message {
             margin-top: 4px;
-            margin-bottom: 8px;
+            margin-bottom: 2px;
             font-size: 10px;
             font-weight: bold;
             font-family: var(--font-mono);
             letter-spacing: normal;
+        }
+        
+        /* Custom UI Time Div */
+        #api-update-time {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            display: none;
         }
         
         /* ── CUSTOM ICON BUTTONS ── */
@@ -167,13 +177,13 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            filter: brightness(0) invert(1); 
+            filter: brightness(0) invert(1);
             transition: filter 0.2s;
         }
 
         .icon-btn.selected, .icon-btn:hover {
             background-color: #d8d8d8;
-            color: var(--bg-dark); 
+            color: var(--bg-dark);
         }
 
         .icon-btn.selected img, .icon-btn:hover img {
@@ -182,7 +192,7 @@
 
         /* ── TRANSPARENT POPUP STYLING ── */
         .leaflet-popup-content-wrapper {
-            background-color: rgba(50, 50, 50, 0); 
+            background-color: rgba(50, 50, 50, 0);
             color: var(--text-main);
             font-family: var(--font-mono);
             font-weight: bolder;
@@ -203,8 +213,8 @@
             line-height: 1.4;
             margin: 0 !important;
             margin-left: 150px !important;
-            text-align: left; 
-            white-space: nowrap; 
+            text-align: left;
+            white-space: nowrap;
         }
 
         .leaflet-popup-tip-container { display: none !important; }
@@ -218,7 +228,7 @@
             -webkit-text-stroke: 2px white;
             paint-order: stroke fill;
             font-weight: bold;
-            font-size: 13px; 
+            font-size: 13px;
             line-height: 1.2;
         }
 
@@ -255,11 +265,11 @@
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            color: #000000 !important; 
+            color: #000000 !important;
             font-family: var(--font-mono);
             font-size: 10px;
             font-weight: bold;
-            -webkit-text-stroke: 2px white; 
+            -webkit-text-stroke: 2px white;
             paint-order: stroke fill;
         }
         .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before { display: none !important; }
@@ -283,7 +293,7 @@
             border: 2px solid #000000;
             border-radius: 50%;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-            margin-top: -6px; 
+            margin-top: -6px;
             margin-left: -6px;
         }
         
@@ -292,7 +302,7 @@
             border: none !important;
             box-shadow: none !important;
             padding: 0 !important;
-            margin-left: 5px; 
+            margin-left: 5px;
         }
         .aircraft-tooltip::before { display: none !important; }
 
@@ -302,8 +312,8 @@
             font-size: 9px; /* Reduced to 9px */
             color: var(--text-main);
             overflow-y: auto;
-            margin-top: 10px; 
-            border-top: 1px solid var(--border-main); 
+            margin-top: 10px;
+            border-top: 1px solid var(--border-main);
             padding-top: 5px;
         }
         
@@ -333,8 +343,6 @@
         }
 
         .wp-table tr:last-child td { border-bottom: none; }
-
-
 
         .wp-stat strong {
             color: #ff9900;
@@ -369,7 +377,6 @@
             font-weight: bold;
         }
 
-        /* ADD THIS CSS CLASS */
         .context-menu-coords {
             padding: 4px 10px;
             font-family: var(--font-mono);
@@ -385,11 +392,11 @@
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            color: #ffffff !important; 
+            color: #ffffff !important;
             font-family: var(--font-mono);
             font-size: 11px;
             font-weight: bold;
-            text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; 
+            text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
         }
 
         .airport-hover-box {
@@ -404,28 +411,43 @@
         }
         .leaflet-tooltip-top.airport-hover-box::before { display: none; }
 
+        /* Permanent Map Icon Labelling */
+        .airport-icao-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #000000;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+            -webkit-text-stroke: 1.5px white;
+            paint-order: stroke fill;
+            pointer-events: none;
+        }
+
         /* ═══════════════════════════════════════════════════════════
            WIKIPEDIA FEATURE STYLES
         ═══════════════════════════════════════════════════════════ */
         .wiki-marker {
-    background-color:#d8d8d8; /* Dark background like the button */
-    border: 1px solid var(--bg-dark);
-    border-radius: 4px; /* Matches the sidebar button style */
-    color: #000000; /* Sets the SVG color */
-    padding: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    cursor: pointer;
-    transition: transform 0.1s ease;
-}
+            background-color:#d8d8d8; /* Dark background like the button */
+            border: 1px solid var(--bg-dark);
+            border-radius: 4px; /* Matches the sidebar button style */
+            color: #000000; /* Sets the SVG color */
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
 
-.wiki-marker:hover {
-    background-color: var(--bg-dark); /* Hover effect like the button */
-    color: #d8d8d8;     /* Flips the SVG color to dark on hover */
-    transform: scale(1.1);
-}
+        .wiki-marker:hover {
+            background-color: var(--bg-dark); /* Hover effect like the button */
+            color: #d8d8d8;     /* Flips the SVG color to dark on hover */
+            transform: scale(1.1);
+        }
 
         .wiki-marker svg {
             width: 100%;
@@ -470,7 +492,7 @@
             border-bottom: 1px solid var(--bg-light);
             padding-bottom: 3px;
             padding-right: 15px;
-            letter-spacing: -0.5px; 
+            letter-spacing: -0.5px;
         }
         .wiki-content-box p {
             margin: 0;
@@ -501,7 +523,7 @@
             background-color: var(--bg-dark) !important;
             color: var(--text-main) !important;
             border: 1px solid var(--border-main) !important;
-            border-radius: 0 !important; 
+            border-radius: 0 !important;
             font-family: var(--font-mono) !important;
             font-weight: bold !important;
             transition: 0.2s;
@@ -521,82 +543,82 @@
 
 
         /* ═══════════════════════════════════════════════════════════
-   MOBILE RESPONSIVENESS
-═══════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-    /* -- TOP SEARCH BOX UI -- */
-    #search-box {
-        width: 95%; 
-        max-width: none;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        right: auto;
-    }
+        MOBILE RESPONSIVENESS
+        ═══════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            /* -- TOP SEARCH BOX UI -- */
+            #search-box {
+                width: 95%;
+                max-width: none;
+                top: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                right: auto;
+            }
 
-    /* THE FIX: Remove the hardcoded 23px height so the box can hold the larger text */
-    .search-row {
-        height: auto; 
-        margin-bottom: 6px; /* Add breathing room between rows */
-        align-items: stretch; /* Makes input and button the same height */
-    }
+            /* THE FIX: Remove the hardcoded 23px height so the box can hold the larger text */
+            .search-row {
+                height: auto;
+                margin-bottom: 6px; /* Add breathing room between rows */
+                align-items: stretch; /* Makes input and button the same height */
+            }
 
-    /* 16px prevents iOS auto-zoom, but now it will actually fit in the box */
-    #search-box input[type="text"], 
-    #flight-select-container select {
-        font-size: 10px;
-        padding: 6px 8px;
-        height: auto;
-    }
+            /* 16px prevents iOS auto-zoom, but now it will actually fit in the box */
+            #search-box input[type="text"],
+            #flight-select-container select {
+                font-size: 10px;
+                padding: 6px 8px;
+                height: auto;
+            }
 
-    #search-box button.text-btn {
-        font-size: 12px;
-        padding: 0 10px; /* Wider tap target horizontally */
-        height: auto;
-    }
+            #search-box button.text-btn {
+                font-size: 12px;
+                padding: 0 10px; /* Wider tap target horizontally */
+                height: auto;
+            }
 
-    /* Dialed the icon buttons back slightly so they fit the box better */
-    .button-row {
-        margin-top: 8px;
-    }
-    
-    .icon-btn {
-        width: 40px;
-        height: 40px;
-        padding: 8px;
-    }
+            /* Dialed the icon buttons back slightly so they fit the box better */
+            .button-row {
+                margin-top: 8px;
+            }
+            
+            .icon-btn {
+                width: 40px;
+                height: 40px;
+                padding: 8px;
+            }
 
-    /* -- BOTTOM MAP CONTROLS -- */
-    #map-controls {
-        top: auto; 
-        bottom: 25px; 
-        left: 50%;
-        transform: translateX(-50%);
-        width: 95%;
-        justify-content: center;
-        background-color: var(--bg-dark); 
-        padding: 4px;
-        border: 1px solid var(--border-main);
-    }
-    
-    #map-controls button {
-        padding: 10px 8px;
-        font-size: 12px;
-        flex: 1; 
-        text-align: center;
-    }
+            /* -- BOTTOM MAP CONTROLS -- */
+            #map-controls {
+                top: auto;
+                bottom: 25px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 95%;
+                justify-content: center;
+                background-color: var(--bg-dark);
+                padding: 4px;
+                border: 1px solid var(--border-main);
+            }
+            
+            #map-controls button {
+                padding: 10px 8px;
+                font-size: 12px;
+                flex: 1;
+                text-align: center;
+            }
 
-    /* Adjust context menu size for thumbs */
-    .context-menu-item {
-        padding: 12px 15px;
-        font-size: 14px;
-    }
-    
-    .context-menu-coords {
-        font-size: 12px;
-        padding: 8px 15px;
-    }
-}
+            /* Adjust context menu size for thumbs */
+            .context-menu-item {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+            
+            .context-menu-coords {
+                font-size: 12px;
+                padding: 8px 15px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -615,6 +637,7 @@
         </div>
 
         <div id="search-message"></div>
+        <div id="api-update-time"></div>
         
         <div class="button-row">
             <button id="btn-follow" class="icon-btn selected" title="Follow Aircraft">
@@ -671,11 +694,6 @@
                     </g>
                 </svg>
             </button>
-
-            <!-- <button id="btn-wiki" class="icon-btn" title="Wikipedia Layers">
-                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 128 128" stroke-miterlimit="10" style="shape-rendering:geometricPrecision; fill-rule:evenodd">
-                    </svg>
-            </button> -->
 
             <a href="https://flightsmart.tools" target="_blank" class="icon-btn" title="Open FlightSmart Tools">
                 <img src="/images/flightSmartLogoTransparent.png" alt="FlightSmart Logo">
@@ -738,15 +756,11 @@
             this.classList.toggle('selected');
             updateAirports();
         });
-        // document.getElementById('btn-wiki').addEventListener('click', function() {
-        //     this.classList.toggle('selected');
-        //     updateWikipedia();
-        // });
 
         function getHeadingEndPoint(lat, lon, heading, distanceNauticalMiles) {
-            const R = 6371; 
-            const distKm = distanceNauticalMiles * 1.852; 
-            const brng = (heading * Math.PI) / 180; 
+            const R = 6371;
+            const distKm = distanceNauticalMiles * 1.852;
+            const brng = (heading * Math.PI) / 180;
             const lat1 = (lat * Math.PI) / 180;
             const lon1 = (lon * Math.PI) / 180;
 
@@ -816,16 +830,25 @@
             });
         }
 
+        function updateApiTime() {
+            const timeDiv = document.getElementById('api-update-time');
+            if(timeDiv) {
+                timeDiv.style.display = 'block';
+                const now = new Date();
+                timeDiv.innerText = `Last API Update: ${now.toLocaleTimeString()}`;
+            }
+        }
+
         const elevationBox = document.getElementById('elevation-box');
         const topoOptions = {
             token: 'pk.eyJ1IjoiZW1tYW5hMjIyIiwiYSI6ImNtb3Z6OXQycDBjeXEycXE1Nmo2bzlsMnIifQ.ad9ZjoePvVofT1HA14HorQ', // key, URL restricted
-            scale: 12 
+            scale: 12
         };
 
         const fetchElevationDebounced = debounce(async (e) => {
             if (map.getZoom() < 8) {
                 elevationBox.style.display = 'none';
-                return; 
+                return;
             }
 
             elevationBox.style.display = 'block';
@@ -839,14 +862,14 @@
                     
                     if (currentAircraftAltitude !== null) {
                         const diff = Math.round(elevationFeet - currentAircraftAltitude);
-                        let textColor = '#000'; 
+                        let textColor = '#000';
                         
                         if (diff > 1000) {
-                            textColor = '#fc031c'; 
+                            textColor = '#fc031c';
                         } else if (diff >= -1000) {
-                            textColor = '#ffcc00'; 
+                            textColor = '#ffcc00';
                         } else {
-                            textColor = '#000000'; 
+                            textColor = '#000000';
                         }
 
                         elevationBox.style.color = textColor;
@@ -861,7 +884,7 @@
             } catch (err) {
                 elevationBox.innerText = 'Data error (Check Token)';
             }
-        }, 40); 
+        }, 40);
 
         map.on('mousemove', fetchElevationDebounced);
 
@@ -873,15 +896,20 @@
         let flightPlanLayer = null;
         let trackingInterval = null;
         let activeFlightSessionId = null;
-        let availableFlights = []; 
-        let currentAircraftAltitude = null; 
-        let currentAircraftSpeed = null; 
+        let availableFlights = [];
+        let currentAircraftAltitude = null;
+        let currentAircraftSpeed = null;
         let glideCircle = null;
+
+        // Breadcrumb Variables
+        let breadcrumbCoords = [];
+        let breadcrumbPolyline = null;
 
 async function findUserFlights() {
     const username = document.getElementById('username-input').value.trim();
     const msgDiv = document.getElementById('search-message');
     const selectContainer = document.getElementById('flight-select-container');
+    const apiTimeDiv = document.getElementById('api-update-time');
     
     if (!username) {
         msgDiv.style.color = "var(--exc-txt)";
@@ -891,12 +919,17 @@ async function findUserFlights() {
 
     msgDiv.style.color = "var(--text-muted)";
     msgDiv.innerText = "Searching servers...";
+    if(apiTimeDiv) apiTimeDiv.style.display = 'none';
     selectContainer.style.display = "none";
     
     if (trackingInterval) clearInterval(trackingInterval);
     if (flightPlanLayer) map.removeLayer(flightPlanLayer);
     if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
-    activeFlightSessionId = null; 
+    
+    breadcrumbCoords = [];
+    if (breadcrumbPolyline) { map.removeLayer(breadcrumbPolyline); breadcrumbPolyline = null; }
+
+    activeFlightSessionId = null;
     availableFlights = [];
 
     try {
@@ -967,16 +1000,34 @@ function trackSpecificFlight(index) {
 
     drawFlight(selectedData.flight, true);
     drawFlightPlan(selectedData.sessionId, selectedData.flight.flightId);
+    updateApiTime();
 
     trackingInterval = setInterval(() => {
         pollFlightPosition(document.getElementById('username-input').value.trim(), selectedData.sessionId, msgDiv);
     }, 15000);
 }
-        
+       
 async function drawFlight(flight, isFirstLoad) {
     currentAircraftAltitude = flight.altitude;
     currentAircraftSpeed = flight.speed;
     const coords = [flight.latitude, flight.longitude];
+
+    // Build the short breadcrumb trail
+    breadcrumbCoords.push(coords);
+    if (breadcrumbCoords.length > 30) {
+        breadcrumbCoords.shift();
+    }
+    
+    if (breadcrumbPolyline) {
+        breadcrumbPolyline.setLatLngs(breadcrumbCoords);
+    } else {
+        breadcrumbPolyline = L.polyline(breadcrumbCoords, {
+            color: '##64c49a',
+            weight: 2.5,
+            opacity: 0.8,
+            pane: 'aircraftPane'
+        }).addTo(map);
+    }
 
     let terrainElevationFeet = 0;
     try {
@@ -997,11 +1048,11 @@ async function drawFlight(flight, isFirstLoad) {
     } else {
         glideCircle = L.circle(coords, {
             radius: glideRadiusMeters,
-            color: 'red', 
+            color: 'red',
             weight: 1,
             fillColor: 'white',
             fillOpacity: 0.05,
-            interactive: false 
+            interactive: false
         }).addTo(map);
     }
 
@@ -1021,14 +1072,14 @@ if (userMarker) {
 
 
         userMarker.on('mousedown', function(e) {
-            L.DomEvent.stopPropagation(e); 
+            L.DomEvent.stopPropagation(e);
             map.dragging.disable();
 
-            clearMeasurements(); 
+            clearMeasurements();
 
             const startMarker = L.marker(userMarker.getLatLng(), {
                 icon: L.divIcon({ className: 'draggable-dot', iconSize: [12, 12] }),
-                draggable: true 
+                draggable: true
             }).addTo(measureMarkerLayer);
             measureMarkers.push(startMarker);
             startMarker.on('drag', updateLines);
@@ -1036,7 +1087,7 @@ if (userMarker) {
 
             const endMarker = L.marker(e.latlng, {
                 icon: L.divIcon({ className: 'draggable-dot', iconSize: [12, 12] }),
-                draggable: true 
+                draggable: true
             }).addTo(measureMarkerLayer);
             measureMarkers.push(endMarker);
             endMarker.on('drag', updateLines);
@@ -1088,10 +1139,10 @@ if (userMarker) {
     `;
     
 if (!userMarker.getTooltip()) {
-        userMarker.bindTooltip(popupContent, { 
-            permanent: true,       
+        userMarker.bindTooltip(popupContent, {
+            permanent: true,      
             direction: 'right',    
-            className: 'aircraft-tooltip', 
+            className: 'aircraft-tooltip',
             offset: [10, 0]        
         }).openTooltip();          
     } else {
@@ -1116,6 +1167,7 @@ if (!userMarker.getTooltip()) {
 
                 if (data.found && activeFlight) {
                     drawFlight(activeFlight, false);
+                    updateApiTime();
                 } else {
                     msgDiv.style.color = "var(--exc-txt)";
                     msgDiv.innerText = "Flight tracking lost.";
@@ -1148,7 +1200,7 @@ if (!userMarker.getTooltip()) {
                                         <path d="M 50 5 L 95 90 L 5 90 Z" fill="#cd4aee" stroke="black" stroke-width="15"/>
                                     </svg>`,
                                 iconSize: [12, 12],
-                                iconAnchor: [6, 6] 
+                                iconAnchor: [6, 6]
                             });
 
                             const marker = L.marker(pt, {
@@ -1159,9 +1211,9 @@ if (!userMarker.getTooltip()) {
                             const wpName = node.name || node.identifier || "";
                             if (wpName) {
                                 marker.bindTooltip(wpName, {
-                                    permanent: true,     
+                                    permanent: true,   
                                     direction: 'bottom',    
-                                    className: 'waypoint-label', 
+                                    className: 'waypoint-label',
                                     offset: [0, 5]      
                                 });
                             }
@@ -1197,7 +1249,7 @@ if (!userMarker.getTooltip()) {
             }
         }
 
-let airportDataCache = null; 
+let airportDataCache = null;
 const airportLayer = L.layerGroup().addTo(map);
 
 async function updateAirports() {
@@ -1249,15 +1301,18 @@ const bounds = map.getBounds();
             if (currentZoom < 7 && type === 'medium_airport') return;
 
             const isMajor = type === 'large_airport' || type === 'medium_airport';
-            const color = isMajor ? '#00eeff' : '#00ff6a'; 
-            const size = isMajor ? 12 : 9; 
+            const color = isMajor ? '#00eeff' : '#00ff6a';
+            const size = isMajor ? 12 : 9;
 
             const airportIcon = L.divIcon({
                 html: `
-                    <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="50" cy="50" r="35" stroke="black" stroke-width="35" fill="none" />
-                        <circle cx="50" cy="50" r="35" stroke="${color}" stroke-width="12" fill="none" />
-                    </svg>
+                    <div style="position: relative; width: ${size}px; height: ${size}px;">
+                        <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="position: absolute; top:0; left:0;">
+                            <circle cx="50" cy="50" r="35" stroke="black" stroke-width="35" fill="none" />
+                            <circle cx="50" cy="50" r="35" stroke="${color}" stroke-width="12" fill="none" />
+                        </svg>
+                        <div class="airport-icao-label" style="left: ${size + 4}px;">${row.ident}</div>
+                    </div>
                 `,
                 className: '',
                 iconSize: [size, size],
@@ -1276,9 +1331,9 @@ const marker = L.marker([lat, lon], {
             const stickyLabel = L.tooltip({
                 permanent: true,
                 direction: 'bottom',
-                className: 'airport-label', 
+                className: 'airport-label',
                 offset: [0, 5],
-                interactive: true 
+                interactive: true
             })
             .setLatLng(this.getLatLng())
             .setContent(row.ident)
@@ -1292,9 +1347,9 @@ const marker = L.marker([lat, lon], {
             const hoverContent = `<b>${row.ident}</b><br>${row.name}<br>${type.replace('_', ' ').toUpperCase()}`;
             
             marker.bindTooltip(hoverContent, {
-                permanent: false,   
+                permanent: false,  
                 direction: 'top',
-                sticky: true,       
+                sticky: true,        
                 className: 'airport-hover-box',
                 offset: [0, -10]
             });
@@ -1311,7 +1366,7 @@ map.on('moveend', updateAirports);
 const measureMarkerLayer = L.layerGroup().addTo(map);
 const measureLineLayer = L.layerGroup().addTo(map);
 const selectedAirportsLayer = L.layerGroup().addTo(map);
-let measureMarkers = []; 
+let measureMarkers = [];
 
 function calculateBearing(latlng1, latlng2) {
     const startLat = latlng1.lat * Math.PI / 180;
@@ -1351,16 +1406,16 @@ function formatEteTime(hours) {
 }
 
 function updateLines() {
-measureLineLayer.clearLayers(); 
+measureLineLayer.clearLayers();
     const listBox = document.getElementById('waypoint-list-box');
 
     if (measureMarkers.length < 2) {
         if (listBox) listBox.style.display = 'none';
-        return; 
+        return;
     }
 
-    listBox.style.display = 'block'; 
-    let totalDistanceNM = 0; 
+    listBox.style.display = 'block';
+    let totalDistanceNM = 0;
     let cumHours = 0;
 
     // Start building the HTML table with headers
@@ -1393,10 +1448,10 @@ measureLineLayer.clearLayers();
 
         const distMeters = map.distance(point1, point2);
         const distNM = distMeters / 1852;
-        totalDistanceNM += distNM; 
+        totalDistanceNM += distNM;
 
         // 1. Calculate True Bearing for the visual angle, and Display Bearing for the text
-        const trueBearing = calculateBearing(point1, point2); 
+        const trueBearing = calculateBearing(point1, point2);
         let displayBearing = trueBearing;
         
         if (getMagVar) {
@@ -1430,54 +1485,61 @@ measureLineLayer.clearLayers();
             weight: 3,
             opacity: 0.7
         }).addTo(measureLineLayer);
-
-        // Midpoint for label placement
-        const midLat = (point1.lat + point2.lat) / 2;
-        const midLng = (point1.lng + point2.lng) / 2;
+// Midpoint for label placement (Removed - no longer needed)
+        // const midLat = (point1.lat + point2.lat) / 2;
+        // const midLng = (point1.lng + point2.lng) / 2;
 
         // 2. CALCULATE PERFECT VISUAL ROTATION USING SCREEN PIXELS
         const p1 = map.latLngToLayerPoint(point1);
         const p2 = map.latLngToLayerPoint(point2);
         let cssRotation = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI);
+        let isFlipped = false;
         
-        // Keep the text right-side up
-        if (cssRotation > 90) cssRotation -= 180;
-        else if (cssRotation < -90) cssRotation += 180;
+        // Keep the text right-side up and track if it was flipped
+        if (cssRotation > 90) {
+            cssRotation -= 180;
+            isFlipped = true;
+        } else if (cssRotation < -90) {
+            cssRotation += 180;
+            isFlipped = true;
+        }
 
         // 3. Set text using the Magnetic (Display) Bearing
         let labelText = `${Math.round(displayBearing).toString().padStart(3, '0')}° ${distNM.toFixed(0)}nm`;
-       
-        
-        
         if (eteString !== "N/A") labelText += ` ${eteString}`;
 
-const labelIcon = L.divIcon({
-    className: '',
-    html: `<div style="position:absolute;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;">
-        <div style="
-            background: #ff9900;
-            border-radius: 10px;
-            padding: 1px 2px; /* Slightly more padding for the thicker border */
-            font-size: 8px;
-            font-weight: bold;
-            letter-spacing: -05px;
-            color: #000;
-            white-space: nowrap;
-            transform: rotate(${cssRotation}deg);
-            font-family: 'B612 Mono', monospace;
-            /* Remove box-shadow and add a solid stroke */
-            border: 2px solid black; 
-            letter-spacing: 0;
-        ">${labelText}</div>
-    </div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0]
-});
+        // Add direction arrow pointing toward the destination
+        let labelTextWithArrow = isFlipped ? `< ${labelText}` : `${labelText} >`;
 
-        L.marker([midLat, midLng], {
-            icon: labelIcon,
-            interactive: false
-        }).addTo(measureLineLayer);
+        // Only draw the text label if distance is >= 2.5NM to prevent clutter
+        if (map.getZoom() > 8) {
+            const labelIcon = L.divIcon({
+                className: '',
+                html: `<div style="
+                    position: absolute;
+                    ${isFlipped ? 'right: 0;' : 'left: 0;'}
+                    bottom: 0;
+                    transform-origin: ${isFlipped ? 'bottom right' : 'bottom left'};
+                    transform: rotate(${cssRotation}deg) translate(${isFlipped ? '-15px' : '15px'}, -4px);
+                    color: #ff9900;
+                    font-family: var(--font-mono);
+                    font-size: 11px;
+                    font-weight: bold;
+                    -webkit-text-stroke: 2px black;
+                    paint-order: stroke fill;
+                    white-space: nowrap;
+                    pointer-events: none;
+                ">${labelTextWithArrow}</div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0]
+            });
+
+            // Anchor at the starting waypoint (point1) instead of the midpoint
+            L.marker([point1.lat, point1.lng], {
+                icon: labelIcon,
+                interactive: false
+            }).addTo(measureLineLayer);
+        }
 
         // Add row for this leg
         htmlContent += `
@@ -1506,6 +1568,8 @@ const labelIcon = L.divIcon({
             <span>${totalDistanceNM.toFixed(1)} nm</span>
             <span>${totalEteStr}</span>
         </div>
+        <button id="copy-coords-btn" class="text-btn" style="width: 100%; margin-top: 4px; margin-bottom: 2px; padding: 3px; font-weight: bold; font-size: 9px; border-color: var(--accent-green);" onclick="copySimbriefRoute()">COPY COORDS FOR SIMBRIEF</button>
+        <button id="delete-fpl-btn" class="text-btn" style="width: 100%; margin-bottom: 2px; padding: 3px; font-weight: bold; font-size: 9px; border-color: var(--exc-brd); " onclick="clearMeasurements()">DELETE FLIGHT PLAN</button>
     `;
 
     listBox.innerHTML = htmlContent;
@@ -1516,21 +1580,65 @@ const labelIcon = L.divIcon({
     });
 }
 
-async function fetchElevationForWaypoint(latlng, index) {
-    try {
-        const results = await L.Topography.getTopography(latlng, topoOptions);
-        const elSpan = document.getElementById(`wp-elev-${index}`);
-        if (elSpan && results && results.elevation !== undefined) {
-            const elevFt = Math.round(results.elevation * 3.28084);
-            elSpan.innerHTML = `${elevFt.toLocaleString()}ft`;
-        } else if (elSpan) {
-            elSpan.innerHTML = `N/A`;
+// ═══════════════════════════════════════════════════════════
+//   COPY TO SIMBRIEF HANDLER
+// ═══════════════════════════════════════════════════════════
+
+window.copySimbriefRoute = function() {
+    if (!measureMarkers || measureMarkers.length === 0) return;
+    
+    const coords = measureMarkers.map(m => {
+        const lat = m.getLatLng().lat;
+        const lng = m.getLatLng().lng;
+        
+        const latDir = lat >= 0 ? 'N' : 'S';
+        const lngDir = lng >= 0 ? 'E' : 'W';
+        
+        // --- Latitude Conversion (DDMMSSN) ---
+        const absLat = Math.abs(lat);
+        const totalLatSeconds = Math.round(absLat * 3600);
+         
+        const latDegrees = Math.floor(totalLatSeconds / 3600);
+        const latMinutes = Math.floor((totalLatSeconds % 3600) / 60);
+        const latSeconds = totalLatSeconds % 60;
+         
+        const latStr = String(latDegrees).padStart(2, '0') + 
+                       String(latMinutes).padStart(2, '0') + 
+                       String(latSeconds).padStart(2, '0') + 
+                       latDir;
+
+        // --- Longitude Conversion (DDDMMSSW) ---
+        const absLng = Math.abs(lng);
+        const totalLngSeconds = Math.round(absLng * 3600);
+         
+        const lngDegrees = Math.floor(totalLngSeconds / 3600);
+        const lngMinutes = Math.floor((totalLngSeconds % 3600) / 60);
+        const lngSeconds = totalLngSeconds % 60;
+         
+        // Longitude degrees must be padded to 3 digits
+        const lngStr = String(lngDegrees).padStart(3, '0') + 
+                       String(lngMinutes).padStart(2, '0') + 
+                       String(lngSeconds).padStart(2, '0') + 
+                       lngDir;
+        
+        return `${latStr}${lngStr}`;
+    }).join(' ');
+
+    navigator.clipboard.writeText(coords).then(() => {
+        const btn = document.getElementById('copy-coords-btn');
+        if (btn) {
+            btn.innerText = 'COPIED TO CLIPBOARD!';
+            btn.style.backgroundColor = 'var(--accent-green)';
+            btn.style.color = 'var(--bg-dark)';
+            
+            setTimeout(() => {
+                btn.innerText = 'COPY COORDS FOR SIMBRIEF';
+                btn.style.backgroundColor = 'var(--bg-light)';
+                btn.style.color = 'var(--text-main)';
+            }, 2000);
         }
-    } catch (err) {
-        const elSpan = document.getElementById(`wp-elev-${index}`);
-        if (elSpan) elSpan.innerHTML = `Err`;
-    }
-}
+    }).catch(err => console.error('Clipboard copy failed:', err));
+};
 
 async function fetchElevationForWaypoint(latlng, index) {
     try {
@@ -1556,6 +1664,7 @@ const contextMenu = document.getElementById('custom-context-menu');
 let contextMenuLatLng = null;
 
 map.on('zoomend', updateAirports);
+map.on('zoomend', updateLines);
 
 map.on('contextmenu', function(e) {
     contextMenuLatLng = e.latlng;
@@ -1592,7 +1701,7 @@ document.getElementById('menu-add-point').addEventListener('click', function() {
 
     const marker = L.marker(contextMenuLatLng, {
         icon: dotIcon,
-        draggable: true 
+        draggable: true
     }).addTo(measureMarkerLayer);
 
     measureMarkers.push(marker);
@@ -1621,7 +1730,7 @@ document.addEventListener('keydown', function(e) {
         console.log("Map cleared: Measurements and pinned airports removed.");
     }
 });
-              
+             
 async function performNavSearch() {
     const query = document.getElementById('nav-search-input').value.trim();
     const msgDiv = document.getElementById('search-message');
@@ -1653,7 +1762,7 @@ async function performNavSearch() {
         msgDiv.innerText = `Arrived at: ${airport.name}`;
         
         document.getElementById('btn-airports').classList.add('selected');
-        updateAirports(); 
+        updateAirports();
         return;
     }
 
@@ -1699,7 +1808,7 @@ async function fetchNearbyWikipedia(latlng) {
     wikiLayer.clearLayers();
 
     // 10km is the max radius allowed by the Wikipedia geosearch API
-    const radius = 10000; 
+    const radius = 10000;
     const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=coordinates|extracts|info&inprop=url&exintro=1&explaintext=1&exsentences=1&generator=geosearch&ggscoord=${latlng.lat}|${latlng.lng}&ggsradius=${radius}&ggslimit=50`;
 
     try {
@@ -1742,8 +1851,8 @@ async function fetchNearbyWikipedia(latlng) {
                     `;
 
                     marker.bindPopup(content, {
-                        className: 'wiki-popup', 
-                        offset: [0, -15] 
+                        className: 'wiki-popup',
+                        offset: [0, -15]
                     });
                 }
             });
@@ -1769,7 +1878,7 @@ function showNoWikiPopup(latlng, msg = "No Wikipedia articles found within 10km.
 }
 // map.on('moveend', () => {
 //     clearTimeout(wikiDebounceTimer);
-//     wikiDebounceTimer = setTimeout(updateWikipedia, 600); 
+//     wikiDebounceTimer = setTimeout(updateWikipedia, 600);
 // });
 
     </script>
