@@ -831,14 +831,34 @@
             });
         }
 
+        let lastApiUpdateTimestamp = null;
+
         function updateApiTime() {
+            // Store the exact moment the API was updated
+            lastApiUpdateTimestamp = Date.now();
+            refreshApiTimeDisplay();
+        }
+
+        function refreshApiTimeDisplay() {
             const timeDiv = document.getElementById('api-update-time');
-            if(timeDiv) {
+            if (timeDiv && lastApiUpdateTimestamp) {
                 timeDiv.style.display = 'block';
-                const now = new Date();
-                timeDiv.innerText = `Last API Update: ${now.toLocaleTimeString()}`;
+                
+                // Calculate the difference in seconds
+                const diffSeconds = Math.floor((Date.now() - lastApiUpdateTimestamp) / 1000);
+                
+                // Format nicely for seconds or minutes
+                if (diffSeconds < 60) {
+                    timeDiv.innerText = `Last API Update: ${diffSeconds}s ago`;
+                } else {
+                    const diffMinutes = Math.floor(diffSeconds / 60);
+                    timeDiv.innerText = `Last API Update: ${diffMinutes}m ago`;
+                }
             }
         }
+
+        // Start a timer that updates the text every 1 second
+        setInterval(refreshApiTimeDisplay, 1000);
 
         const elevationBox = document.getElementById('elevation-box');
         const topoOptions = {
