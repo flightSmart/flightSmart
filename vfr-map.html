@@ -922,6 +922,13 @@
         let currentAircraftSpeed = null;
         let glideCircle = null;
 
+
+        let animationFrameId = null;
+        let lastFlightData = null;
+        let lastDataTimestamp = null;
+        let lastFrameTime = null;
+
+
         // Breadcrumb Variables
         let breadcrumbCoords = [];
         let breadcrumbPolyline = null;
@@ -1027,7 +1034,9 @@ function trackSpecificFlight(index) {
         pollFlightPosition(document.getElementById('username-input').value.trim(), selectedData.sessionId, msgDiv);
     }, 15000);
 }
-       
+
+
+
 async function drawFlight(flight, isFirstLoad) {
     currentAircraftAltitude = flight.altitude;
     currentAircraftSpeed = flight.speed;
@@ -1043,7 +1052,7 @@ async function drawFlight(flight, isFirstLoad) {
         breadcrumbPolyline.setLatLngs(breadcrumbCoords);
     } else {
         breadcrumbPolyline = L.polyline(breadcrumbCoords, {
-            color: '##64c49a',
+            color: '#000000',
             weight: 2.5,
             opacity: 0.8,
             pane: 'aircraftPane'
@@ -1140,6 +1149,8 @@ if (userMarker) {
             color: 'black',
             weight: 2.5,
             opacity: 1,
+            dashArray: '6, 6',
+            lineCap: 'butt',
             pane: 'aircraftPane' // <-- ADD THIS LINE
         }).addTo(map);
     }
@@ -1170,105 +1181,184 @@ if (!userMarker.getTooltip()) {
         userMarker.setTooltipContent(popupContent);
     }
 
-    const followEnabled = document.getElementById('btn-follow').classList.contains('selected');
+const followEnabled = document.getElementById('btn-follow').classList.contains('selected');
     if (isFirstLoad) {
         userMarker.openPopup();
         map.flyTo(coords, 10, { duration: 1.5 });
-    } else if (followEnabled) {
-        map.panTo(coords);
+        
+        // Wait for the initial flyTo animation to finish, then start smooth gliding
+        setTimeout(startAircraftInterpolation, 1500);
+    } 
+    // We removed the old `else if (followEnabled) { map.panTo(coords) }` 
+    // because the smooth animation loop handles following the camera now!
+
+    // Save the latest actual API data for the interpolation loop to use
+    lastFlightData = flight;
+    lastDataTimestamp = Date.now();
+
+}
+
+
+
+
+
+
+async function pollFlightPosition(username, sessionId, msgDiv) {
+    try {
+        const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}?sessionId=${sessionId}`);
+        const data = await response.json();
+
+        const activeFlight = data.flight || (data.flights && data.flights[0] ? data.flights[0].flight : null);
+
+        if (data.found && activeFlight) {
+            drawFlight(activeFlight, false);
+            updateApiTime();
+        } else {
+            msgDiv.style.color = "var(--exc-txt)";
+            msgDiv.innerText = "Flight tracking lost.";
+            clearInterval(trackingInterval);
+        }
+    } catch (err) {
+        console.error("Polling error:", err);
     }
 }
 
-        async function pollFlightPosition(username, sessionId, msgDiv) {
-            try {
-                const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}?sessionId=${sessionId}`);
-                const data = await response.json();
+function startAircraftInterpolation() {
+    // Clear any existing loop to prevent duplicates
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    lastFrameTime = performance.now();
 
-                const activeFlight = data.flight || (data.flights && data.flights[0] ? data.flights[0].flight : null);
+    function animate(currentTime) {
+        animationFrameId = requestAnimationFrame(animate);
 
-                if (data.found && activeFlight) {
-                    drawFlight(activeFlight, false);
-                    updateApiTime();
-                } else {
-                    msgDiv.style.color = "var(--exc-txt)";
-                    msgDiv.innerText = "Flight tracking lost.";
-                    clearInterval(trackingInterval);
-                }
-            } catch (err) {
-                console.error("Polling error:", err);
+        // If no flight is active, do nothing
+        if (!lastFlightData || !userMarker) return;
+
+        const dt = currentTime - lastFrameTime;
+        lastFrameTime = currentTime;
+
+        // Pause animation if the browser tab is hidden (dt > 1sec) to prevent crazy jumps
+        if (dt > 1000) return; 
+
+        // Stop predicting if we lose API connection (no true updates in 35 seconds)
+        if (Date.now() - lastDataTimestamp > 35000) return;
+
+        // Calculate distance traveled in this exact frame (Speed is knots / Nautical Miles per Hour)
+        const distanceNM = lastFlightData.speed * (dt / 3600000);
+
+        if (distanceNM > 0) {
+            const currentPos = userMarker.getLatLng();
+            
+            // Calculate where it should be right now using your existing math function
+            const nextCoords = getHeadingEndPoint(
+                currentPos.lat, 
+                currentPos.lng, 
+                lastFlightData.heading, 
+                distanceNM
+            );
+
+            // 1. Move the aircraft
+            userMarker.setLatLng(nextCoords);
+            
+            // 2. Move the glide circle
+            if (glideCircle) glideCircle.setLatLng(nextCoords);
+            
+            // 3. Move the heading projection line
+            if (headingLine) {
+                const endLineCoords = getHeadingEndPoint(nextCoords[0], nextCoords[1], lastFlightData.heading, 10);
+                headingLine.setLatLngs([nextCoords, endLineCoords]);
+            }
+
+            // 3.5 Smoothly stretch the breadcrumb trail to the live animated position
+            if (breadcrumbPolyline && breadcrumbCoords.length > 0) {
+                // Combine the historical points with the current live point
+                breadcrumbPolyline.setLatLngs([...breadcrumbCoords, nextCoords]);
+            }
+            // --------------------------
+
+            // 4. Smoothly pan the map if "Follow" mode is active
+            if (document.getElementById('btn-follow').classList.contains('selected')) {
+                map.panTo(nextCoords, { animate: false }); 
             }
         }
+    }
+    
+    // Kick off the loop
+    animationFrameId = requestAnimationFrame(animate);
+}
 
-        async function drawFlightPlan(sessionId, flightId) {
-            try {
-                const response = await fetch(`https://flightsmart.tools/api/if/flightplan/${sessionId}/${flightId}`);
-                const planData = await response.json();
 
-                if (planData.errorCode === 0 && planData.result && planData.result.flightPlanItems) {
-                    let pathCoordinates = [];
-                    
-                    if (flightPlanLayer) map.removeLayer(flightPlanLayer);
-                    flightPlanLayer = L.layerGroup().addTo(map);
 
-                    const processNode = (node) => {
-                        if (node.location && node.location.latitude !== 0) {
-                            const pt = [node.location.latitude, node.location.longitude];
-                            pathCoordinates.push(pt);
+async function drawFlightPlan(sessionId, flightId) {
+    try {
+        const response = await fetch(`https://flightsmart.tools/api/if/flightplan/${sessionId}/${flightId}`);
+        const planData = await response.json();
 
-                            const triangleIcon = L.divIcon({
-                                className: 'waypoint-triangle-icon',
-                                html: `<svg width="12" height="12" viewBox="0 0 100 100">
-                                        <path d="M 50 5 L 95 90 L 5 90 Z" fill="#cd4aee" stroke="black" stroke-width="15"/>
-                                    </svg>`,
-                                iconSize: [12, 12],
-                                iconAnchor: [6, 6]
-                            });
+        if (planData.errorCode === 0 && planData.result && planData.result.flightPlanItems) {
+            let pathCoordinates = [];
+            
+            if (flightPlanLayer) map.removeLayer(flightPlanLayer);
+            flightPlanLayer = L.layerGroup().addTo(map);
 
-                            const marker = L.marker(pt, {
-                                icon: triangleIcon,
-                                interactive: false
-                            }).addTo(flightPlanLayer);
+            const processNode = (node) => {
+                if (node.location && node.location.latitude !== 0) {
+                    const pt = [node.location.latitude, node.location.longitude];
+                    pathCoordinates.push(pt);
 
-                            const wpName = node.name || node.identifier || "";
-                            if (wpName) {
-                                marker.bindTooltip(wpName, {
-                                    permanent: true,   
-                                    direction: 'bottom',    
-                                    className: 'waypoint-label',
-                                    offset: [0, 5]      
-                                });
-                            }
-                        }
-                    };
-
-                    planData.result.flightPlanItems.forEach(item => {
-                        if (item.children && item.children.length > 0) {
-                            item.children.forEach(child => processNode(child));
-                        } else {
-                            processNode(item);
-                        }
+                    const triangleIcon = L.divIcon({
+                        className: 'waypoint-triangle-icon',
+                        html: `<svg width="12" height="12" viewBox="0 0 100 100">
+                                <path d="M 50 5 L 95 90 L 5 90 Z" fill="#cd4aee" stroke="black" stroke-width="15"/>
+                            </svg>`,
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
                     });
 
-                    // Draw the black stroke first (thicker)
-                    L.polyline(pathCoordinates, {
-                        color: 'black',
-                        weight: 6, // Adjust for thicker/thinner stroke
-                        opacity: 1,
+                    const marker = L.marker(pt, {
+                        icon: triangleIcon,
+                        interactive: false
                     }).addTo(flightPlanLayer);
 
-                    // Draw the main purple line on top
-                    if (pathCoordinates.length > 0) {
-                        L.polyline(pathCoordinates, {
-                            color: '#cd4aee',
-                            weight: 3,
-                            opacity: 0.8,
-                        }).addTo(flightPlanLayer);
+                    const wpName = node.name || node.identifier || "";
+                    if (wpName) {
+                        marker.bindTooltip(wpName, {
+                            permanent: true,   
+                            direction: 'bottom',    
+                            className: 'waypoint-label',
+                            offset: [0, 5]      
+                        });
                     }
                 }
-            } catch (err) {
-                console.error("Could not draw flight plan:", err);
+            };
+
+            planData.result.flightPlanItems.forEach(item => {
+                if (item.children && item.children.length > 0) {
+                    item.children.forEach(child => processNode(child));
+                } else {
+                    processNode(item);
+                }
+            });
+
+            // Draw the black stroke first (thicker)
+            L.polyline(pathCoordinates, {
+                color: 'black',
+                weight: 6, // Adjust for thicker/thinner stroke
+                opacity: 1,
+            }).addTo(flightPlanLayer);
+
+            // Draw the main purple line on top
+            if (pathCoordinates.length > 0) {
+                L.polyline(pathCoordinates, {
+                    color: '#cd4aee',
+                    weight: 3,
+                    opacity: 0.8,
+                }).addTo(flightPlanLayer);
             }
         }
+    } catch (err) {
+        console.error("Could not draw flight plan:", err);
+    }
+}
 
 let airportDataCache = null;
 const airportLayer = L.layerGroup().addTo(map);
