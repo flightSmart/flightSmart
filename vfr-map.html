@@ -297,6 +297,31 @@
             margin-top: -6px;
             margin-left: -6px;
         }
+
+        .draggable-dot-blue {
+            background-color: #00b9ff;
+            border: 2px solid #000000;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            margin-top: -6px;
+            margin-left: -6px;
+        }
+
+        .ghost-dot {
+            background-color: rgba(255, 153, 0, 0.4);
+            border: 2px dashed rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            margin-top: -6px;
+            margin-left: -6px;
+            cursor: pointer;
+            transition: background-color 0.2s, border 0.2s;
+        }
+        .ghost-dot:hover {
+            background-color: #ff9900;
+            border: 2px solid #000000;
+        }
+
         
         .aircraft-tooltip {
             background: transparent !important;
@@ -705,8 +730,18 @@
             <input type="text" id="nav-search-input" placeholder="ICAO, City, or Landmark..." onkeydown="if(event.key==='Enter') performNavSearch()"/>
             <button class="text-btn" onclick="performNavSearch()">NAV</button>
         </div>
+        <div class="search-row" style="margin-top: 5px;">
+            <input type="text" id="import-coords-input" placeholder="Paste coords (Simbrief or Lat,Lng)" onkeydown="if(event.key==='Enter') importCoordinates()"/>
+            <button class="text-btn" onclick="importCoordinates()">IMPORT</button>
+        </div>
         
-        <div id="waypoint-list-box" style="display: none;"></div>
+        <div id="waypoint-wrapper" style="display: none; margin-top: 10px; border-top: 1px solid var(--border-main); padding-top: 5px;">
+            <div id="waypoint-header" onclick="toggleWaypointList()" style="display: flex; justify-content: space-between; cursor: pointer; font-size: 10px; font-weight: bold; color: var(--accent-green); margin-bottom: 5px; padding: 2px 0;">
+                <span>FLIGHT PLAN</span>
+                <span id="waypoint-toggle-icon">▼</span>
+            </div>
+            <div id="waypoint-list-box" style="display: block; margin-top: 0; border-top: none; padding-top: 0;"></div>
+        </div>
         
     </div>
 
@@ -735,7 +770,7 @@
 
        let getMagVar = null;
 
-        import('https://esm.sh/magvar')
+         import('https://esm.sh/magvar')
             .then(module => {
                 if (typeof module.default === 'function') {
                     getMagVar = module.default;
@@ -1096,7 +1131,7 @@ if (userMarker) {
             weight: 2,
             opacity: 1,
             fillOpacity: 1,
-            pane: 'aircraftPane' // <-- ADD THIS LINE
+            pane: 'aircraftPane' 
         }).addTo(map);
 
 
@@ -1105,27 +1140,27 @@ if (userMarker) {
             L.DomEvent.stopPropagation(e);
             map.dragging.disable();
 
-            clearMeasurements();
+            clearAircraftDrag();
 
             const startMarker = L.marker(userMarker.getLatLng(), {
-                icon: L.divIcon({ className: 'draggable-dot', iconSize: [12, 12] }),
+                icon: L.divIcon({ className: 'draggable-dot-blue', iconSize: [12, 12] }),
                 draggable: true
-            }).addTo(measureMarkerLayer);
-            measureMarkers.push(startMarker);
-            startMarker.on('drag', updateLines);
-            startMarker.on('click', clearMeasurements);
+            }).addTo(acDragMarkerLayer);
+            acDragMarkers.push(startMarker);
+            startMarker.on('drag', updateAircraftDragLines);
+            startMarker.on('click', clearAircraftDrag);
 
             const endMarker = L.marker(e.latlng, {
-                icon: L.divIcon({ className: 'draggable-dot', iconSize: [12, 12] }),
+                icon: L.divIcon({ className: 'draggable-dot-blue', iconSize: [12, 12] }),
                 draggable: true
-            }).addTo(measureMarkerLayer);
-            measureMarkers.push(endMarker);
-            endMarker.on('drag', updateLines);
-            endMarker.on('click', clearMeasurements);
+            }).addTo(acDragMarkerLayer);
+            acDragMarkers.push(endMarker);
+            endMarker.on('drag', updateAircraftDragLines);
+            endMarker.on('click', clearAircraftDrag);
 
             function tempMouseMove(ev) {
                 endMarker.setLatLng(ev.latlng);
-                updateLines();
+                updateAircraftDragLines();
             }
 
             function tempMouseUp() {
@@ -1137,7 +1172,7 @@ if (userMarker) {
             map.on('mousemove', tempMouseMove);
             map.on('mouseup', tempMouseUp);
 
-            updateLines();
+            updateAircraftDragLines();
         });
     }
 
@@ -1151,7 +1186,7 @@ if (userMarker) {
             opacity: 1,
             dashArray: '6, 6',
             lineCap: 'butt',
-            pane: 'aircraftPane' // <-- ADD THIS LINE
+            pane: 'aircraftPane' 
         }).addTo(map);
     }
 
@@ -1189,8 +1224,6 @@ const followEnabled = document.getElementById('btn-follow').classList.contains('
         // Wait for the initial flyTo animation to finish, then start smooth gliding
         setTimeout(startAircraftInterpolation, 1500);
     } 
-    // We removed the old `else if (followEnabled) { map.panTo(coords) }` 
-    // because the smooth animation loop handles following the camera now!
 
     // Save the latest actual API data for the interpolation loop to use
     lastFlightData = flight;
@@ -1476,8 +1509,14 @@ map.on('moveend', updateAirports);
 
 const measureMarkerLayer = L.layerGroup().addTo(map);
 const measureLineLayer = L.layerGroup().addTo(map);
+let currentGhostMarkers = []; // Replaces the layer group
 const selectedAirportsLayer = L.layerGroup().addTo(map);
 let measureMarkers = [];
+
+// Distinct layer groups for Aircraft Blue Drag Path
+const acDragMarkerLayer = L.layerGroup().addTo(map);
+const acDragLineLayer = L.layerGroup().addTo(map);
+let acDragMarkers = [];
 
 function calculateBearing(latlng1, latlng2) {
     const startLat = latlng1.lat * Math.PI / 180;
@@ -1494,13 +1533,58 @@ function calculateBearing(latlng1, latlng2) {
     return (brng + 360) % 360;
 }
 
+
+function saveMeasurementPlan() {
+    if (measureMarkers.length === 0) {
+        localStorage.removeItem('savedMeasurementPlan');
+        return;
+    }
+    const coords = measureMarkers.map(m => m.getLatLng());
+    localStorage.setItem('savedMeasurementPlan', JSON.stringify(coords));
+}
+
+function loadMeasurementPlan() {
+    const saved = localStorage.getItem('savedMeasurementPlan');
+    if (saved) {
+        try {
+            const coords = JSON.parse(saved);
+            coords.forEach(latlng => {
+                const dotIcon = L.divIcon({
+                    className: 'draggable-dot',
+                    iconSize: [12, 12]
+                });
+                const marker = L.marker(latlng, {
+                    icon: dotIcon,
+                    draggable: true
+                }).addTo(measureMarkerLayer);
+                
+                measureMarkers.push(marker);
+                marker.on('drag', updateLines);
+            });
+            updateLines();
+        } catch(e) {
+            console.error("Failed to load saved plan", e);
+        }
+    }
+}
+
+
 function clearMeasurements() {
     measureMarkerLayer.clearLayers();
     measureLineLayer.clearLayers();
+    currentGhostMarkers = []; // Reset the ghost array
     measureMarkers = [];
     
-    const listBox = document.getElementById('waypoint-list-box');
-    if (listBox) listBox.style.display = 'none';
+const wrapperBox = document.getElementById('waypoint-wrapper');
+    if (wrapperBox) wrapperBox.style.display = 'none';
+
+    localStorage.removeItem('savedMeasurementPlan');
+}
+
+function clearAircraftDrag() {
+    acDragMarkerLayer.clearLayers();
+    acDragLineLayer.clearLayers();
+    acDragMarkers = [];
 }
 
 function formatEteTime(hours) {
@@ -1517,15 +1601,27 @@ function formatEteTime(hours) {
 }
 
 function updateLines() {
-measureLineLayer.clearLayers();
+    measureLineLayer.clearLayers();
+    
+    currentGhostMarkers.forEach(marker => {
+        measureMarkerLayer.removeLayer(marker);
+    });
+    currentGhostMarkers = [];    
+    
+    const wrapperBox = document.getElementById('waypoint-wrapper');
     const listBox = document.getElementById('waypoint-list-box');
 
     if (measureMarkers.length < 2) {
-        if (listBox) listBox.style.display = 'none';
+        if (wrapperBox) wrapperBox.style.display = 'none';
+        saveMeasurementPlan();
         return;
     }
 
-    listBox.style.display = 'block';
+    if (wrapperBox) wrapperBox.style.display = 'block';
+    // Notice we removed the line that forced 'listBox' to 'block'. 
+    // This allows it to remember if you collapsed it!
+
+
     let totalDistanceNM = 0;
     let cumHours = 0;
 
@@ -1596,9 +1692,41 @@ measureLineLayer.clearLayers();
             weight: 3,
             opacity: 0.7
         }).addTo(measureLineLayer);
-// Midpoint for label placement (Removed - no longer needed)
-        // const midLat = (point1.lat + point2.lat) / 2;
-        // const midLng = (point1.lng + point2.lng) / 2;
+
+        
+        const leftMarker = measureMarkers[i];
+        
+        // ─── NEW GHOST MARKER LOGIC ──────────────────────────────
+        const midLat = (point1.lat + point2.lat) / 2;
+        const midLng = (point1.lng + point2.lng) / 2;
+        
+        const ghostMarker = L.marker([midLat, midLng], {
+            icon: L.divIcon({ className: 'ghost-dot', iconSize: [12, 12] }),
+            draggable: true
+        }).addTo(measureMarkerLayer); // ADD DIRECTLY TO PERMANENT LAYER
+        
+        currentGhostMarkers.push(ghostMarker);
+
+        ghostMarker.on('dragstart', function(e) {
+            // 1. Remove from the temporary array immediately so it survives the redraw
+            const gIndex = currentGhostMarkers.indexOf(this);
+            if (gIndex > -1) currentGhostMarkers.splice(gIndex, 1);
+
+            // 2. Visual swap
+            L.DomUtil.removeClass(this._icon, 'ghost-dot');
+            L.DomUtil.addClass(this._icon, 'draggable-dot');
+            
+            // 3. Splice into the main array right after the left marker
+            const insertIndex = measureMarkers.indexOf(leftMarker) + 1;
+            measureMarkers.splice(insertIndex, 0, this);
+            
+            // 4. Bind standard events
+            this.on('drag', updateLines);
+            // this.on('click', clearMeasurements);
+            
+            // 5. Instantly redraw to generate lines and new ghosts
+            updateLines();
+        });
 
         // 2. CALCULATE PERFECT VISUAL ROTATION USING SCREEN PIXELS
         const p1 = map.latLngToLayerPoint(point1);
@@ -1679,16 +1807,109 @@ measureLineLayer.clearLayers();
             <span>${totalDistanceNM.toFixed(1)} nm</span>
             <span>${totalEteStr}</span>
         </div>
-        <button id="copy-coords-btn" class="text-btn" style="width: 100%; margin-top: 4px; margin-bottom: 2px; padding: 3px; font-weight: bold; font-size: 9px; border-color: var(--accent-green);" onclick="copySimbriefRoute()">COPY COORDS FOR SIMBRIEF</button>
-        <button id="delete-fpl-btn" class="text-btn" style="width: 100%; margin-bottom: 2px; padding: 3px; font-weight: bold; font-size: 9px; border-color: var(--exc-brd); " onclick="clearMeasurements()">DELETE FLIGHT PLAN</button>
+        <div style="display: flex; gap: 4px; margin-top: 4px; margin-bottom: 2px;">
+            <button id="copy-coords-btn" class="text-btn" style="flex: 1; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--accent-green);" onclick="copySimbriefRoute()">COPY COORDS</button>
+            <button id="delete-fpl-btn" class="text-btn" style="flex: 1; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--exc-brd);" onclick="clearMeasurements()">DELETE PLAN</button>
+        </div>
     `;
-
     listBox.innerHTML = htmlContent;
 
     // Asynchronously resolve terrain elevations
     measureMarkers.forEach((marker, index) => {
         fetchElevationForWaypoint(marker.getLatLng(), index);
     });
+    saveMeasurementPlan(); // ADD HERE
+}
+
+function updateAircraftDragLines() {
+    acDragLineLayer.clearLayers();
+
+    if (acDragMarkers.length < 2) return;
+
+    for (let i = 0; i < acDragMarkers.length - 1; i++) {
+        const point1 = acDragMarkers[i].getLatLng();
+        const point2 = acDragMarkers[i+1].getLatLng();
+
+        const distMeters = map.distance(point1, point2);
+        const distNM = distMeters / 1852;
+
+        const trueBearing = calculateBearing(point1, point2);
+        let displayBearing = trueBearing;
+        
+        if (getMagVar) {
+            const declination = getMagVar(point1.lat, point1.lng);
+            displayBearing = trueBearing - declination;
+            
+            if (displayBearing <= 0) displayBearing += 360;
+            if (displayBearing > 360) displayBearing -= 360;
+        }
+
+        let eteString = "N/A";
+        if (typeof currentAircraftSpeed === 'number' && currentAircraftSpeed > 10) {
+            const legHours = distNM / currentAircraftSpeed;
+            eteString = formatEteTime(legHours);
+        }
+
+        // Thick black outer path wrapper
+        L.polyline([point1, point2], {
+            color: 'black',
+            weight: 6,
+            opacity: 1
+        }).addTo(acDragLineLayer);
+
+        // Primary Blue Vector Line
+        L.polyline([point1, point2], {
+            color: '#00b9ff',
+            weight: 3,
+            opacity: 0.8
+        }).addTo(acDragLineLayer);
+
+        const p1 = map.latLngToLayerPoint(point1);
+        const p2 = map.latLngToLayerPoint(point2);
+        let cssRotation = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI);
+        let isFlipped = false;
+        
+        if (cssRotation > 90) {
+            cssRotation -= 180;
+            isFlipped = true;
+        } else if (cssRotation < -90) {
+            cssRotation += 180;
+            isFlipped = true;
+        }
+
+        let labelText = `${Math.round(displayBearing).toString().padStart(3, '0')}° ${distNM.toFixed(0)}nm`;
+        if (eteString !== "N/A") labelText += ` ${eteString}`;
+
+        let labelTextWithArrow = isFlipped ? `< ${labelText}` : `${labelText} >`;
+
+        if (map.getZoom() > 8) {
+            const labelIcon = L.divIcon({
+                className: '',
+                html: `<div style="
+                    position: absolute;
+                    ${isFlipped ? 'right: 0;' : 'left: 0;'}
+                    bottom: 0;
+                    transform-origin: ${isFlipped ? 'bottom right' : 'bottom left'};
+                    transform: rotate(${cssRotation}deg) translate(${isFlipped ? '-15px' : '15px'}, -4px);
+                    color: #00b9ff;
+                    font-family: var(--font-mono);
+                    font-size: 11px;
+                    font-weight: bold;
+                    -webkit-text-stroke: 2px black;
+                    paint-order: stroke fill;
+                    white-space: nowrap;
+                    pointer-events: none;
+                ">${labelTextWithArrow}</div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0]
+            });
+
+            L.marker([point1.lat, point1.lng], {
+                icon: labelIcon,
+                interactive: false
+            }).addTo(acDragLineLayer);
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1738,18 +1959,115 @@ window.copySimbriefRoute = function() {
     navigator.clipboard.writeText(coords).then(() => {
         const btn = document.getElementById('copy-coords-btn');
         if (btn) {
-            btn.innerText = 'COPIED TO CLIPBOARD!';
+            btn.innerText = 'COPIED';
             btn.style.backgroundColor = 'var(--accent-green)';
             btn.style.color = 'var(--bg-dark)';
             
             setTimeout(() => {
-                btn.innerText = 'COPY COORDS FOR SIMBRIEF';
+                btn.innerText = 'COPY COORDS';
                 btn.style.backgroundColor = 'var(--bg-light)';
                 btn.style.color = 'var(--text-main)';
             }, 2000);
         }
     }).catch(err => console.error('Clipboard copy failed:', err));
 };
+
+function toggleWaypointList() {
+    const listBox = document.getElementById('waypoint-list-box');
+    const icon = document.getElementById('waypoint-toggle-icon');
+    
+    if (listBox.style.display === 'none') {
+        listBox.style.display = 'block';
+        icon.innerText = '▼';
+    } else {
+        listBox.style.display = 'none';
+        icon.innerText = '▲';
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//   IMPORT COORDINATES HANDLER
+// ═══════════════════════════════════════════════════════════
+
+function importCoordinates() {
+    const inputEl = document.getElementById('import-coords-input');
+    let rawText = inputEl.value.trim();
+    const msgDiv = document.getElementById('search-message');
+
+    if (!rawText) return;
+
+    // Clean up string: change "Lat, Lng" to "Lat,Lng" so it splits nicely by space
+    rawText = rawText.replace(/,\s+/g, ',');
+    
+    // Split the pasted string by spaces to allow importing multiple waypoints at once
+    const tokens = rawText.split(/\s+/);
+    let addedCount = 0;
+    let bounds = L.latLngBounds();
+
+    tokens.forEach(token => {
+        const latlng = parseCoordinateString(token);
+        if (latlng) {
+            const dotIcon = L.divIcon({
+                className: 'draggable-dot',
+                iconSize: [12, 12]
+            });
+
+            // Create the new marker and tie it into your existing measure architecture
+            const marker = L.marker(latlng, {
+                icon: dotIcon,
+                draggable: true
+            }).addTo(measureMarkerLayer);
+
+            measureMarkers.push(marker);
+            marker.on('drag', updateLines);
+            bounds.extend(latlng);
+            addedCount++;
+        }
+    });
+
+    // Update UI based on import success
+    if (addedCount > 0) {
+        updateLines();
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+        msgDiv.style.color = "var(--accent-green)";
+        msgDiv.innerText = `Imported ${addedCount} waypoint(s).`;
+        inputEl.value = ''; // Clear input upon success
+    } else {
+        msgDiv.style.color = "var(--exc-txt)";
+        msgDiv.innerText = "No valid coordinates found.";
+    }
+}
+
+function parseCoordinateString(str) {
+    str = str.trim().toUpperCase();
+
+    // 1. Match SimBrief format generated by your app: DDMMSSN DDDMMSSW (15 chars)
+    const simbriefRegex = /^(\d{2})(\d{2})(\d{2})([NS])(\d{3})(\d{2})(\d{2})([EW])$/;
+    const sbMatch = str.match(simbriefRegex);
+    
+    if (sbMatch) {
+        let lat = parseInt(sbMatch[1]) + parseInt(sbMatch[2])/60 + parseInt(sbMatch[3])/3600;
+        if (sbMatch[4] === 'S') lat *= -1;
+
+        let lng = parseInt(sbMatch[5]) + parseInt(sbMatch[6])/60 + parseInt(sbMatch[7])/3600;
+        if (sbMatch[8] === 'W') lng *= -1;
+
+        return L.latLng(lat, lng);
+    }
+
+    // 2. Match standard Decimal format: 39.7392,-104.9903
+    const decimalRegex = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/;
+    const decMatch = str.match(decimalRegex);
+    
+    if (decMatch) {
+        return L.latLng(parseFloat(decMatch[1]), parseFloat(decMatch[2]));
+    }
+
+    return null; // Fails quietly if the token is gibberish
+}
+
+
 
 async function fetchElevationForWaypoint(latlng, index) {
     try {
@@ -1776,6 +2094,7 @@ let contextMenuLatLng = null;
 
 map.on('zoomend', updateAirports);
 map.on('zoomend', updateLines);
+map.on('zoomend', updateAircraftDragLines);
 
 map.on('contextmenu', function(e) {
     contextMenuLatLng = e.latlng;
@@ -1794,6 +2113,9 @@ map.on('contextmenu', function(e) {
 
 map.on('click', function() {
     contextMenu.style.display = 'none';
+    if (typeof clearAircraftDrag === "function") {
+        clearAircraftDrag();
+    }
 });
 
 map.on('dragstart', () => {
@@ -1817,7 +2139,6 @@ document.getElementById('menu-add-point').addEventListener('click', function() {
 
     measureMarkers.push(marker);
     marker.on('drag', updateLines);
-    marker.on('click', clearMeasurements);
     updateLines();
 });
 
@@ -1835,10 +2156,11 @@ document.getElementById('menu-google-maps').addEventListener('click', function()
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         selectedAirportsLayer.clearLayers();
-        if (typeof clearMeasurements === "function") {
-            clearMeasurements();
+        // REMOVED: clearMeasurements() from here
+        if (typeof clearAircraftDrag === "function") {
+            clearAircraftDrag();
         }
-        console.log("Map cleared: Measurements and pinned airports removed.");
+        console.log("Map cleared: Pinned airports and aircraft drag removed.");
     }
 });
              
@@ -1992,6 +2314,8 @@ function showNoWikiPopup(latlng, msg = "No Wikipedia articles found within 10km.
 //     wikiDebounceTimer = setTimeout(updateWikipedia, 600);
 // });
 
-    </script>
+    loadMeasurementPlan();
+
+</script>
 </body>
 </html>
