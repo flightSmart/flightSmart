@@ -338,6 +338,7 @@
             font-size: 9px; /* Reduced to 9px */
             color: var(--text-main);
             overflow-y: auto;
+            max-height: 60vh; /* Limits height to 30% of the viewport, triggering the scrollbar */
             margin-top: 10px;
             border-top: 1px solid var(--border-main);
             padding-top: 5px;
@@ -567,6 +568,31 @@
             cursor: default;
         }
 
+        /* ── WAYPOINT MAP NUMBERS & DELETE BUTTON ── */
+        .wp-map-number {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #ff9900 !important;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: bold;
+            -webkit-text-stroke: 2px black;
+            paint-order: stroke fill;
+        }
+        .wp-map-number::before { display: none !important; }
+
+        .wp-del-btn {
+            color: var(--exc-txt);
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 11px;
+            text-shadow: none;
+        }
+        .wp-del-btn:hover {
+            color: white;
+            font-weight: bold;
+        }
 
         /* ═══════════════════════════════════════════════════════════
         MOBILE RESPONSIVENESS
@@ -731,20 +757,26 @@
             <button class="text-btn" onclick="performNavSearch()">NAV</button>
         </div>
         <div class="search-row" style="margin-top: 5px;">
-            <input type="text" id="import-coords-input" placeholder="Paste coords (Simbrief or Lat,Lng)" onkeydown="if(event.key==='Enter') importCoordinates()"/>
+            <input type="text" id="import-coords-input" placeholder="Paste coords" onkeydown="if(event.key==='Enter') importCoordinates()"/>
             <button class="text-btn" onclick="importCoordinates()">IMPORT</button>
         </div>
         
         <div id="waypoint-wrapper" style="display: none; margin-top: 10px; border-top: 1px solid var(--border-main); padding-top: 5px;">
+            
             <div id="waypoint-header" onclick="toggleWaypointList()" style="display: flex; justify-content: space-between; cursor: pointer; font-size: 10px; font-weight: bold; color: var(--accent-green); margin-bottom: 5px; padding: 2px 0;">
                 <span>FLIGHT PLAN</span>
                 <span id="waypoint-toggle-icon">▼</span>
             </div>
-            <div id="waypoint-list-box" style="display: block; margin-top: 0; border-top: none; padding-top: 0;"></div>
-        </div>
-        
-    </div>
+            
+            <div id="waypoint-list-box" style="display: block; margin-top: 0; border-top: none; padding-top: 0; margin-bottom: 8px;"></div>
+            
+            <div id="waypoint-footer" style="display: flex; gap: 4px; margin-top: 4px; margin-bottom: 2px;">
+                <button id="copy-coords-btn" class="text-btn" style="flex: 1; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--accent-green);" onclick="copySimbriefRoute()">COPY COORDS</button>
+                <button id="delete-fpl-btn" class="text-btn" style="flex: 1; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--exc-brd);" onclick="clearMeasurements()">DELETE PLAN</button>
+            </div>
 
+        </div>
+    </div>
     <div id="map-controls">
         <button onclick="switchLayer('natgeo')">DEFAULT</button>
         <button onclick="switchLayer('topo')">TOPO</button>
@@ -754,9 +786,10 @@
     
     <div id="elevation-box">Elevation: Hover over map...</div>
 
-    <div id="custom-context-menu">
+<div id="custom-context-menu">
         <div id="menu-coords" class="context-menu-coords"></div>
         <div class="context-menu-item" id="menu-add-point">Add Point</div>
+        <div class="context-menu-item" id="menu-delete-point" style="display: none; color: var(--exc-txt);">Delete Point</div>
         <div class="context-menu-item" id="menu-google-maps">Open in Google Maps</div>
         <div class="context-menu-item" id="menu-wiki-nearby">Load Nearby Wikipedia Articles</div>
     </div>
@@ -1513,6 +1546,41 @@ let currentGhostMarkers = []; // Replaces the layer group
 const selectedAirportsLayer = L.layerGroup().addTo(map);
 let measureMarkers = [];
 
+let targetWaypointIndex = -1;
+
+// Globally accessible function so the inline HTML ✕ buttons can click it
+window.removeWaypoint = function(index) {
+    if (index > -1 && index < measureMarkers.length) {
+        measureMarkerLayer.removeLayer(measureMarkers[index]);
+        measureMarkers.splice(index, 1);
+        updateLines();
+    }
+};
+
+// Attaches a targeted right-click menu to a specific marker
+function attachWaypointContextMenu(marker) {
+    marker.on('contextmenu', function(e) {
+        L.DomEvent.stopPropagation(e); // Stop the map from firing its own right-click
+        targetWaypointIndex = measureMarkers.indexOf(this);
+        
+        // Show "Delete Point" and hide "Add Point"
+        document.getElementById('menu-coords').innerText = `Waypoint ${targetWaypointIndex + 1}`;
+        document.getElementById('menu-add-point').style.display = 'none';
+        document.getElementById('menu-delete-point').style.display = 'block';
+        
+        const contextMenu = document.getElementById('custom-context-menu');
+        contextMenu.style.display = 'flex';
+        contextMenu.style.left = e.originalEvent.pageX + 'px';
+        contextMenu.style.top = e.originalEvent.pageY + 'px';
+    });
+}
+
+// Add the click listener for the new Context Menu item
+document.getElementById('menu-delete-point').addEventListener('click', function() {
+    document.getElementById('custom-context-menu').style.display = 'none';
+    removeWaypoint(targetWaypointIndex);
+});
+
 // Distinct layer groups for Aircraft Blue Drag Path
 const acDragMarkerLayer = L.layerGroup().addTo(map);
 const acDragLineLayer = L.layerGroup().addTo(map);
@@ -1559,6 +1627,7 @@ function loadMeasurementPlan() {
                 }).addTo(measureMarkerLayer);
                 
                 measureMarkers.push(marker);
+                attachWaypointContextMenu(marker);
                 marker.on('drag', updateLines);
             });
             updateLines();
@@ -1611,6 +1680,31 @@ function updateLines() {
     const wrapperBox = document.getElementById('waypoint-wrapper');
     const listBox = document.getElementById('waypoint-list-box');
 
+    // Add permanent number tooltips to all current markers
+    // Add permanent number tooltips to all current markers (only when zoomed in)
+    measureMarkers.forEach((marker, index) => {
+        const wpNum = index + 1;
+        
+        if (map.getZoom() > 8) {
+            // Show the numbers
+            if (!marker.getTooltip()) {
+                marker.bindTooltip(wpNum.toString(), {
+                    permanent: true,
+                    direction: 'top',
+                    className: 'wp-map-number',
+                    offset: [0, 0] // <--- Make this number more negative to raise the text higher
+                }).openTooltip();
+            } else {
+                marker.setTooltipContent(wpNum.toString());
+            }
+        } else {
+            // Hide the numbers if zoomed out
+            if (marker.getTooltip()) {
+                marker.unbindTooltip();
+            }
+        }
+    });
+
     if (measureMarkers.length < 2) {
         if (wrapperBox) wrapperBox.style.display = 'none';
         saveMeasurementPlan();
@@ -1640,7 +1734,7 @@ function updateLines() {
             </thead>
             <tbody>
                 <tr>
-                    <td style="color:var(--accent-green)">1</td>
+                    <td style="color:var(--accent-green)">1 <span class="wp-del-btn" onclick="removeWaypoint(0)" title="Delete Waypoint">✕</span></td>
                     <td>-</td>
                     <td>-</td>
                     <td>-</td>
@@ -1719,7 +1813,8 @@ function updateLines() {
             // 3. Splice into the main array right after the left marker
             const insertIndex = measureMarkers.indexOf(leftMarker) + 1;
             measureMarkers.splice(insertIndex, 0, this);
-            
+            attachWaypointContextMenu(this);
+
             // 4. Bind standard events
             this.on('drag', updateLines);
             // this.on('click', clearMeasurements);
@@ -1783,7 +1878,7 @@ function updateLines() {
         // Add row for this leg
         htmlContent += `
             <tr>
-                <td style="color:var(--accent-green)">${i+2}</td>
+                <td style="color:var(--accent-green)">${i+2} <span class="wp-del-btn" onclick="removeWaypoint(${i+1})" title="Delete Waypoint">✕</span></td>
                 <td>${Math.round(displayBearing).toString().padStart(3, '0')}°</td>
                 <td>${distNM.toFixed(1)}</td>
                 <td>${totalDistanceNM.toFixed(1)}</td>
@@ -1806,10 +1901,6 @@ function updateLines() {
             <span>ROUTE TOTAL</span>
             <span>${totalDistanceNM.toFixed(1)} nm</span>
             <span>${totalEteStr}</span>
-        </div>
-        <div style="display: flex; gap: 4px; margin-top: 4px; margin-bottom: 2px;">
-            <button id="copy-coords-btn" class="text-btn" style="flex: 1; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--accent-green);" onclick="copySimbriefRoute()">COPY COORDS</button>
-            <button id="delete-fpl-btn" class="text-btn" style="flex: 1; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--exc-brd);" onclick="clearMeasurements()">DELETE PLAN</button>
         </div>
     `;
     listBox.innerHTML = htmlContent;
@@ -2020,6 +2111,7 @@ function importCoordinates() {
             }).addTo(measureMarkerLayer);
 
             measureMarkers.push(marker);
+            attachWaypointContextMenu(marker);
             marker.on('drag', updateLines);
             bounds.extend(latlng);
             addedCount++;
@@ -2103,8 +2195,11 @@ map.on('contextmenu', function(e) {
     const latStr = e.latlng.lat.toFixed(4);
     const lngStr = e.latlng.lng.toFixed(4);
     
-    // Inject the formatted string into the new HTML element
     document.getElementById('menu-coords').innerText = `${latStr}, ${lngStr}`;
+
+    // Reset visibility to default Map Actions
+    document.getElementById('menu-add-point').style.display = 'block';
+    document.getElementById('menu-delete-point').style.display = 'none';
 
     contextMenu.style.display = 'flex';
     contextMenu.style.left = e.originalEvent.pageX + 'px';
@@ -2138,6 +2233,7 @@ document.getElementById('menu-add-point').addEventListener('click', function() {
     }).addTo(measureMarkerLayer);
 
     measureMarkers.push(marker);
+    attachWaypointContextMenu(marker);
     marker.on('drag', updateLines);
     updateLines();
 });
