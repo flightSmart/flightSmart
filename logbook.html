@@ -131,6 +131,11 @@
             height: 100vh;
             letter-spacing: -0.5px;
         }
+        
+        .map-btn svg text {
+            font-family: Helvetica, Arial, sans-serif !important;
+        }
+
 
         /* ── LEFT PANEL (ROUTES) ── */
         #left-panel {
@@ -580,54 +585,84 @@
             display: none !important;
         }
 
-/* ── MOBILE CLOSE BUTTON ── */
-.mobile-close-btn {
-    display: none; 
-    position: absolute; /* Takes the button out of the flex layout */
-    right: 15px;        /* Pins it to the right edge */
-    top: 7px;           /* Pins it to the top */
-    background: var(--bg-hover);
-    border: 1px solid var(--border-main);
-    color: var(--text-main);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 3px 8px;
-    z-index: 3000;
-}
+        /* ── GLOW CONFIRMATION MODAL ── */
+        #glow-confirm-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 99999;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        #glow-confirm-overlay.open { display: flex; }
+        #glow-confirm-box {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-main);
+            padding: 20px;
+            max-width: 300px;
+            width: 90%;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-main);
+            line-height: 1.7;
+        }
+        #glow-confirm-box p { margin: 0 0 16px 0; }
+        #glow-confirm-buttons { display: flex; gap: 8px;  }
 
-.mobile-close-btn:hover {
-    background: var(--text-main);
-    color: var(--bg-dark);
-}
+        #glow-confirm-buttons .action-btn {
+            padding: 4px 7px;
+        }
 
-/* ── MOBILE RESPONSIVENESS UPDATE ── */
-@media (max-width: 768px) {
-    #left-panel, #sidebar {
-        display: none;
-        position: absolute; 
-        left: 0;
-        top: 0;
-        width: 100%; 
-        border-left: none; /* Remove border-left on mobile */
-    }
-    
-    /* Show the close button on mobile for both panels */
-    .mobile-close-btn {
-        display: block !important;
-    }
 
-    /* Adjust filter container padding to avoid overlapping the button */
-    #filter-container {
-        padding-top: 30px;
-    }
-}
+        /* ── MOBILE CLOSE BUTTON ── */
+        .mobile-close-btn {
+            display: none; 
+            position: absolute; /* Takes the button out of the flex layout */
+            right: 15px;        /* Pins it to the right edge */
+            top: 7px;           /* Pins it to the top */
+            background: var(--bg-hover);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 3px 8px;
+            z-index: 3000;
+        }
 
-/* Ensure the button is styled for the filter container context */
-#filter-container {
-    position: relative;
-}
+        .mobile-close-btn:hover {
+            background: var(--text-main);
+            color: var(--bg-dark);
+        }
+
+        /* ── MOBILE RESPONSIVENESS UPDATE ── */
+        @media (max-width: 768px) {
+            #left-panel, #sidebar {
+                display: none;
+                position: absolute; 
+                left: 0;
+                top: 0;
+                width: 100%; 
+                border-left: none; /* Remove border-left on mobile */
+            }
+            
+            /* Show the close button on mobile for both panels */
+            .mobile-close-btn {
+                display: block !important;
+            }
+
+            /* Adjust filter container padding to avoid overlapping the button */
+            #filter-container {
+                padding-top: 30px;
+            }
+        }
+
+        /* Ensure the button is styled for the filter container context */
+        #filter-container {
+            position: relative;
+        }
 
 
 
@@ -845,6 +880,20 @@
         </div>
 </div>
 
+
+<div id="glow-confirm-overlay">
+    <div id="glow-confirm-box">
+        <p>Turning on glow on all routes can be laggy. Are you sure you want to turn on glow?</p>
+        <div id="glow-confirm-buttons">
+            <button id="glow-confirm-yes" class="action-btn"         style="flex:1;">Turn on glow</button>
+            <button id="glow-confirm-no"  class="action-btn btn-inc" style="flex:1;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+
+
+
 <script>
 
 function backToMain() {
@@ -972,7 +1021,7 @@ const modeIcons = {
 
 
 const glowIcons = {
-    'auto': `<svg style="width: 22px; height: 22px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+    'auto': `<svg style="width: 23px; height: 23px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
                 <text id="A" xml:space="preserve" x="110" y="147" font-family="B612" font-size="50" font-weight="700" fill="#d8d8d9" letter-spacing="-4">A</text>
                 <filter id="glow-filter-auto" x="0" y="0" width="152" height="152" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
                     <feGaussianBlur stdDeviation="27"/>
@@ -987,7 +1036,7 @@ const glowIcons = {
                 <path fill="none" stroke="#d8d8d9" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-filter-auto)" d="M 124 30 L 35 119"/>
             </svg>`,
              
-    'on': `<svg style="width: 22px; height: 22px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+    'on': `<svg style="width: 23px; height: 23px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
                 <filter id="glow-filter-on" x="0" y="0" width="152" height="152" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
                     <feGaussianBlur stdDeviation="27"/>
                     <feOffset dx="-0" dy="0" result="offsetblur"/>
@@ -1001,7 +1050,7 @@ const glowIcons = {
                 <path fill="none" stroke="#d8d8d9" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-filter-on)" d="M 124 30 L 35 119"/>
             </svg>`,
            
-    'off': `<svg style="width: 22px; height: 22px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+    'off': `<svg style="width: 23px; height: 23px;" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
                 <path fill="none" stroke="#d8d8d9" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" d="M 124 30 L 35 119"/>
             </svg>`
 };
@@ -1089,11 +1138,48 @@ window.updateCircles = function() {
 };
 
 window.cycleGlowMode = function() {
-    if (glowMode === 'auto') glowMode = 'on';
-    else if (glowMode === 'on') glowMode = 'off';
-    else glowMode = 'auto';
+    if (glowMode === 'auto') {
+        // Check if any filters are currently active
+        var hasActiveFilters = false;
+        if (document.getElementById('start-date').value || document.getElementById('end-date').value) {
+            hasActiveFilters = true;
+        }
+        if (!hasActiveFilters) {
+            ['aircraft', 'airline', 'airport', 'ifatc', 'remarks'].forEach(function(key) {
+                if (filterState[key].includes.size > 0 || filterState[key].excludes.size > 0) {
+                    hasActiveFilters = true;
+                }
+            });
+        }
+
+        if (hasActiveFilters) {
+            // Filters are narrowing down the routes — skip the warning and just turn on
+            glowMode = 'on';
+            window.updateGlows();
+        } else {
+            // No filters, full route set could be laggy — show confirmation
+            document.getElementById('glow-confirm-overlay').classList.add('open');
+        }
+        return;
+    } else if (glowMode === 'on') {
+        glowMode = 'off';
+    } else {
+        glowMode = 'auto';
+    }
     window.updateGlows();
 };
+
+document.getElementById('glow-confirm-no').addEventListener('click', function() {
+    document.getElementById('glow-confirm-overlay').classList.remove('open');
+});
+document.getElementById('glow-confirm-yes').addEventListener('click', function() {
+    document.getElementById('glow-confirm-overlay').classList.remove('open');
+    glowMode = 'on';
+    window.updateGlows();
+});
+document.getElementById('glow-confirm-overlay').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open'); // Click outside to cancel
+});
 
 window.toggleAirportLabels = function() {
     labelsVisible = !labelsVisible;
@@ -1719,11 +1805,7 @@ document.addEventListener('keydown', function(e) {
 function toggleSidebar() {
     var sb = document.getElementById('sidebar');
     var lp = document.getElementById('left-panel');
-    
-    // Optional: Close the other panel if opening this one
-    if (sb.style.display === 'none') {
-        lp.style.display = 'none'; 
-    }
+
     
     sb.style.display = sb.style.display === 'none' ? 'flex' : 'none';
     setTimeout(function(){ map.invalidateSize(); }, 200);
@@ -2343,6 +2425,7 @@ Promise.all([
                 });
 
                 var drawn={};
+                var drawnAtcCircles = {};
                 var mapOffsets = [-360, 0, 360];
 
                 filteredFlights.forEach(function(f){
@@ -2397,30 +2480,32 @@ Promise.all([
                     var linesForFlight = [];
 
                     if (f.isATC) {
-                        // Draw a thin, wide stroked circle around the airport for ATC
-                        mapOffsets.forEach(function(offset) {
-                        // Use L.circle instead of L.circleMarker so it scales with zoom
-                        var circle = L.circle([dep.lat, dep.lon + offset], {
-                            radius: 20000, // Roughly 43 nautical miles (typical airspace size)
-                                color: '#64c49a', // Matches standard flight path green
-                                weight: 1,
-                                fillColor: '#64c49a', 
-                                fillOpacity: 0.2,
-                                opacity: atcCircleVisible ? 0.5 : 0,
-                                interactive: false
-                            });
-                            
-                            circle.isAtc = true; // Flag for hover visibility toggling
-                            circle.on('add', function() {
-                                if (glowMode === 'on' && circle.getElement()) {
-                                    circle.getElement().classList.add('glow-path');
-                                }
-                            });
+    var existingCircleLayers = drawnAtcCircles[f.departure];
+    if (existingCircleLayers) {
+        // Airport already has a circle — just reference it, don't draw again
+        existingCircleLayers.forEach(function(c) { linesForFlight.push(c); });
+    } else {
+        // First time seeing this ATC airport — draw the circle
+        var newCircleLayers = [];
+        mapOffsets.forEach(function(offset) {
+            var circle = L.circle([dep.lat, dep.lon + offset], {
+                radius: 20000,
+                color: '#64c49a',
+                weight: 1,
+                fillColor: '#64c49a',
+                fillOpacity: 0.2,
+                opacity: atcCircleVisible ? 0.5 : 0,
+                interactive: false
+            });
+            circle.isAtc = true;
+            drawnLayers.addLayer(circle);
+            linesForFlight.push(circle);
+            newCircleLayers.push(circle);
+            atcCircleLayers.push(circle);
+        });
+        drawnAtcCircles[f.departure] = newCircleLayers;
+    }
 
-                            drawnLayers.addLayer(circle);
-                            linesForFlight.push(circle);
-                            atcCircleLayers.push(circle);
-                        });
                     } else {
                         // Standard Flight & Traffic Pattern Logic
                         // Standard Flight & Traffic Pattern Logic
@@ -2679,6 +2764,8 @@ map.on('zoomend', function() {
 
 
 </script>
+
+
 
 </body>
 </html>
