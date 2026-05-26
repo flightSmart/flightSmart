@@ -510,19 +510,38 @@
 
         /* ── AIRPORT HOVER INFO ── */
         #hover-airport-id { color: var(--accent-green) !important; font-size: 15px !important; }
-        #sidebar-routes, 
-        #filter-container, 
-        .tag-dropdown {
+       
+       #sidebar-routes, 
+        #filter-container {
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;     /* Firefox */
         }
 
         /* Hide scrollbar for Chrome, Safari and Opera */
         #sidebar-routes::-webkit-scrollbar, 
-        #filter-container::-webkit-scrollbar, 
-        .tag-dropdown::-webkit-scrollbar {
+        #filter-container::-webkit-scrollbar {
             display: none;
         }
+
+        /* ── CUSTOM DROPDOWN SCROLLBAR ── */
+        .tag-dropdown {
+            scrollbar-width: thin;
+            scrollbar-color: var(--bg-light) var(--bg-dark);
+        }
+        .tag-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+        .tag-dropdown::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        .tag-dropdown::-webkit-scrollbar-thumb {
+            background: var(--bg-light);
+            border: 1px solid var(--bg-dark);
+            border-radius: 4px;
+        }
+        .tag-dropdown::-webkit-scrollbar-thumb:hover {
+            background: var(--border-main);
+        }    
 
         /* ── AIRPORT HOVER INFO ── */
         #airport-hover-info {
@@ -560,6 +579,58 @@
         body.ui-hidden .map-overlay-btns {
             display: none !important;
         }
+
+/* ── MOBILE CLOSE BUTTON ── */
+.mobile-close-btn {
+    display: none; 
+    position: absolute; /* Takes the button out of the flex layout */
+    right: 15px;        /* Pins it to the right edge */
+    top: 7px;           /* Pins it to the top */
+    background: var(--bg-hover);
+    border: 1px solid var(--border-main);
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 3px 8px;
+    z-index: 3000;
+}
+
+.mobile-close-btn:hover {
+    background: var(--text-main);
+    color: var(--bg-dark);
+}
+
+/* ── MOBILE RESPONSIVENESS UPDATE ── */
+@media (max-width: 768px) {
+    #left-panel, #sidebar {
+        display: none;
+        position: absolute; 
+        left: 0;
+        top: 0;
+        width: 100%; 
+        border-left: none; /* Remove border-left on mobile */
+    }
+    
+    /* Show the close button on mobile for both panels */
+    .mobile-close-btn {
+        display: block !important;
+    }
+
+    /* Adjust filter container padding to avoid overlapping the button */
+    #filter-container {
+        padding-top: 30px;
+    }
+}
+
+/* Ensure the button is styled for the filter container context */
+#filter-container {
+    position: relative;
+}
+
+
+
     </style>
 </head>
 <body>
@@ -578,6 +649,9 @@
             <span id="visible-routes-count" title="Total Visible Routes">0</span>
             <span class="stat-divider">Routes</span>
         </div>
+
+        <button class="mobile-close-btn" onclick="toggleLeftPanel()">X</button>
+
     </div>
 
     <div id="secondary-stats">
@@ -706,7 +780,9 @@
     <div id="map"></div>
 </div>
 <div id="sidebar" style="display: none;">
-    <div id="filter-container">        
+    <div id="filter-container">     
+        <button class="mobile-close-btn" onclick="toggleSidebar()">X</button>
+
         <div class="filter-section">
             <div class="filter-header-row"><span class="filter-label">Date Range</span></div>
             <div class="date-row">
@@ -725,6 +801,7 @@
             <div class="filter-header-row"><span class="filter-label">Airline / Livery</span></div>
             <div class="tag-input-wrapper" id="airline-wrapper"></div>
         </div>
+        
         
 
 
@@ -746,7 +823,11 @@
                 </div>
             </div>
         </div>
-
+        
+        <div class="filter-section">
+            <div class="filter-header-row"><span class="filter-label">Remarks</span></div>
+            <div class="tag-input-wrapper" id="remarks-wrapper"></div>
+        </div>
 
         <button class="reset-btn" onclick="resetFilters()">Reset All Filters</button> 
     </div>
@@ -1072,7 +1153,8 @@ var filterState = {
     aircraft: { includes: new Set(), excludes: new Set() },
     airline:  { includes: new Set(), excludes: new Set() },
     airport:  { includes: new Set(), excludes: new Set() },
-    ifatc:    { includes: new Set(), excludes: new Set() }
+    ifatc:    { includes: new Set(), excludes: new Set() },
+    remarks:  { includes: new Set(), excludes: new Set() }
 };
 var filterHistory = [];
 var tagInputs = {};
@@ -1082,6 +1164,7 @@ function TagInput(filterKey, wrapper, options) {
     this.wrapper   = wrapper;
     this.options   = options; 
     this.stagedValue = null; 
+    this.savedQuery = null; // NEW: Track the search query
     this._init();
 }
 
@@ -1123,15 +1206,40 @@ TagInput.prototype._init = function() {
 
     input.addEventListener('input', function() { 
         self.stagedValue = null; 
+        self.savedQuery = null; // Clear saved query if they resume typing
+        this.style.color = 'var(--text-main)'; // Restore standard color
         self._updateDropdown(this.value); 
     });
-    input.addEventListener('focus', function() { self._updateDropdown(this.value); });
+    input.addEventListener('focus', function() { 
+        // Prevent re-filtering the list if we just clicked and staged an item
+        if (self.stagedValue !== null) return; 
+        self._updateDropdown(this.value); 
+    });    
     input.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') { dropdown.classList.remove('open'); input.blur(); }
+        if (e.key === 'Escape') { 
+            dropdown.classList.remove('open'); 
+            input.blur(); 
+            // Restore query if they abort with Escape
+            if (self.savedQuery !== null) {
+                input.value = self.savedQuery;
+                self.savedQuery = null;
+                input.style.color = 'var(--text-main)';
+                self.stagedValue = null;
+            }
+        }
     });
 
     document.addEventListener('click', function(e) {
-        if (!self.wrapper.contains(e.target)) dropdown.classList.remove('open');
+        if (!self.wrapper.contains(e.target)) {
+            dropdown.classList.remove('open');
+            // Restore query if they click away
+            if (self.savedQuery !== null) {
+                self._input.value = self.savedQuery;
+                self.savedQuery = null;
+                self._input.style.color = 'var(--text-main)';
+                self.stagedValue = null;
+            }
+        }
     });
 
     box.addEventListener('click', function(e) {
@@ -1149,6 +1257,16 @@ TagInput.prototype._init = function() {
         if (val) {
             self.addTag(val, mode);
             self.stagedValue = null;
+            
+            // Restore saved query so the user can quickly pick the next item
+            if (self.savedQuery !== null) {
+                input.value = self.savedQuery;
+                self.savedQuery = null;
+            } else {
+                input.value = '';
+            }
+            input.style.color = 'var(--text-main)'; // Restore text color
+            
             self._updateDropdown(input.value);
             input.focus();
         } else {
@@ -1170,7 +1288,7 @@ TagInput.prototype._updateDropdown = function(query) {
         if (incs.has(opt.value) || excs.has(opt.value)) return false;
         if (!q) return true;
         return opt.label.toLowerCase().includes(q);
-    }).slice(0, 12);
+    });
 
     if (filtered.length === 0) {
         this._dropdown.innerHTML = '<div class="no-results">No matches</div>';
@@ -1203,6 +1321,15 @@ TagInput.prototype._updateDropdown = function(query) {
     this._dropdown.querySelectorAll('.dropdown-opt').forEach(function(el) {
         el.addEventListener('click', function(e) {
             self.stagedValue = this.getAttribute('data-value');
+            
+            // Capture the current search term before we overwrite it
+            if (self.savedQuery === null) {
+                self.savedQuery = self._input.value;
+            }
+            // Display the selected item in the text box & turn it green
+            self._input.value = this.querySelector('.opt-label').textContent;
+            self._input.style.color = 'var(--accent-green)';
+            
             self._dropdown.querySelectorAll('.dropdown-opt').forEach(function(opt) {
                 opt.style.background = ''; 
             });
@@ -1354,7 +1481,7 @@ window.renderAllActiveFilters = function() {
             if (window.applyFiltersGlobal) window.applyFiltersGlobal();
         }, null));
     }
-    ['aircraft', 'airline', 'airport', 'ifatc'].forEach(function(key) {
+    ['aircraft', 'airline', 'airport', 'ifatc', 'remarks'].forEach(function(key) {
         var state = filterState[key];
         
         function renderTags(set, mode) {
@@ -1590,14 +1717,23 @@ document.addEventListener('keydown', function(e) {
 });
 
 function toggleSidebar() {
-    var sb=document.getElementById('sidebar');
-    sb.style.display = sb.style.display==='none' ? 'flex' : 'none';
+    var sb = document.getElementById('sidebar');
+    var lp = document.getElementById('left-panel');
+    
+    // Optional: Close the other panel if opening this one
+    if (sb.style.display === 'none') {
+        lp.style.display = 'none'; 
+    }
+    
+    sb.style.display = sb.style.display === 'none' ? 'flex' : 'none';
     setTimeout(function(){ map.invalidateSize(); }, 200);
 }
 
 function toggleLeftPanel() {
     var lp = document.getElementById('left-panel');
-    lp.style.display = lp.style.display === 'none' ? 'flex' : 'none';
+    // Check the actual computed display style rather than just the inline style
+    var currentDisplay = window.getComputedStyle(lp).display;
+    lp.style.display = currentDisplay === 'none' ? 'flex' : 'none';
     setTimeout(function(){ map.invalidateSize(); }, 200);
 }
 
@@ -2098,7 +2234,7 @@ Promise.all([
                 }
             });
 
-            var mfrSet=new Set(), famSet=new Set(), spcSet=new Set(), airlineSet=new Set();
+            var mfrSet=new Set(), famSet=new Set(), spcSet=new Set(), airlineSet=new Set(), rmkSet=new Set();
             var apSet=new Set(), regSet=new Set(), ctySet=new Set();
 
             flights.forEach(function(f){
@@ -2110,6 +2246,8 @@ Promise.all([
                 
                 if (f.livery) airlineSet.add(f.livery); // Treat ATC station as livery
                 
+                if (f.remarks) rmkSet.add(f.remarks);
+
                 if (f.departure) {
                     apSet.add(f.departure);
                     if (airportData[f.departure]) {
@@ -2134,6 +2272,8 @@ Promise.all([
 
             var airlineOptions = Array.from(airlineSet).sort().map(function(v){ return {value:v, label:v, badge:null}; });
             
+            var remarksOptions = Array.from(rmkSet).sort().map(function(v){ return {value:v, label:v, badge:null}; });
+
             var airportOptions = [];
             Array.from(regSet).sort().forEach(function(v){ if(v) airportOptions.push({value:'reg:'+v, label:v, badge:'Region'}); });
             Array.from(ctySet).sort().forEach(function(v){ if(v) airportOptions.push({value:'cty:'+v, label:v, badge:'Country'}); });
@@ -2150,7 +2290,8 @@ Promise.all([
             tagInputs.aircraft = new TagInput('aircraft', document.getElementById('aircraft-wrapper'), aircraftOptions);
             tagInputs.airline  = new TagInput('airline',  document.getElementById('airline-wrapper'),  airlineOptions);
             tagInputs.airport  = new TagInput('airport',  document.getElementById('airport-wrapper'),  airportOptions);
-            
+            tagInputs.remarks  = new TagInput('remarks',  document.getElementById('remarks-wrapper'),  remarksOptions);
+
             // Connect IFATC Buttons
             document.getElementById('btn-ifatc-inc').addEventListener('click', function() {
                 filterState.ifatc.includes.add('true');
@@ -2403,6 +2544,15 @@ Promise.all([
                         if (alf.excludes.size > 0 && isExcAl) return false;
                         if (alf.includes.size > 0 && !isIncAl) return false;
                     }
+                    
+                    var rmf = filterState.remarks;
+                    if (rmf.includes.size > 0 || rmf.excludes.size > 0) {
+                        var isIncRm = rmf.includes.has(f.remarks);
+                        var isExcRm = rmf.excludes.has(f.remarks);
+                        if (rmf.excludes.size > 0 && isExcRm) return false;
+                        if (rmf.includes.size > 0 && !isIncRm) return false;
+                    }
+
 
                     var apf = filterState.airport;
                     if (apf.includes.size > 0 || apf.excludes.size > 0) {
@@ -2467,7 +2617,7 @@ Promise.all([
                 document.getElementById('end-date').value='';
                 document.getElementById('airport-strict-match').checked = false;
                 filterHistory = [];
-                ['aircraft','airline','airport','ifatc'].forEach(function(key){
+                ['aircraft','airline','airport','ifatc', 'remarks'].forEach(function(key){
                     filterState[key].includes.clear(); filterState[key].excludes.clear();
                 });
                 window.renderAllActiveFilters();
