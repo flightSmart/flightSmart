@@ -1271,7 +1271,11 @@ function toggleAtcVisibility() {
     var btn = document.getElementById('atc-toggle');
     btn.innerHTML = atcIcons[atcCircleVisible ? 'on' : 'off'];
     atcCircleLayers.forEach(function(l) {
-        l.setStyle({ opacity: atcCircleVisible ? 0.5 : 0 });
+        l.setStyle({ 
+            opacity: atcCircleVisible ? 0.5 : 0, 
+            fillOpacity: atcCircleVisible ? 0.2 : 0,
+        });
+        
     });
 }
 
