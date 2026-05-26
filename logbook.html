@@ -2052,20 +2052,59 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
 
         html += '<td>'+escapeHtml(item.isATC ? '' : getIcaoCode(item.aircraft))+'</td>'; 
 
+
+
         var c1 = 'transparent', c2 = 'transparent', c3 = 'transparent';
+        var logoUrl = null;
+        var includeName = true; // Default to true if not specified
+        
         if (window.liveryColorMap && window.liveryColorMap[item.livery]) {
-            var colors = window.liveryColorMap[item.livery];
-            c1 = colors[0] || 'transparent';
-            c2 = colors[1] || 'transparent';
-            c3 = colors[2] || 'transparent';
+            var lData = window.liveryColorMap[item.livery];
+            
+            // Backward compatibility just in case
+            if (Array.isArray(lData)) {
+                c1 = lData[0] || 'transparent';
+                c2 = lData[1] || 'transparent';
+                c3 = lData[2] || 'transparent';
+            } else {
+                var colors = lData.colors || [];
+                c1 = colors[0] || 'transparent';
+                c2 = colors[1] || 'transparent';
+                c3 = colors[2] || 'transparent';
+                
+                if (lData.logo && lData.logo.trim() !== '') {
+                logoUrl = 'https://en.wikipedia.org/wiki/Special:FilePath/' + encodeURIComponent(lData.logo.trim());
+                }
+                if (lData.includeName) {
+                    includeName = (lData.includeName.trim().toUpperCase() === 'T');
+                }
+            }
         }
         
-        var colorBox = '';
-        if (c1 !== 'transparent') {
-            colorBox = `<span style="display:inline-block; width:12px; height:10px; margin-right:6px; vertical-align:-1px; border:1px solid var(--border-main); background: linear-gradient(to right, ${c1} 0%, ${c1} 50%, ${c2} 50%, ${c2} 80%, ${c3} 80%, ${c3} 100%);"></span>`;
+        var liveryContent = '';
+        if (logoUrl) {
+            // If we have a logo, render the image
+            var imgStyle = 'height: 14px; max-width: 90px; vertical-align: middle; object-fit: contain; ' + (includeName ? 'margin-right: 6px;' : '');
+            var imgTag = '<img src="' + logoUrl + '" style="' + imgStyle + '">';
+            
+            if (includeName) {
+                liveryContent = imgTag + escapeHtml(truncateText(item.livery, 22));
+            } else {
+                liveryContent = imgTag; // Skip the name if 'F'
+            }
+        } else {
+            // Fallback to standard color boxes
+            var colorBox = '';
+            if (c1 !== 'transparent') {
+                colorBox = `<span style="display:inline-block; width:12px; height:10px; margin-right:6px; vertical-align:-1px; border:1px solid var(--border-main); background: linear-gradient(to right, ${c1} 0%, ${c1} 50%, ${c2} 50%, ${c2} 80%, ${c3} 80%, ${c3} 100%);"></span>`;
+            }
+            liveryContent = colorBox + escapeHtml(truncateText(item.livery, 22));
         }
 
-        html += '<td style="letter-spacing: -0.5px;" title="' + escapeHtml(item.livery || '') + '">' + colorBox + escapeHtml(truncateText(item.livery, 22)) + '</td>';
+        html += '<td style="letter-spacing: -0.5px;" title="' + escapeHtml(item.livery || '') + '">' + liveryContent + '</td>';
+        
+        
+        
         html += '</tr>';
 
         html += '<tr class="details-row" id="details-'+idx+'" style="display:none;">';
@@ -2716,11 +2755,18 @@ Promise.all([
                     liveryResults.data.forEach(function(row) {
                         var name = row["Infinite Flight Livery Name"];
                         if (name) {
-                            window.liveryColorMap[name.trim()] = [
-                                row["Color 1"], 
-                                row["Color 2"], 
-                                row["Color 3"]
-                            ];
+                            // Grabbing the logo filename (supporting the typo in the header)
+                            var logoFile = row["Logol or Wordmark"] || row["Logo or Wordmark"];
+                            
+                            window.liveryColorMap[name.trim()] = {
+                                colors: [
+                                    row["Color 1"], 
+                                    row["Color 2"], 
+                                    row["Color 3"]
+                                ],
+                                logo: logoFile,
+                                includeName: row["Include Name"]
+                            };
                         }
                     });
                     
