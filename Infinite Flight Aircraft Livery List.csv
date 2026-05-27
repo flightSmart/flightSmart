@@ -20,7 +20,7 @@ Swiss,#e32526,#ffffff,#ffffff,Swiss_International_Air_Lines_Logo_2011.svg,F
 Southwest,#2144c8,#eccc5f,#cf363f,Southwest_Airlines_logo_2014.svg,F
 Jetblue,#053878,#4d93d3,#ffffff,JetBlue_Airways_Logo.svg,F
 N17XC,#e87539,#e87539,#cbccc7,,
-Yakutia Airlines,#d9e1d8,#040d69,#040d69,Yakutia_Airlines_Eng_Logo.png,T
+Yakutia Airlines,#d9e1d8,#040d69,#040d69,,
 Aer Lingus,#ffffff,#006472,#82c341,Aer_Lingus_logo_2019.svg,F
 VietJet Air,#ffffff,#e92127,#f1e436,VietJet_Air_logo.svg,F
 Avianca,#ffffff,#ff0000,#ff0000,Logo_Avianca_(Colombia)_2023.svg,F
@@ -49,7 +49,7 @@ Private 1,#323232,#323232,#323232,,
 Private 5,#323232,#323232,#323232,,
 Spirit Airlines,#ffec00,#ffffff,#ffffff,Spirit_Airlines_logo.svg,F
 JAL Express,#cc0000,#ffffff,#000000,JALExpresslogo.gif,
-Ryanair,#ffffff,#2b4779,#f4ca36,Ryanair.svg,T
+Ryanair,#ffffff,#2b4779,#f4ca36,Ryanair.svg,F
 United Airlines 2019,#0060a9,#ffffff,#ffffff,,
 Fly Dubai,#ffffff,#ff8200,#006496,Fly_Dubai_logo_2010_03.svg,F
 Cargolux,#ffffff,#d60606,#060606,Cargolux_Logo.svg,T
@@ -97,25 +97,25 @@ Crystal Luxary Airlines,#008298,#ffffff,#ffffff,,
 Maroon,#3d1a23,#9aa19f,#3a4856,,
 75th FS Moody AFB,#323232,#323232,#323232,,
 Eva Air,#009a42,#009a42,#ea5400,EVA_Air_logo.svg,F
-Austrian,#ffffff,#d7211c,#93282b,,
+Austrian,#ffffff,#d7211c,#93282b,Austrian_Airlines_logo.svg,F
 Jetstar,#dbe2ea,#ff5115,#000000,,
-GOL+,#ff5800,#b7b3b1,#b7b3b1,,
-Kuwait Airways,#20275b,#ffffff,#00aff0,,
+GOL+,#ff5800,#b7b3b1,#b7b3b1,"Gol_Linhas_Aéreas_Inteligentes_logo_(2015,_without_the_slogan).svg",T
+Kuwait Airways,#20275b,#ffffff,#00aff0,Kuwait_Airways_logo.svg,T
 "Black, Red &",#1c1c1c,#db362a,#9a958d,,
-Aerologic,#ffffff,#5f6a6d,#ffcc00,,
+Aerologic,#ffffff,#5f6a6d,#ffcc00,Logo_AeroLogic.svg,F
 Alaska Airlines,#03416e,#00b2d6,#b1d887,,
 United Express - Old,#0060a9,#ffffff,#ffffff,,
 US Navy,#323232,#323232,#323232,,
-Transavia,#00d66c,#ffffff,#ffffff,,
+Transavia,#00d66c,#ffffff,#ffffff,Transavia_logo_2025.png,F
 United,#0060a9,#ffffff,#ffffff,,
-LATAM,#2a0087,#ee1850,#ffffff,,
+LATAM,#2a0087,#ee1850,#ffffff,Latam-logo_-v_(Indigo).svg,F
 American Airlines - TWA,#c7d0d7,#14acdc,#b62023,,
-LAPA,#151c59,#ffffff,#d1c066,,
-China Airlines,#141e4c,#99b7e5,#e83652,,
+LAPA,#151c59,#ffffff,#d1c066,Lapa_logo.svg,T
+China Airlines,#141e4c,#99b7e5,#e83652,China_Airlines.svg,F
 Generic,#eff0ee,#eff0ee,#eff0ee,,
-TUI,#6bace4,#c3d8ef,#da281c,,
+TUI,#6bace4,#c3d8ef,#da281c,TUI_Logo_2016.svg,F
 Infinite Flight Dark,#1c1c1d,#fa9822,#ffffff,,
-Air Mauritius,#ffffff,#bc0003,#bc0003,,
+Air Mauritius,#ffffff,#bc0003,#bc0003,Air_Mauritius_Logo.svg,T
 Qantas,#ffffff,#e00606,#e00606,,
 French Air Force,#ffffff,#32578d,#f0cb7d,,
 Garuda Indonesia,#001550,#007c90,#f8f8f8,,
