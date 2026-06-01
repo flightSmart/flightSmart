@@ -1,0 +1,104 @@
+infiniteflight-bot | 2026-05-30 11:33:59 UTC | #1
+
+![IFATC Schedule|830x153](upload://8VENjMsZJUnELn7LUFq4igPwnJo.jpeg)
+
+<div align=center>
+
+_The ATC schedule lists featured airports, which change daily at 0600Z, that are staffed by the Infinite Flight ATC (IFATC) team on the Expert Server. Controllers may staff any airport in the world in addition to featured airports listed below._
+</div>
+
+
+
+
+# May 2026:
+|Day|Date|Featured Route &#9992;|Add. Airports|
+|---|---|---|---|
+|Friday|May 29|KVRB (Vero Beach) - KHPN (Westchester County)|**KHVN** (Tweed/New Haven), **KIAD** (Washington Dulles Intl), **KISP** (Long Island Mac Arthur Airport)
+|Saturday|May 30||<b>&#11088;[IF48 Edition 8: Across The Med ](https://community.infiniteflight.com/t/if48-edition-8-across-the-med/1196009)&#11088;</b><br>**LEBL** (Josep Tarradellas Barcelona-El Prat), **LEPA** (Palma De Mallorca), **LGAV** (Athens Eleftherios Venizelos), **LIRF** (Roma-Fiumicino "Leonardo Da Vinci")
+|Sunday|May 31||<b>&#11088;[IF48 Edition 8: Across The Med ](https://community.infiniteflight.com/t/if48-edition-8-across-the-med/1196009)&#11088;</b><br>**LEBL** (Josep Tarradellas Barcelona-El Prat), **LEPA** (Palma De Mallorca), **LGAV** (Athens Eleftherios Venizelos), **LIRF** (Roma-Fiumicino "Leonardo Da Vinci")
+
+# June 2026:
+<div data-separator="atc-week">WEEK 1</div>
+
+|Day|Date|Featured Route &#9992;|Add. Airports|
+|---|---|---|---|
+|Monday|Jun 01|YBBN (Brisbane Intl) - YBCS (Cairns)|**YMHB** (Hobart Intl), **YMML** (Melbourne Intl), **YPAD** (Adelaide International )
+|Tuesday|Jun 02|RCTP (Taiwan Taoyuan International) - VTBS (Bangkok Suvarnabhumi International )|**VVNB** (Noi Bai Intl), **VVTS** (Tan Son Nhat Intl), **WSSS** (Singapore Changi Intl)
+|Wednesday|Jun 03|LTFM (Istanbul International ) - LGAV (Athens Eleftherios Venizelos)|**LGRP** (Rhodos Diagoras), **LTAI** (Antalya International Airport ), **UBBB** (Baku Heydar Aliyev Intl)
+|Thursday|Jun 04|EGPH (Edinburgh) - EGGP (Liverpool John Lennon)|**EGCC** (Manchester), **EGPF** (Glasgow Int'l), **EGSS** (Stansted)
+|Friday|Jun 05|KRNO (Reno-Tahoe International) - KPDX (Portland International Airport)|**KCOS** (Colorado Springs Municipal), **KPSP** (Palm Springs Intl), **KSMF** (Sacramento International Airport)
+|Saturday|Jun 06|ESSA (Stockholm Arlanda) - EGBB (Birmingham)|**EDDH** (Hamburg Airport), **EFHK** (Helsinki Vantaa International), **EKCH** (Kastrup)
+|Sunday|Jun 07|OERK (King Khalid International) - OJAI (Queen Alia Intl)|<b>&#11088;[Royal Jordanian VA: 1st Anniversary Event](https://community.infiniteflight.com/t/7june26-royal-jordanian-virtual-presents-amman-nights-commemorating-our-1-year-anniversary/1200089)&#11088;</b><br>**LCLK** (Larnaca Intl), **LOWW** (Vienna), **OEMA** (Prince Mohammed bin Abdulaziz International)
+
+<div data-separator="atc-week">WEEK 2</div>
+
+|Day|Date|Featured Route &#9992;|Add. Airports|
+|---|---|---|---|
+|Monday|Jun 08|OBBI (Bahrain International Airport) - OMDB (Dubai International)|**OEJN** (King Abdulaziz Intl.), **OKKK** (Kuwait International Airport), **OPIS** (Islamabad)
+|Tuesday|Jun 09|GCLP (Gran Canaria) - GMMN (Casablanca Mohammed V Intl)|**GCFV** (Fuerteventura ), **GCRR** (César Manrique-Lanzarote), **LPMA** (Madeira/Funchal - Cristiano Ronaldo)
+|Wednesday|Jun 10|KMSP (Minneapolis-St Paul International Airport) - KRDU (Raleigh Durham Intl)|**KDCA** (Ronald Reagan Washington Airport), **KDSM** (Des Moines Intl), **KSTL** (St. Louis Lambert Intl)
+|Thursday|Jun 11|RJFF (Fukuoka) - RJTT (Tokyo Haneda International)|**RJCC** (New Chitose Airport), **RJGG** (Chubu Centrair International), **RKSI** (Incheon Intl)
+|Friday|Jun 12|ZSSS (Shanghai Hongqiao Intl) - ZUTF (Chengdu Tianfu Intl)|**VHHX** (Kai Tak), **ZSPD** (Shanghai Pudong Intl), **ZUUU** (Chengdu Shuangliu Intl)
+|Saturday|Jun 13|SBGR (Guarulhos-Andre Franco Montoro Intl) - SCEL (Arturo Merino Benitez Intl)|<b>&#11088;[LATOR VA: 1st Anniversary Event](https://community.infiniteflight.com/t/13th-june-latour-virtual-presents-latours-1st-anniversary-scel-fly-in-out/1187909)&#11088;</b><br>**SAZN** (Presidente Perón), **SKBO** (El Dorado Intl), **SPJC** (Jorge Chavez Intl)
+|Sunday|Jun 14|VOBL (Kempegowda International Airport) - VOMM (Chennai Meenambakkam International Airport)|**VECC** (Netaji Subhash Chandra Bose international Airport), **VOCL** (Calicut International Airport), **VOGO** (Goa)
+
+<div data-separator="atc-week">WEEK 3</div>
+
+|Day|Date|Featured Route &#9992;|Add. Airports|
+|---|---|---|---|
+|Monday|Jun 15|EPWA (Warsaw Chopin Airport) - EPKK (Krakow-John Paul II)|**EPWR** (Wroclaw Copernicus), **EVRA** (Riga Intl), **LKPR** (Vaclav Havel Prague)
+|Tuesday|Jun 16|FMEE (Roland Garros) - FMCZ (Dzaoudzi Pamandzi Intl)|**FMMI** (Antananarivo Ivato Intl), **HKJK** (Nairobi-Jomo Kenyatta Intl), **LFPG** (Paris Charles De Gaulle)
+|Wednesday|Jun 17|EGLL (London Heathrow) - EHAM (Amsterdam Schiphol)|**EDDF** (Flughafen Frankfurt Main), **EKCH** (Kastrup), **LSZH** (Zurich)
+|Thursday|Jun 18|CYYZ (Toronto Pearson Intl) - CYVR (Vancouver)|**BIKF** (Keflavik), **CYUL** (Montreal-Pierre Elliott Trudeau Intl), **KBOS** (General Edward Lawrence Logan Intl)
+|Friday|Jun 19|MSLP (Monsenor Oscar Arnulfo Romero y Galdámez/ El Salvador Intl) - MPTO (Tocumen Intl)|**MGGT** (La Aurora Intl), **MHTG** (Toncontin Intl), **MROC** (Juan Santamaria Intl)
+|Saturday|Jun 20|VHHH (Hong Kong Intl) - ZWWW (Urumqi Tianshan Intl)|<b>&#11088;[Inaugural Flight to Urumqi](https://community.infiniteflight.com/t/june20-the-1st-anniversary-of-inaugural-flight-to-urumqi-zwww/1192510)&#11088;</b><br>**UUEE** (Moscow Sheremetyevo Alexander S. Pushkin Intl), **ZGGG** (Guangzhou Baiyun Intl), **ZUUU** (Chengdu Shuangliu Intl)
+|Sunday|Jun 21|KATL (Hartsfield-Jackson Atlanta Intl) - KSLC (Salt Lake City International Airport)|**KCLT** (Charlotte Douglas Intl), **KGSP** (Greenville Spartanburg Intl), **KSAV** (Savannah Hilton Head Intl)
+
+<div data-separator="atc-week">WEEK 4</div>
+
+|Day|Date|Featured Route &#9992;|Add. Airports|
+|---|---|---|---|
+|Monday|Jun 22|CYVR (Vancouver) - CYXE (Saskatoon J G Diefenbaker Intl)|**CYEG** (Edmonton Intl), **CYQR** (Regina), **CYYJ** (Victoria Intl)
+|Tuesday|Jun 23|EIDW (Dublin) - EGNT (Newcastle)|**EICK** (Cork), **EIKY** (Kerry), **EINN** (Shannon)
+|Wednesday|Jun 24|WADD (Denpasar Ngurah Rai Intl) - WIII (Jakarta Soekarno-Hatta Intl)|**RPLL** (Ninoy Aquino Intl), **VMMC** (Macau Intl), **WSSS** (Singapore Changi Intl)
+|Thursday|Jun 25|MMMX (Benito Juarez Intl) - MMGL (Miguel Hidalgo y Costilla Intl)|**MMMY** (Mariano Escobedo Intl), **MMSD** (Los Cabos Intl), **MMTJ** (Abelardo L. Rodriguez International Airport)
+|Friday|Jun 26|FACT (Cape Town International) - FAOR (O. R. Tambo Intl)|<b>&#11088;[South African VA: Anniversary Event](https://community.infiniteflight.com/t/28jun26-south-african-virtual-presents-johannesburg-anniversary-takeover-faor-fly-in-out/1197728)&#11088;</b><br>**FHSH** (Saint Helena), **FNBJ** (Unknown), **HAAB** (Bole Intl-Addis Ababa)
+|Saturday|Jun 27|TBA|<b>&#11088;[IF48 Event: Edition 9](community.infiniteflight.com)&#11088;</b><br>
+|Sunday|Jun 28|TBA|<b>&#11088;[IF48 Event: Edition 9 ](community.infiniteflight.com)&#11088;</b><br>
+
+<div data-separator="atc-week">WEEK 5</div>
+
+|Day|Date|Featured Route &#9992;|Add. Airports|
+|---|---|---|---|
+|Monday|Jun 29|LIRF (Roma-Fiumicino "Leonardo Da Vinci") - LEBL (Josep Tarradellas Barcelona-El Prat)|**LEIB** (Ibiza), **LEPA** (Palma De Mallorca), **LEVC** (Valencia)
+|Tuesday|Jun 30|KLAX (Los Angeles Intl) - PHNL (Daniel K. Inouye International Airport)|**KSFO** (San Francisco International), **RJAA** (Narita International), **RKSI** (Incheon Intl)
+
+# FAQ
+
+[details='How does IFATC staff airports?']
+Our members may staff *any* airport in the world at anytime! The Infinite Flight ATC team is encouraged to staff featured airports on the ATC schedule to the max extent possible, though it is entirely optional.
+
+You'll find IFATC staffing a mix of ATC Schedule airports, airports that compliment the featured fields, fan-favorites like LAX, community airports, and everything in between!
+
+> **For more information, check out the blog below:**
+> https://infiniteflight.com/blog/the-atc-staffing-evolution-continues
+[/details]
+
+[details='How do I join IFATC?']
+Head over to our [ATC Recruiting Topic](https://community.infiniteflight.com/t/atc-recruiting/843545), read **all** instructions, and submit an application to get started!
+[/details]
+
+[details='How do I get IFATC at my event?']
+IFATC members are encouraged to staff all community events around the world! While events aren't featured on the schedule, community members may use the schedule locations to create future events with guaranteed traffic!
+
+Head over to our #live:events category to begin creating. You can use helpful tags like #atc-needed and #atc-staffed to let controllers know where they're needed.
+[/details]
+
+[details='How can I appeal my Level 2 or 3 Violation?']
+If reported by ATC on the Expert Server for an infraction you will be issued a [Level 2 or Level 3 Violation](https://infiniteflight.com/guide/getting-started/pilot-user-interface/violations). This may be appealed here on the Community Forum by sending a direct message to @appeals where you should provide your callsign, display name, location, details surrounding the report, and a replay file which can easily be uploaded [here!](https://sharemyinfiniteflight.com/)
+[/details]
+
+>Featured airports are subject to change at anytime without notice to highlight the release of new airports and aircraft, official events, and more!
+
+-------------------------
+
