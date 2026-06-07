@@ -1267,14 +1267,59 @@ const followEnabled = document.getElementById('btn-follow').classList.contains('
 
 
 
-
-
 async function pollFlightPosition(username, sessionId, msgDiv) {
     try {
         const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}?sessionId=${sessionId}`);
         const data = await response.json();
 
-        const activeFlight = data.flight || (data.flights && data.flights[0] ? data.flights[0].flight : null);
+        let activeFlight = null;
+
+        // ── STEP 1: SessionId match on flights array ──
+        if (data.flights && data.flights.length > 0) {
+            const match = data.flights.find(f => f.sessionId === sessionId);
+            if (match) activeFlight = match.flight;
+        }
+
+        // If no sessionId match, treat data.flight as a candidate
+        if (!activeFlight && data.flight) {
+            activeFlight = data.flight;
+        }
+
+        // ── STEP 2: Reject if position jumped > 50nm (wrong flight) ──
+        if (activeFlight && lastFlightData) {
+            const dist = haversineDistanceNM(
+                lastFlightData.latitude, lastFlightData.longitude,
+                activeFlight.latitude,  activeFlight.longitude
+            );
+            if (dist > 50) {
+                console.warn(`Rejected: flight jumped ${dist.toFixed(1)}nm — likely wrong flight. Trying proximity fallback.`);
+                activeFlight = null;
+            }
+        }
+
+        // ── STEP 3: Proximity fallback across all available flights ──
+        if (!activeFlight && lastFlightData) {
+            const MAX_RADIUS_NM = 50;
+            let closest = null;
+            let closestDist = Infinity;
+
+            const candidates = data.flights || [];
+            candidates.forEach(f => {
+                const dist = haversineDistanceNM(
+                    lastFlightData.latitude, lastFlightData.longitude,
+                    f.flight.latitude,       f.flight.longitude
+                );
+                if (dist < MAX_RADIUS_NM && dist < closestDist) {
+                    closestDist = dist;
+                    closest = f;
+                }
+            });
+
+            if (closest) {
+                console.warn(`Using proximity fallback — nearest flight ${closestDist.toFixed(1)}nm away.`);
+                activeFlight = closest.flight;
+            }
+        }
 
         if (data.found && activeFlight) {
             drawFlight(activeFlight, false);
@@ -1599,6 +1644,17 @@ function calculateBearing(latlng1, latlng2) {
 
     const brng = Math.atan2(y, x) * 180 / Math.PI;
     return (brng + 360) % 360;
+}
+
+
+function haversineDistanceNM(lat1, lon1, lat2, lon2) {
+    const R = 3440.065; // Earth radius in nautical miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 
