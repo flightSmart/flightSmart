@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>VFR Map - Single Image & Path Editor</title>
+    <title>SkyArt</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     
     <link href='https://fonts.googleapis.com/css?family=B612+Mono' rel='stylesheet'>
@@ -14,7 +14,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/regenerator-runtime" type="text/javascript"></script>
     <script src="https://unpkg.com/leaflet-topography" type="text/javascript"></script>
-    
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
     <style>
         /* ═══════════════════════════════════════════════════════════
            THEME VARIABLES & BASICS
@@ -30,7 +32,7 @@
             --border-main: rgb(131, 131, 131);
             --border-faint: rgba(232, 232, 232, 0.275);
             --font-mono: 'B612 Mono', monospace;
-            --font-sans: 'Montserrat', Helvetica, sans-serif;
+            --font-sans: Helvetica, sans-serif;
             --exc-txt: rgb(248, 81, 73);
             --exc-brd: rgb(248, 81, 73);
         }
@@ -69,7 +71,6 @@
             color: var(--accent-green);
             font-family: var(--font-sans);
             font-size: 14px;
-            border-bottom: 1px solid var(--border-main);
             padding-bottom: 5px;
         }
 
@@ -97,6 +98,11 @@
             top: 10px;
             left: 50px;
             z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        #map-controls .controls-row {
             display: flex;
             gap: 2px;
         }
@@ -133,6 +139,44 @@
             background-color: #d8d8d8 !important;
             color: var(--bg-dark) !important;
             border-color: var(--bg-dark) !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           AIRPORT LAYER STYLING
+        ═══════════════════════════════════════════════════════════ */
+        .airport-hover-box {
+            background: rgba(30, 30, 30, 0.9) !important;
+            border: 1px solid var(--border-main) !important;
+            color: var(--text-main) !important;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 5px 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            border-radius: 0 !important;
+        }
+        .leaflet-tooltip-top.airport-hover-box::before { display: none; }
+
+        .airport-icao-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #000000;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+            -webkit-text-stroke: 1.5px white;
+            paint-order: stroke fill;
+            pointer-events: none;
+        }
+
+        .airport-3d-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            flex-shrink: 0;
+            transform: translateY(-1px);
         }
 
         /* ═══════════════════════════════════════════════════════════
@@ -268,6 +312,135 @@
             display: none !important;
         }
 
+        /* ── EXPORT FPL DOWNLOAD MODAL ── */
+        #fpl-export-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #fpl-export-overlay.visible { display: flex; }
+        .fpl-export-modal {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-main);
+            width: 100%;
+            max-width: 420px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            font-family: var(--font-mono);
+        }
+        .fpl-export-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-main);
+        }
+        .fpl-export-header h3 {
+            margin: 0;
+            color: var(--accent-green);
+            font-family: var(--font-sans);
+            font-size: 12px;
+        }
+        .fpl-export-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: 0.2s;
+        }
+        .fpl-export-close:hover { color: var(--exc-txt); }
+        .fpl-export-hint-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 16px 4px;
+        }
+        .fpl-export-hint {
+            font-size: 10px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        .fpl-export-zip-btn {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            border: 1px solid var(--border-main);
+            padding: 5px 8px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .fpl-export-zip-btn:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .fpl-export-list {
+            padding: 8px 16px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .fpl-export-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-main);
+            padding: 8px 12px;
+            transition: 0.2s;
+        }
+        .fpl-export-item.downloaded {
+            border-color: var(--accent-green);
+        }
+        .fpl-export-item .fname {
+            font-size: 11px;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .fpl-export-dl {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            border: 1px solid var(--border-main);
+            padding: 5px 8px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .fpl-export-dl:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .fpl-export-dl svg { display: block; }
+        .fpl-export-item.downloaded .fpl-export-dl {
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
         /* Steep turn waypoint */
         .steep-turn-dot {
             background-color: var(--exc-txt); border: 2px solid #000000; border-radius: 50%;
@@ -353,6 +526,25 @@
 
     <div id="map"></div>
 
+    <!-- Export FPL download modal: lets the user download each file individually
+         so browsers don't block a burst of simultaneous downloads. -->
+    <div id="fpl-export-overlay">
+        <div class="fpl-export-modal" role="dialog" aria-modal="true" aria-labelledby="fpl-export-title">
+            <div class="fpl-export-header">
+                <h3 id="fpl-export-title">EXPORT FPL</h3>
+                <button class="fpl-export-close" onclick="closeFplExportModal()" title="Close" aria-label="Close">&times;</button>
+            </div>
+            <div class="fpl-export-hint-row">
+                <div class="fpl-export-hint"> </div>
+                <button class="fpl-export-zip-btn" id="fpl-export-zip-btn" onclick="downloadAllFplAsZip()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>DOWNLOAD ALL (.ZIP)</span>
+                </button>
+            </div>
+            <div class="fpl-export-list" id="fpl-export-list"></div>
+        </div>
+    </div>
+
     <div id="search-box">
 
         <input type="file" id="image-input" accept="image/*" style="display:none">
@@ -381,8 +573,11 @@
             </div>
         </div>
 
+        <input type="file" id="fpl-import-input" accept=".fpl,application/xml,text/xml" multiple style="display:none" onchange="handleFplImportFile(event)">
+
         <div id="path-empty" class="empty-state">
             <button class="action-btn" onclick="startNewPath()">+ CREATE PATH</button>
+            <button class="action-btn" style="margin-top: 6px;" onclick="document.getElementById('fpl-import-input').click()">IMPORT FPL</button>
         </div>
 
         <div id="path-active" class="layer-row selected" style="display:none;">
@@ -422,6 +617,8 @@
                 </div>
                 <div style="display: flex; gap: 4px; margin-top: 4px;">
                     <button class="layer-remove-btn" style="border-color: var(--accent-green); color: var(--accent-green); margin-top: 0;" onclick="exportFplFiles()">EXPORT FPL</button>
+                </div>
+                <div style="display: flex; gap: 4px; margin-top: 4px;">
                     <button class="layer-remove-btn" style="border-color: #d97757; color: #d97757; margin-top: 0;" onclick="clearMeasurements()">REMOVE PATH</button>
                 </div>
             </div>
@@ -430,10 +627,15 @@
     </div>
 
     <div id="map-controls">
-        <button onclick="switchLayer('natgeo')">DEFAULT</button>
-        <button onclick="switchLayer('topo')">TOPO</button>
-        <button onclick="switchLayer('sat')">SATELLITE</button>
-        <button onclick="switchLayer('relief')">RELIEF</button>
+        <div class="controls-row">
+            <button class="layer-btn" onclick="switchLayer('natgeo')">DEFAULT</button>
+            <button class="layer-btn" onclick="switchLayer('topo')">TOPO</button>
+            <button class="layer-btn" onclick="switchLayer('sat')">SATELLITE</button>
+            <button class="layer-btn" onclick="switchLayer('relief')">RELIEF</button>
+        </div>
+        <div class="controls-row">
+            <button id="btn-airports" onclick="toggleAirportsControl()" title="Toggle Airports">AIRPORTS</button>
+        </div>
     </div>
 
     <script>
@@ -462,11 +664,195 @@
         }
         
         function updateButtonUI(layerKey) {
-            document.querySelectorAll('#map-controls button').forEach(btn => {
+            document.querySelectorAll('#map-controls button.layer-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.getAttribute('onclick').includes(`'${layerKey}'`)) btn.classList.add('active');
             });
         }
+
+        /* ═══════════════════════════════════════════════════════════
+           AIRPORT LAYER (toggleable, with 3D-scenery badges)
+        ═══════════════════════════════════════════════════════════ */
+        let airportDataCache = null;
+        const airportLayer = L.layerGroup().addTo(map);
+        const airportMarkers = new Map(); // ident -> marker currently on the map
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // ICAO / local codes for airports with 3D scenery (IFAET "3D Airports" list)
+        let threeDAirportSet = null;
+        let threeDAirportsPromise = null;
+
+        function loadThreeDAirports() {
+            if (threeDAirportsPromise) return threeDAirportsPromise;
+            threeDAirportsPromise = fetch('/IFAET - 3D Airports.csv')
+                .then(res => res.text())
+                .then(csvText => {
+                    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+                    const codes = new Set();
+                    parsed.data.forEach(row => {
+                        const field = row['ICAO / Code'];
+                        if (!field) return;
+                        field.split(/[/|]/).forEach(part => {
+                            const code = part.trim();
+                            if (/^[A-Z0-9]{3,4}$/.test(code)) codes.add(code);
+                        });
+                    });
+                    threeDAirportSet = codes;
+                    console.log(`Loaded ${threeDAirportSet.size} 3D airport codes.`);
+                    return threeDAirportSet;
+                })
+                .catch(err => {
+                    console.error("Failed to load 3D airports CSV:", err);
+                    threeDAirportSet = new Set();
+                    return threeDAirportSet;
+                });
+            return threeDAirportsPromise;
+        }
+        loadThreeDAirports();
+
+        // Small inline "3D" badge icon shown next to airports that have 3D scenery
+        const THREE_D_BADGE_SVG = `<svg viewBox="0 0 24 24" width="13" height="13" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="22" height="22" rx="4" fill="#ff9500" stroke="#000" stroke-width="1.5"/><text x="12" y="17" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="12" fill="#000">3D</text></svg>`;
+
+        window.toggleAirportsControl = function() {
+            document.getElementById('btn-airports').classList.toggle('active');
+            updateAirports();
+        };
+
+        function buildAirportIcon(airport) {
+            const is3D = threeDAirportSet && threeDAirportSet.has(airport.ident);
+            const badgeHtml = is3D ? `<span class="airport-3d-badge">${THREE_D_BADGE_SVG}</span>` : '';
+            const size = airport.size;
+
+            return L.divIcon({
+                html: `
+                    <div style="position: relative; width: ${size}px; height: ${size}px;">
+                        <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="position: absolute; top:0; left:0;">
+                            <circle cx="50" cy="50" r="35" stroke="black" stroke-width="35" fill="none" />
+                            <circle cx="50" cy="50" r="35" stroke="${airport.color}" stroke-width="12" fill="none" />
+                        </svg>
+                        <div style="position: absolute; top: 50%; left: ${size + 4}px; transform: translateY(-50%); display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                            <div class="airport-icao-label" style="position: static; transform: none;">${airport.ident}</div>
+                            ${badgeHtml}
+                        </div>
+                    </div>
+                `,
+                className: '',
+                iconSize: [size, size],
+                iconAnchor: [size/2, size/2]
+            });
+        }
+
+        function makeAirportMarker(airport) {
+            const marker = L.marker([airport.lat, airport.lon], {
+                icon: buildAirportIcon(airport),
+                interactive: true
+            });
+
+            const hoverContent = `<b>${airport.ident}</b><br>${airport.name}<br>${airport.type.replace('_', ' ').toUpperCase()}`;
+            marker.bindTooltip(hoverContent, {
+                permanent: false,
+                direction: 'top',
+                sticky: true,
+                className: 'airport-hover-box',
+                offset: [0, -10]
+            });
+
+            return marker;
+        }
+
+        async function updateAirports() {
+            const isEnabled = document.getElementById('btn-airports').classList.contains('active');
+            if (!isEnabled) {
+                airportLayer.clearLayers();
+                airportMarkers.clear();
+                return;
+            }
+
+            const currentZoom = map.getZoom();
+
+            if (currentZoom < 5) {
+                airportLayer.clearLayers();
+                airportMarkers.clear();
+                return;
+            }
+
+            if (!airportDataCache) {
+                console.log("Downloading airport database...");
+                try {
+                    const response = await fetch('https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv');
+                    const csvText = await response.text();
+                    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+
+                    // Pre-parse and pre-filter once so subsequent pans/zooms just iterate
+                    // plain numbers instead of re-parsing floats and strings every time.
+                    airportDataCache = [];
+                    parsed.data.forEach(row => {
+                        const lat = parseFloat(row.latitude_deg);
+                        const lon = parseFloat(row.longitude_deg);
+                        const type = row.type;
+                        if (isNaN(lat) || isNaN(lon)) return;
+                        if (type === 'closed' || type === 'heliport' || type === 'seaplane_base') return;
+
+                        const isMajor = type === 'large_airport' || type === 'medium_airport';
+                        airportDataCache.push({
+                            ident: row.ident,
+                            name: row.name,
+                            type: type,
+                            lat: lat,
+                            lon: lon,
+                            isMajor: isMajor,
+                            color: isMajor ? '#00eeff' : '#00ff6a',
+                            size: isMajor ? 12 : 9
+                        });
+                    });
+                    console.log(`Loaded ${airportDataCache.length} airports.`);
+                } catch (err) {
+                    console.error("Critical error loading CSV:", err);
+                    return;
+                }
+            }
+
+            if (!threeDAirportSet) {
+                await loadThreeDAirports();
+            }
+
+            const bounds = map.getBounds();
+            const wanted = new Set();
+
+            airportDataCache.forEach(airport => {
+                if (currentZoom < 8 && airport.type === 'small_airport') return;
+                if (currentZoom < 6 && airport.type === 'medium_airport') return;
+                if (!bounds.contains([airport.lat, airport.lon])) return;
+
+                wanted.add(airport.ident);
+
+                if (!airportMarkers.has(airport.ident)) {
+                    const marker = makeAirportMarker(airport);
+                    airportMarkers.set(airport.ident, marker);
+                    marker.addTo(airportLayer);
+                }
+            });
+
+            // Drop markers that have scrolled/zoomed out of view instead of
+            // rebuilding everything from scratch on every moveend/zoomend.
+            airportMarkers.forEach((marker, ident) => {
+                if (!wanted.has(ident)) {
+                    airportLayer.removeLayer(marker);
+                    airportMarkers.delete(ident);
+                }
+            });
+        }
+
+        const debouncedUpdateAirports = debounce(updateAirports, 150);
+        map.on('moveend', debouncedUpdateAirports);
+        map.on('zoomend', debouncedUpdateAirports);
 
         /* ═══════════════════════════════════════════════════════════
            SECTION 1: IMAGE LAYER EDITOR (Single Instance)
@@ -1736,21 +2122,180 @@
                 chunks.push(allWaypoints.slice(i, i + FPL_MAX_WAYPOINTS));
             }
 
-            chunks.forEach((chunk, idx) => {
+            const files = chunks.map((chunk, idx) => {
                 const isSplit = chunks.length > 1;
                 const filename = isSplit ? `${baseName}_part${idx + 1}.fpl` : `${baseName}.fpl`;
                 const thisRouteName = isSplit ? `${routeName} (PART ${idx + 1})` : routeName;
-                const xml = buildFplXml(chunk, thisRouteName);
-                setTimeout(() => downloadTextFile(filename, xml), idx * 150);
+                return { filename, content: buildFplXml(chunk, thisRouteName) };
             });
 
-            const btn = document.querySelector('[onclick="exportFplFiles()"]');
-            if (btn) {
-                const original = btn.innerText;
-                btn.innerText = chunks.length > 1 ? `EXPORTED ${chunks.length} FILES` : 'EXPORTED';
-                setTimeout(() => { btn.innerText = original; }, 2000);
-            }
+            openFplExportModal(files);
         };
+
+        // Parse a Garmin-style .fpl XML string into [{lat, lng, label}, ...],
+        // following route-point order (not waypoint-table order) so the imported
+        // path matches the route the file was flown/drawn in.
+        function parseFplXml(xmlText) {
+            const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+            if (doc.querySelector('parsererror')) {
+                throw new Error('That file is not a valid FPL/XML file.');
+            }
+
+            const waypointMap = new Map();
+            Array.from(doc.getElementsByTagName('waypoint')).forEach(wp => {
+                const identifier = (wp.getElementsByTagName('identifier')[0]?.textContent || '').trim();
+                const lat = parseFloat(wp.getElementsByTagName('lat')[0]?.textContent);
+                const lon = parseFloat(wp.getElementsByTagName('lon')[0]?.textContent);
+                if (identifier && isFinite(lat) && isFinite(lon)) {
+                    waypointMap.set(identifier, { lat, lng: lon });
+                }
+            });
+
+            const toLabel = (identifier) => (identifier === '⠀' ? '' : identifier);
+
+            const coords = [];
+            Array.from(doc.getElementsByTagName('route-point')).forEach(rp => {
+                const identifier = (rp.getElementsByTagName('waypoint-identifier')[0]?.textContent || '').trim();
+                const wp = waypointMap.get(identifier);
+                if (wp) coords.push({ lat: wp.lat, lng: wp.lng, label: toLabel(identifier) });
+            });
+
+            // Fall back to waypoint-table order if the file has no <route-point> entries.
+            if (coords.length === 0) {
+                waypointMap.forEach((wp, identifier) => {
+                    coords.push({ lat: wp.lat, lng: wp.lng, label: toLabel(identifier) });
+                });
+            }
+
+            if (coords.length === 0) {
+                throw new Error('No waypoints found in that FPL file.');
+            }
+
+            return coords;
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error(`Failed to read "${file.name}".`));
+                reader.readAsText(file);
+            });
+        }
+
+        window.handleFplImportFile = function(event) {
+            const input = event.target;
+            const files = input.files ? Array.from(input.files) : [];
+            if (!files.length) return;
+
+            // Files are read in parallel but kept in selection order via their index,
+            // so multi-part plans (e.g. part1/part2) concatenate in the order picked.
+            Promise.all(files.map(readFileAsText))
+                .then(texts => {
+                    const coords = texts.flatMap(parseFplXml);
+                    if (measureMarkers.length > 0) pushPathHistory();
+                    restorePath(coords);
+                })
+                .catch(err => {
+                    alert(err.message || 'Failed to import those FPL files.');
+                })
+                .finally(() => {
+                    input.value = '';
+                });
+        };
+
+        const DOWNLOAD_ICON_SVG =
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>' +
+            '<polyline points="7 10 12 15 17 10"></polyline>' +
+            '<line x1="12" y1="15" x2="12" y2="3"></line></svg>';
+
+        let currentFplExportFiles = [];
+
+        function openFplExportModal(files) {
+            currentFplExportFiles = files;
+            const overlay = document.getElementById('fpl-export-overlay');
+            const list = document.getElementById('fpl-export-list');
+            list.innerHTML = '';
+
+            files.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'fpl-export-item';
+
+                const name = document.createElement('span');
+                name.className = 'fname';
+                name.textContent = file.filename;
+                name.title = file.filename;
+
+                const btn = document.createElement('button');
+                btn.className = 'fpl-export-dl';
+                btn.innerHTML = DOWNLOAD_ICON_SVG + '<span>DOWNLOAD</span>';
+                btn.onclick = () => {
+                    downloadTextFile(file.filename, file.content);
+                    item.classList.add('downloaded');
+                    btn.querySelector('span').textContent = 'SAVED';
+                };
+
+                item.appendChild(name);
+                item.appendChild(btn);
+                list.appendChild(item);
+            });
+
+            overlay.classList.add('visible');
+        }
+
+        window.downloadAllFplAsZip = function() {
+            if (!currentFplExportFiles.length || typeof JSZip === 'undefined') return;
+
+            const btn = document.getElementById('fpl-export-zip-btn');
+            const label = btn.querySelector('span');
+            const originalLabel = label.textContent;
+            label.textContent = 'ZIPPING...';
+            btn.disabled = true;
+
+            const zip = new JSZip();
+            currentFplExportFiles.forEach(file => zip.file(file.filename, file.content));
+
+            const rawName = (document.getElementById('fpl-filename-input').value || 'flight_plan').trim();
+            const baseName = (rawName.replace(/\.fpl$/i, '').replace(/[\\/:*?"<>|]/g, '_') || 'flight_plan');
+
+            zip.generateAsync({ type: 'blob' }).then(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${baseName}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                document.querySelectorAll('.fpl-export-item').forEach(item => {
+                    item.classList.add('downloaded');
+                    const span = item.querySelector('.fpl-export-dl span');
+                    if (span) span.textContent = 'SAVED';
+                });
+
+                label.textContent = originalLabel;
+                btn.disabled = false;
+            }).catch(() => {
+                alert('Failed to create the zip file.');
+                label.textContent = originalLabel;
+                btn.disabled = false;
+            });
+        };
+
+        window.closeFplExportModal = function() {
+            document.getElementById('fpl-export-overlay').classList.remove('visible');
+        };
+
+        // Close when clicking the dimmed backdrop or pressing Escape.
+        document.getElementById('fpl-export-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeFplExportModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeFplExportModal();
+        });
 
         function loadMeasurementPlan() {
             const saved = localStorage.getItem('savedMeasurementPlan');
