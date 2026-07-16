@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>VFR Map - Single Image & Path Editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <link href='https://fonts.googleapis.com/css?family=B612+Mono' rel='stylesheet'>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/regenerator-runtime" type="text/javascript"></script>
+    <script src="https://unpkg.com/leaflet-topography" type="text/javascript"></script>
+    
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           THEME VARIABLES & BASICS
+        ═══════════════════════════════════════════════════════════ */
+        :root {
+            --bg-dark: rgb(30, 30, 30);
+            --bg-light: rgb(50, 50, 50);
+            --bg-hover: rgb(60, 60, 60);
+            --bg-active: rgb(40, 40, 40);
+            --text-main: rgb(224, 225, 226);
+            --text-muted: rgb(150, 150, 150);
+            --accent-green: rgb(100, 195, 153);
+            --border-main: rgb(131, 131, 131);
+            --border-faint: rgba(232, 232, 232, 0.275);
+            --font-mono: 'B612 Mono', monospace;
+            --font-sans: 'Montserrat', Helvetica, sans-serif;
+            --exc-txt: rgb(248, 81, 73);
+            --exc-brd: rgb(248, 81, 73);
+        }
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0; padding: 0;
+            font-family: var(--font-mono);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow: hidden;
+            letter-spacing: -0.3px;
+        }
+        #map { height: 100vh; width: 100%; background: var(--bg-dark); }
+        
+        /* ── SIDEBAR CONTAINER (RIGHT) ── */
+        #search-box {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            background: var(--bg-dark);
+            padding: 15px;
+            border: 1px solid var(--border-main);
+            display: flex;
+            flex-direction: column;
+            width: 320px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        #search-box h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: var(--accent-green);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-main);
+            padding-bottom: 5px;
+        }
+
+        .action-btn {
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            border: 1px solid var(--border-main);
+            padding: 8px 10px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+            text-align: center;
+        }
+        .action-btn:hover {
+            background-color: var(--bg-hover);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        
+        /* ── LAYER CONTROL STYLING (map style switcher, top-left) ── */
+        #map-controls {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            z-index: 1000;
+            display: flex;
+            gap: 2px;
+        }
+        #map-controls button {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            border: 1px solid var(--border-main);
+            padding: 6px 10px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #map-controls button:hover { background-color: var(--bg-light); }
+        #map-controls button.active {
+            background-color: #d8d8d9;
+            color: var(--bg-dark);
+            border-color: var(--bg-dark);
+        }
+        
+        /* ── ZOOM CONTROL CUSTOM OVERRIDES ── */
+        .leaflet-control-zoom { border: none !important; }
+        .leaflet-bar a {
+            background-color: var(--bg-dark) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--border-main) !important;
+            border-radius: 0 !important;
+            font-family: var(--font-mono) !important;
+            font-weight: bold !important;
+            transition: 0.2s;
+        }
+        .leaflet-bar a:first-child { border-bottom: none !important; }
+        .leaflet-bar a:hover {
+            background-color: #d8d8d8 !important;
+            color: var(--bg-dark) !important;
+            border-color: var(--bg-dark) !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           LAYER ROW SYSTEM & STATES
+        ═══════════════════════════════════════════════════════════ */
+        .empty-state {
+            border: 1px dashed var(--border-main);
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .layer-row {
+            border: 1px solid var(--border-main);
+            background-color: var(--bg-active);
+            padding: 8px;
+            margin-bottom: 10px;
+            transition: 0.2s;
+        }
+        .layer-row.selected { border-color: var(--text-main); }
+        .layer-row-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .layer-thumb {
+            width: 30px;
+            height: 30px;
+            object-fit: cover;
+            border: 1px solid var(--border-main);
+            flex-shrink: 0;
+            background: var(--bg-dark);
+        }
+        .layer-name {
+            flex: 1;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .layer-row-head button {
+            background: none;
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            width: 20px;
+            height: 20px;
+            line-height: 1;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .layer-row-head button:hover { background-color: var(--bg-hover); }
+        .layer-row-head button.toggled-off { color: var(--text-muted); }
+        .layer-controls {
+            margin-top: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .layer-row.selected .layer-controls { display: flex; }
+        
+        .layer-control-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        .layer-control-line label { width: 46px; flex-shrink: 0; }
+        .layer-control-line input[type="range"] {
+            flex: 1; accent-color: var(--accent-green); background: transparent; height: 14px;
+        }
+        .layer-control-line span.val {
+            min-width: 30px; text-align: right; color: var(--text-main); flex-shrink: 0;
+        }
+        
+        .layer-drag-hint { font-size: 9px; color: var(--text-muted); font-style: italic; margin-top: 2px; text-align: center; }
+        .layer-remove-btn {
+            width: 100%;
+            margin-top: 4px;
+            background: none;
+            border: 1px solid var(--border-main);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 4px;
+            cursor: pointer;
+        }
+        .layer-remove-btn:hover { border-color: #d97757; color: #d97757; }
+        
+        /* Interactive Overlays CSS */
+        .image-layer-overlay { will-change: transform; }
+        .image-layer-overlay.placing-preview { opacity: 0.55 !important; outline: 2px dashed var(--accent-green); outline-offset: -2px; }
+        #map.placing-cursor { cursor: crosshair; }
+        
+        .resize-handle-icon {
+            width: 10px; height: 10px; background-color: var(--accent-green);
+            border: 1px solid var(--bg-light); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+            cursor: nwse-resize; will-change: transform;
+        }
+        .resize-handle-icon:hover { background-color: #d8d8d8; }
+        
+        .move-handle-icon {
+            width: 10px; height: 10px; border-radius: 50%; background-color: var(--bg-light);
+            border: 2px solid var(--accent-green); color: var(--accent-green);
+            display: flex; align-items: center; justify-content: center; padding: 3px;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); cursor: pointer;
+        }
+        .move-handle-icon:hover { background-color: var(--bg-light); }
+        .move-handle-icon.active { background-color: var(--accent-green); color: var(--bg-dark); }
+
+        /* ═══════════════════════════════════════════════════════════
+           PATH MEASUREMENT & WAYPOINT CSS
+        ═══════════════════════════════════════════════════════════ */
+        .draggable-dot {
+            background-color: #ff9900; border: 2px solid #000000; border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4); margin-top: -6px; margin-left: -6px;
+            transition: box-shadow 0.2s, background-color 0.2s;
+        }
+        .ghost-dot {
+            background-color: rgba(255, 153, 0, 0.4); border: 2px dashed rgba(0, 0, 0, 0.6);
+            border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            margin-top: -6px; margin-left: -6px; cursor: pointer; transition: background-color 0.2s, border 0.2s;
+        }
+        .ghost-dot:hover { background-color: #ff9900; border: 2px solid #000000; }
+
+        /* Waypoint & ghost dots only show while actively drawing/editing the path */
+        .fpl-overlays-hidden .draggable-dot,
+        .fpl-overlays-hidden .steep-turn-dot,
+        .fpl-overlays-hidden .ghost-dot {
+            display: none !important;
+        }
+
+        /* Steep turn waypoint */
+        .steep-turn-dot {
+            background-color: var(--exc-txt); border: 2px solid #000000; border-radius: 50%;
+            box-shadow: 0 0 6px 3px var(--exc-brd), 0 0 14px 7px rgba(248, 81, 73, 0.45), 0 1px 3px rgba(0,0,0,0.4);
+            margin-top: -6px; margin-left: -6px;
+            transition: box-shadow 0.2s, background-color 0.2s;
+        }
+        .steep-turn-dot:hover {
+            box-shadow: 0 0 8px 4px var(--exc-brd), 0 0 18px 9px rgba(248, 81, 73, 0.55), 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        /* ── WAYPOINT MAP NUMBERS & FPL TABLE ── */
+        .wp-map-number {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #ff9900 !important;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: bold;
+            -webkit-text-stroke: 2px black;
+            paint-order: stroke fill;
+        }
+        .wp-map-number::before { display: none !important; }
+
+        .wp-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 10px;
+        }
+        .wp-table th {
+            color: var(--accent-green);
+            padding: 2px 4px;
+            border-bottom: 1px solid var(--border-main);
+            font-weight: normal;
+        }
+        .wp-table td {
+            padding: 3px 4px;
+            border-bottom: 1px dashed var(--border-faint);
+            white-space: nowrap;
+        }
+        .wp-table tr:last-child td { border-bottom: none; }
+        .wp-del-btn {
+            color: var(--exc-txt);
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 11px;
+        }
+        .wp-del-btn:hover {
+            color: white;
+            font-weight: bold;
+        }
+        .wp-label-input {
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 2px 4px;
+        }
+        .wp-label-input:focus {
+            outline: none;
+            border-color: var(--accent-green);
+        }
+
+        #waypoint-list-box::-webkit-scrollbar { width: 4px; }
+        #waypoint-list-box::-webkit-scrollbar-thumb {
+            background-color: var(--border-main);
+            border-radius: 2px;
+        }
+
+        @media (max-width: 768px) {
+            #search-box { width: 95%; top: 10px; left: 50%; transform: translateX(-50%); right: auto; }
+            #map-controls { top: auto; bottom: 25px; left: 50%; transform: translateX(-50%); width: 95%; justify-content: center; background-color: var(--bg-dark); padding: 4px; border: 1px solid var(--border-main); }
+            #map-controls button { padding: 10px 8px; font-size: 12px; flex: 1; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div id="search-box">
+
+        <input type="file" id="image-input" accept="image/*" style="display:none">
+        
+        <div id="image-empty" class="empty-state">
+            <button class="action-btn" onclick="document.getElementById('image-input').click()">+ IMPORT IMAGE</button>
+        </div>
+        
+        <div id="image-active" class="layer-row selected" style="display:none;">
+            <div class="layer-row-head" onclick="toggleImageRow()">
+                <img id="img-thumb" class="layer-thumb" src="">
+                <div id="img-name" class="layer-name">Image Name</div>
+                <button id="img-vis-btn" onclick="event.stopPropagation(); toggleImageVisibility()" title="Toggle visibility">◉</button>
+            </div>
+            <div class="layer-controls">
+                <div class="layer-control-line">
+                    <label>OPACITY</label>
+                    <input type="range" id="img-opacity" min="0" max="1" step="0.01" value="0.85" oninput="updateImageOpacity(this.value)">
+                    <span class="val" id="img-opacity-val">85%</span>
+                </div>
+                <div class="layer-control-line layer-size-readout">
+                    <label>SIZE</label>
+                    <span class="val" id="img-scale-val">W:100% H:100%</span>
+                </div>
+                <button class="layer-remove-btn" style="border-color: #d97757; color: #d97757;" onclick="removeImageOverlay()">REMOVE IMAGE</button>
+            </div>
+        </div>
+
+        <div id="path-empty" class="empty-state">
+            <button class="action-btn" onclick="startNewPath()">+ CREATE PATH</button>
+        </div>
+
+        <div id="path-active" class="layer-row selected" style="display:none;">
+            <div class="layer-row-head" onclick="togglePathRow()">
+                <div style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-main); background: var(--bg-dark); color: #ff9900; flex-shrink: 0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-9 5 18 3-9h6"/></svg>
+                </div>
+                <div class="layer-name">Flight Path</div>
+                <button id="path-vis-btn" onclick="event.stopPropagation(); togglePathVisibility()" title="Toggle visibility">◉</button>
+            </div>
+            
+            <div class="layer-controls">
+                <button id="draw-mode-btn" class="action-btn" style="border-color:var(--accent-green); margin-bottom:5px;" onclick="toggleDrawMode()">CONTINUE DRAWING</button>
+                
+                <div id="path-info-box" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-main); margin-top: 5px;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center;">
+                            <input type="number" id="info-gs-input" value="110" min="1" style="width: 50px; background: var(--bg-light); border: 1px solid var(--border-main); color: var(--text-main); font-family: var(--font-mono); font-size: 11px; padding: 2px 4px; text-align: right;" oninput="onGroundSpeedChange()">
+                            <span style="margin-left: 4px; color: var(--text-muted); font-size: 10px;">KT</span>
+                        </div>
+                        <span id="route-total-display" style="color: #ff9900; font-weight: bold; margin-left: 8px;">0.0 NM / 00:00</span>
+                    </div>
+                    
+                    <div id="waypoint-list-box" style="max-height: 400px; overflow-y: auto;">
+                        <div style="text-align:center; padding: 10px; color: var(--text-muted);">Add waypoints to generate FPL</div>
+                    </div>
+                </div>
+
+                <label style="display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 10px; color: var(--text-muted); cursor: pointer;">
+                    <input type="checkbox" id="fpl-blank-label-input" style="accent-color: var(--accent-green); margin: 0;">
+                    USE BLANK IDENTIFIER
+                </label>
+                <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                    <input type="text" id="fpl-filename-input" value="flight_plan" placeholder="Filename" style="flex:1; min-width:0; box-sizing: border-box; background: var(--bg-light); border: 1px solid var(--border-main); color: var(--text-main); font-family: var(--font-mono); font-size: 11px; padding: 4px 6px;">
+                    <span style="color: var(--text-muted); font-size: 11px; flex-shrink: 0;">.fpl</span>
+                </div>
+                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                    <button class="layer-remove-btn" style="border-color: var(--accent-green); color: var(--accent-green); margin-top: 0;" onclick="exportFplFiles()">EXPORT FPL</button>
+                    <button class="layer-remove-btn" style="border-color: #d97757; color: #d97757; margin-top: 0;" onclick="clearMeasurements()">REMOVE PATH</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="map-controls">
+        <button onclick="switchLayer('natgeo')">DEFAULT</button>
+        <button onclick="switchLayer('topo')">TOPO</button>
+        <button onclick="switchLayer('sat')">SATELLITE</button>
+        <button onclick="switchLayer('relief')">RELIEF</button>
+    </div>
+
+    <script>
+        // Initialize Map Object
+        const map = L.map('map').setView([39.7392, -104.9903], 10);
+        
+        // Base Layers
+        const layers = {
+            natgeo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
+            topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'OpenTopoMap' }),
+            sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Esri — Satellite' }),
+            relief: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', { maxZoom: 13, attribution: 'Esri — Relief' })
+        };
+        
+        const savedLayerKey = localStorage.getItem('preferredMapLayer') || 'natgeo';
+        let currentLayer = layers[savedLayerKey];
+        currentLayer.addTo(map);
+        updateButtonUI(savedLayerKey);
+        
+        function switchLayer(layerKey) {
+            map.removeLayer(currentLayer);
+            currentLayer = layers[layerKey];
+            currentLayer.addTo(map);
+            localStorage.setItem('preferredMapLayer', layerKey);
+            updateButtonUI(layerKey);
+        }
+        
+        function updateButtonUI(layerKey) {
+            document.querySelectorAll('#map-controls button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('onclick').includes(`'${layerKey}'`)) btn.classList.add('active');
+            });
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           SECTION 1: IMAGE LAYER EDITOR (Single Instance)
+        ═══════════════════════════════════════════════════════════ */
+        // The map uses the standard Web Mercator projection, which stretches a fixed
+        // degree-of-latitude span into more screen pixels the further it is from the
+        // equator. These helpers convert to/from that projected space so an overlay's
+        // half-height can be stored in units where it maps to a constant pixel height
+        // (independent of latitude), keeping the image's true aspect ratio undistorted.
+        function mercatorY(latDeg) {
+            const rad = latDeg * Math.PI / 180;
+            return Math.log(Math.tan(Math.PI / 4 + rad / 2));
+        }
+        function mercatorYToLat(y) {
+            return (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
+        }
+
+        let singleImage = null;
+        const imageInput = document.getElementById('image-input');
+        
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => initImageLayer(file.name, ev.target.result);
+            reader.readAsDataURL(file);
+            imageInput.value = '';
+        });
+        
+        function initImageLayer(name, dataUrl) {
+            if (singleImage) removeImageOverlay();
+
+            const img = new Image();
+            img.onload = () => {
+                const aspect = img.naturalHeight / img.naturalWidth;
+                const b = map.getBounds();
+                const lngSpan = b.getEast() - b.getWest();
+                const width = lngSpan * 0.4;
+                const center = map.getCenter();
+                const halfLngRad = (width / 2) * Math.PI / 180;
+
+                singleImage = {
+                    name: name,
+                    center: L.latLng(center.lat, center.lng),
+                    baseHalfY: aspect * halfLngRad,
+                    baseHalfLng: width / 2,
+                    scaleX: 1,
+                    scaleY: 1,
+                    opacity: 0.85,
+                    visible: true,
+                    dataUrl: dataUrl
+                };
+                
+                singleImage.overlay = L.imageOverlay(dataUrl, computeBounds(), {
+                    opacity: singleImage.opacity,
+                    interactive: true,
+                    className: 'image-layer-overlay'
+                }).addTo(map);
+                
+                document.getElementById('img-thumb').src = dataUrl;
+                document.getElementById('img-name').innerText = name;
+                document.getElementById('img-opacity').value = singleImage.opacity;
+                document.getElementById('img-opacity-val').innerText = '85%';
+                document.getElementById('img-scale-val').innerText = 'W:100% H:100%';
+                document.getElementById('img-vis-btn').innerText = '\u25C9'; 
+                document.getElementById('img-vis-btn').classList.remove('toggled-off');
+                
+                document.getElementById('image-empty').style.display = 'none';
+                document.getElementById('image-active').style.display = 'block';
+                document.getElementById('image-active').classList.add('selected');
+
+                syncResizeHandle();
+                syncPositionHandle();
+                saveImageState();
+            };
+            img.src = dataUrl;
+        }
+
+        /* ── IMAGE PERSISTENCE (localStorage) ── */
+        function saveImageState() {
+            if (!singleImage) return;
+            const state = {
+                name: singleImage.name,
+                dataUrl: singleImage.dataUrl,
+                center: { lat: singleImage.center.lat, lng: singleImage.center.lng },
+                baseHalfY: singleImage.baseHalfY,
+                baseHalfLng: singleImage.baseHalfLng,
+                scaleX: singleImage.scaleX,
+                scaleY: singleImage.scaleY,
+                opacity: singleImage.opacity,
+                visible: singleImage.visible
+            };
+            try {
+                localStorage.setItem('savedImageLayer', JSON.stringify(state));
+            } catch (e) {
+                console.error('Failed to save image layer to localStorage (it may be too large)', e);
+            }
+        }
+
+        function restoreImageLayer(state) {
+            const img = new Image();
+            img.onload = () => {
+                // Migrate layers saved before the Mercator-aware height fix (plain-degree baseHalfLat).
+                const baseHalfY = state.baseHalfY !== undefined
+                    ? state.baseHalfY
+                    : mercatorY(state.center.lat + state.baseHalfLat) - mercatorY(state.center.lat);
+
+                singleImage = {
+                    name: state.name,
+                    center: L.latLng(state.center.lat, state.center.lng),
+                    baseHalfY: baseHalfY,
+                    baseHalfLng: state.baseHalfLng,
+                    scaleX: state.scaleX,
+                    scaleY: state.scaleY,
+                    opacity: state.opacity,
+                    visible: state.visible,
+                    dataUrl: state.dataUrl
+                };
+
+                singleImage.overlay = L.imageOverlay(state.dataUrl, computeBounds(), {
+                    opacity: singleImage.opacity,
+                    interactive: true,
+                    className: 'image-layer-overlay'
+                });
+
+                if (singleImage.visible) singleImage.overlay.addTo(map);
+
+                document.getElementById('img-thumb').src = state.dataUrl;
+                document.getElementById('img-name').innerText = state.name;
+                document.getElementById('img-opacity').value = singleImage.opacity;
+                document.getElementById('img-opacity-val').innerText = Math.round(singleImage.opacity * 100) + '%';
+                document.getElementById('img-scale-val').innerText = `W:${Math.round(singleImage.scaleX * 100)}% H:${Math.round(singleImage.scaleY * 100)}%`;
+
+                const visBtn = document.getElementById('img-vis-btn');
+                if (singleImage.visible) {
+                    visBtn.innerText = '\u25C9';
+                    visBtn.classList.remove('toggled-off');
+                } else {
+                    visBtn.innerText = '\u25CB';
+                    visBtn.classList.add('toggled-off');
+                }
+
+                document.getElementById('image-empty').style.display = 'none';
+                document.getElementById('image-active').style.display = 'block';
+                document.getElementById('image-active').classList.add('selected');
+
+                syncResizeHandle();
+                syncPositionHandle();
+            };
+            img.src = state.dataUrl;
+        }
+
+        function loadImageLayer() {
+            const saved = localStorage.getItem('savedImageLayer');
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    restoreImageLayer(state);
+                } catch (e) {
+                    console.error('Failed to load saved image layer', e);
+                }
+            }
+        }
+
+        window.toggleImageRow = function() {
+            const row = document.getElementById('image-active');
+            row.classList.toggle('selected');
+            
+            syncResizeHandle();
+            syncPositionHandle();
+            
+            if (!row.classList.contains('selected') && isPlacingImage) {
+                cancelPlacement(true);
+            }
+        };
+        
+        function computeBounds() {
+            if (!singleImage) return map.getBounds();
+            const halfY = singleImage.baseHalfY * singleImage.scaleY;
+            const halfLng = singleImage.baseHalfLng * singleImage.scaleX;
+            const centerY = mercatorY(singleImage.center.lat);
+            return L.latLngBounds(
+                [mercatorYToLat(centerY - halfY), singleImage.center.lng - halfLng],
+                [mercatorYToLat(centerY + halfY), singleImage.center.lng + halfLng]
+            );
+        }
+        
+        function removeImageOverlay() {
+            if (!singleImage) return;
+            if (isPlacingImage) cancelPlacement(true);
+            
+            map.removeLayer(singleImage.overlay);
+            singleImage = null;
+            localStorage.removeItem('savedImageLayer');
+            
+            if (resizeHandleMarker) { map.removeLayer(resizeHandleMarker); resizeHandleMarker = null; }
+            if (positionHandleMarker) { map.removeLayer(positionHandleMarker); positionHandleMarker = null; }
+            
+            document.getElementById('image-active').style.display = 'none';
+            document.getElementById('image-active').classList.remove('selected');
+            document.getElementById('image-empty').style.display = 'block';
+        }
+        
+        window.toggleImageVisibility = function() {
+            if (!singleImage) return;
+            if (isPlacingImage) cancelPlacement(true);
+            
+            singleImage.visible = !singleImage.visible;
+            const btn = document.getElementById('img-vis-btn');
+            
+            if (singleImage.visible) {
+                singleImage.overlay.addTo(map);
+                btn.innerText = '\u25C9';
+                btn.classList.remove('toggled-off');
+            } else {
+                map.removeLayer(singleImage.overlay);
+                btn.innerText = '\u25CB';
+                btn.classList.add('toggled-off');
+            }
+            syncResizeHandle();
+            syncPositionHandle();
+            saveImageState();
+        }
+        
+        window.updateImageOpacity = function(value) {
+            if (!singleImage) return;
+            singleImage.opacity = parseFloat(value);
+            singleImage.overlay.setOpacity(singleImage.opacity);
+            document.getElementById('img-opacity-val').textContent = Math.round(singleImage.opacity * 100) + '%';
+            saveImageState();
+        }
+
+        // Image Editor Handles (Resize / Position)
+        let resizeHandleMarker = null;
+        function syncResizeHandle() {
+            if (resizeHandleMarker) { map.removeLayer(resizeHandleMarker); resizeHandleMarker = null; }
+            
+            const rowSelected = document.getElementById('image-active').classList.contains('selected');
+            if (!singleImage || !singleImage.visible || isPlacingImage || !rowSelected) return;
+            
+            resizeHandleMarker = L.marker(singleImage.overlay.getBounds().getSouthEast(), {
+                icon: L.divIcon({ className: 'resize-handle-icon', iconSize: [10, 10], iconAnchor: [7, 7] }),
+                draggable: false, zIndexOffset: 2000
+            }).addTo(map);
+            
+            attachResizeHandlers(resizeHandleMarker);
+        }
+        
+        function updateHandlePosition() {
+            if (resizeHandleMarker && singleImage) {
+                resizeHandleMarker.setLatLng(singleImage.overlay.getBounds().getSouthEast());
+            }
+        }
+        
+        function attachResizeHandlers(marker) {
+            let nwLatLng = null;
+            let nwY = 0;
+            let startScaleX = 1, startScaleY = 1;
+            let startWidthLng = 0, startHeightY = 0;
+            let rafId = null, latestLatLng = null;
+            let latestShiftKey = false;
+
+            function applyPendingResize() {
+                rafId = null;
+                if (!latestLatLng || !singleImage) return;
+
+                let newWidthLng = latestLatLng.lng - nwLatLng.lng;
+                let newHeightY = nwY - mercatorY(latestLatLng.lat);
+
+                // Prevent complete inversion / extremely small values
+                newWidthLng = Math.max(newWidthLng, 0.001);
+                newHeightY = Math.max(newHeightY, 0.001);
+
+                let scaleXFactor = startWidthLng > 0 ? (newWidthLng / startWidthLng) : 1;
+                let scaleYFactor = startHeightY > 0 ? (newHeightY / startHeightY) : 1;
+
+                if (latestShiftKey) {
+                    // Use the scale factor that has grown/shrunk the most to maintain proportions
+                    let deltaX = Math.abs(1 - scaleXFactor);
+                    let deltaY = Math.abs(1 - scaleYFactor);
+                    let dominantScale = deltaX > deltaY ? scaleXFactor : scaleYFactor;
+                    scaleXFactor = dominantScale;
+                    scaleYFactor = dominantScale;
+                }
+
+                singleImage.scaleX = startScaleX * scaleXFactor;
+                singleImage.scaleY = startScaleY * scaleYFactor;
+
+                const halfY = singleImage.baseHalfY * singleImage.scaleY;
+                const halfLng = singleImage.baseHalfLng * singleImage.scaleX;
+
+                singleImage.center = L.latLng(mercatorYToLat(nwY - halfY), nwLatLng.lng + halfLng);
+                singleImage.overlay.setBounds(computeBounds());
+
+                document.getElementById('img-scale-val').textContent = `W:${Math.round(singleImage.scaleX * 100)}% H:${Math.round(singleImage.scaleY * 100)}%`;
+                updateMoveHandlePosition();
+                marker.setLatLng(singleImage.overlay.getBounds().getSouthEast());
+            }
+
+            function onHandleMouseDown(e) {
+                L.DomEvent.stop(e);
+                map.dragging.disable();
+                map.doubleClickZoom.disable();
+                if (map.scrollWheelZoom) map.scrollWheelZoom.disable();
+
+                startScaleX = singleImage.scaleX;
+                startScaleY = singleImage.scaleY;
+
+                const bounds = singleImage.overlay.getBounds();
+                nwLatLng = bounds.getNorthWest();
+                const seStart = bounds.getSouthEast();
+                nwY = mercatorY(nwLatLng.lat);
+
+                startWidthLng = seStart.lng - nwLatLng.lng;
+                startHeightY = nwY - mercatorY(seStart.lat);
+
+                map.on('mousemove', onHandleMouseMove);
+                map.on('mouseup', onHandleMouseUp);
+                document.addEventListener('mouseup', onHandleMouseUp);
+            }
+            
+            function onHandleMouseMove(e) {
+                latestLatLng = e.latlng;
+                latestShiftKey = e.originalEvent.shiftKey;
+                if (rafId === null) rafId = requestAnimationFrame(applyPendingResize);
+            }
+            
+            function onHandleMouseUp() {
+                if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+                latestLatLng = null;
+                map.dragging.enable(); 
+                map.doubleClickZoom.enable();
+                if (map.scrollWheelZoom) map.scrollWheelZoom.enable();
+                
+                marker.setLatLng(singleImage.overlay.getBounds().getSouthEast());
+                map.off('mousemove', onHandleMouseMove); map.off('mouseup', onHandleMouseUp);
+                document.removeEventListener('mouseup', onHandleMouseUp);
+                saveImageState();
+            }
+            marker.on('mousedown', onHandleMouseDown);
+        }
+        
+        let positionHandleMarker = null;
+        let isPlacingImage = false;
+        let placementCancelHandler = null;
+
+        function syncPositionHandle() {
+            if (positionHandleMarker) { map.removeLayer(positionHandleMarker); positionHandleMarker = null; }
+            
+            const rowSelected = document.getElementById('image-active').classList.contains('selected');
+            if (!singleImage || !singleImage.visible || !rowSelected) return;
+            
+            positionHandleMarker = L.marker(singleImage.center, {
+                icon: L.divIcon({
+                    className: 'move-handle-icon' + (isPlacingImage ? ' active' : ''),
+                    html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>',
+                    iconSize: [22, 22], iconAnchor: [11, 11]
+                }),
+                draggable: false, zIndexOffset: 2000
+            }).addTo(map);
+            
+            positionHandleMarker.on('click', (e) => {
+                L.DomEvent.stop(e);
+                if (isPlacingImage) return;
+                startPlacement();
+            });
+        }
+        function updateMoveHandlePosition() {
+            if (positionHandleMarker && singleImage) {
+                positionHandleMarker.setLatLng(singleImage.center);
+            }
+        }
+        function startPlacement() {
+            if (isPlacingImage) cancelPlacement(false);
+            isPlacingImage = true;
+            
+            const originalCenter = L.latLng(singleImage.center.lat, singleImage.center.lng);
+            const overlayEl = singleImage.overlay.getElement();
+            if (overlayEl) {
+                overlayEl.classList.add('placing-preview');
+                overlayEl.style.pointerEvents = 'none';
+            }
+            map.getContainer().classList.add('placing-cursor');
+            
+            if (positionHandleMarker) { map.removeLayer(positionHandleMarker); positionHandleMarker = null; }
+            if (resizeHandleMarker) { map.removeLayer(resizeHandleMarker); resizeHandleMarker = null; }
+            
+            let rafId = null, latestLatLng = null;
+            function applyPendingPreview() {
+                rafId = null;
+                if (!latestLatLng || !singleImage) return;
+                singleImage.center = latestLatLng;
+                singleImage.overlay.setBounds(computeBounds());
+            }
+            function onMouseMove(e) {
+                latestLatLng = e.latlng;
+                if (rafId === null) rafId = requestAnimationFrame(applyPendingPreview);
+            }
+            function onConfirmClick(e) {
+                if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+                singleImage.center = e.latlng;
+                singleImage.overlay.setBounds(computeBounds());
+                finishPlacement();
+            }
+            function onKeyDown(e) {
+                if (e.key === 'Escape') {
+                    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+                    singleImage.center = originalCenter;
+                    singleImage.overlay.setBounds(computeBounds());
+                    finishPlacement();
+                }
+            }
+            map.on('mousemove', onMouseMove);
+            
+            setTimeout(() => { map.once('click', onConfirmClick); }, 50);
+            document.addEventListener('keydown', onKeyDown);
+            
+            placementCancelHandler = () => {
+                if (rafId !== null) cancelAnimationFrame(rafId);
+                map.off('mousemove', onMouseMove);
+                map.off('click', onConfirmClick);
+                document.removeEventListener('keydown', onKeyDown);
+            };
+        }
+        function finishPlacement() {
+            if (placementCancelHandler) placementCancelHandler();
+            placementCancelHandler = null;
+            isPlacingImage = false;
+            
+            if (singleImage) {
+                const overlayEl = singleImage.overlay.getElement();
+                if (overlayEl) {
+                    overlayEl.classList.remove('placing-preview');
+                    overlayEl.style.pointerEvents = '';
+                }
+                saveImageState();
+            }
+            map.getContainer().classList.remove('placing-cursor');
+            syncResizeHandle();
+            syncPositionHandle();
+        }
+        function cancelPlacement(revert) {
+            finishPlacement();
+        }
+
+
+        /* ═══════════════════════════════════════════════════════════
+           SECTION 2: FLIGHT PATH CREATOR (Single Instance)
+        ═══════════════════════════════════════════════════════════ */
+        const measureMarkerLayer = L.layerGroup().addTo(map);
+        const measureLineLayer = L.layerGroup().addTo(map);
+        const turnArcLayer = L.layerGroup().addTo(map);
+        
+        let measureMarkers = [];
+        let currentGhostMarkers = [];
+        let isDrawingPath = false;
+        let showFplOverlays = false; // Overlays are only shown while actively drawing
+
+        /* ── UNDO HISTORY (Ctrl+Z / Cmd+Z) ── */
+        let pathHistory = [];
+        const PATH_HISTORY_LIMIT = 50;
+
+        // Capture the current waypoint layout as a plain-coords snapshot
+        function getPathSnapshot() {
+            return measureMarkers.map(m => {
+                const ll = m.getLatLng();
+                return { lat: ll.lat, lng: ll.lng, label: m.wpLabel || '' };
+            });
+        }
+
+        // Push the current state onto the undo stack BEFORE a mutating action
+        function pushPathHistory() {
+            pathHistory.push(getPathSnapshot());
+            if (pathHistory.length > PATH_HISTORY_LIMIT) pathHistory.shift();
+        }
+
+        // Rebuild the path markers from a snapshot
+        function restorePath(coords) {
+            measureMarkers.forEach(m => measureMarkerLayer.removeLayer(m));
+            measureMarkers = [];
+
+            coords.forEach(c => {
+                const dotIcon = L.divIcon({ className: 'draggable-dot', iconSize: [12, 12] });
+                const marker = L.marker([c.lat, c.lng], { icon: dotIcon, draggable: true }).addTo(measureMarkerLayer);
+                marker.wpLabel = c.label || '';
+                measureMarkers.push(marker);
+                bindWaypointEvents(marker);
+            });
+
+            if (coords.length > 0) {
+                document.getElementById('path-empty').style.display = 'none';
+                document.getElementById('path-active').style.display = 'block';
+            }
+
+            updateLines();
+            syncPathHandles();
+        }
+
+        window.undoPath = function() {
+            if (pathHistory.length === 0) return;
+            const prev = pathHistory.pop();
+            restorePath(prev);
+        };
+
+        document.addEventListener('keydown', function(e) {
+            const isUndoKey = (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey &&
+                              (e.key === 'z' || e.key === 'Z');
+            if (!isUndoKey) return;
+
+            // Don't hijack undo while typing in a text field
+            const tag = (e.target && e.target.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) return;
+
+            e.preventDefault();
+            undoPath();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+            if (e.key !== 'e' && e.key !== 'E') return;
+
+            // Don't hijack the key while typing in a text field
+            const tag = (e.target && e.target.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) return;
+
+            if (document.getElementById('path-active').style.display === 'none') return;
+
+            e.preventDefault();
+            toggleDrawMode();
+        });
+
+        // Path Editing Handles
+        let pathResizeHandleMarker = null;
+        let pathMoveHandleMarker = null;
+        let isPlacingPath = false;
+        let pathPlacementCancelHandler = null;
+
+        // Bearing Calculation Helper
+        function calculateBearing(latlng1, latlng2) {
+            const startLat = latlng1.lat * Math.PI / 180;
+            const startLng = latlng1.lng * Math.PI / 180;
+            const endLat = latlng2.lat * Math.PI / 180;
+            const endLng = latlng2.lng * Math.PI / 180;
+            const dLng = endLng - startLng;
+            const y = Math.sin(dLng) * Math.cos(endLat);
+            const x = Math.cos(startLat) * Math.sin(endLat) - Math.sin(startLat) * Math.cos(endLat) * Math.cos(dLng);
+            const brng = Math.atan2(y, x) * 180 / Math.PI;
+            return (brng + 360) % 360;
+        }
+
+        // ETE Time Formatter Helper
+        function formatEteTime(hours) {
+            if (!hours || isNaN(hours)) return "00:00";
+            const totalMinutes = Math.floor(hours * 60);
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        }
+
+        window.startNewPath = function() {
+            document.getElementById('path-empty').style.display = 'none';
+            document.getElementById('path-active').style.display = 'block';
+            document.getElementById('path-active').classList.add('selected'); 
+            
+            if (isPathVisible) map.addLayer(measureMarkerLayer); 
+            
+            isDrawingPath = false;
+            toggleDrawMode();
+            updateLines();
+            syncPathHandles();
+        };
+
+        window.togglePathRow = function() {
+            const row = document.getElementById('path-active');
+            row.classList.toggle('selected');
+            const isSelected = row.classList.contains('selected');
+            
+            if (!isSelected) {
+                if (isDrawingPath) toggleDrawMode(); // Turn off drawing mode
+                if (isPlacingPath) cancelPathPlacement(); // Cancel moving 
+            }
+            updateLines(); 
+            drawTurnArcs();
+            syncPathHandles(); 
+        };
+
+        window.toggleDrawMode = function() {
+            isDrawingPath = !isDrawingPath;
+            showFplOverlays = isDrawingPath; // Overlays are visible only while drawing
+            const btn = document.getElementById('draw-mode-btn');
+
+            if (isDrawingPath) {
+                btn.style.backgroundColor = 'var(--accent-green)';
+                btn.style.color = 'var(--bg-dark)';
+                btn.innerText = 'STOP DRAWING';
+                map.getContainer().classList.add('placing-cursor');
+            } else {
+                btn.style.backgroundColor = 'var(--bg-light)';
+                btn.style.color = 'var(--text-main)';
+                btn.innerText = 'CONTINUE DRAWING';
+                map.getContainer().classList.remove('placing-cursor');
+            }
+            updateLines(); // Re-trigger arcs and waypoint styling based on the new overlay state
+            syncPathHandles();
+        }
+
+        // Add Points on Left Click
+        map.on('click', function(e) {
+            if (isPlacingImage || isPlacingPath) return; 
+            if (isDrawingPath) addWaypoint(e.latlng);
+        });
+        
+        function escapeHtmlAttr(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        window.updateWaypointLabel = function(index, value) {
+            if (index > -1 && index < measureMarkers.length) {
+                measureMarkers[index].wpLabel = value;
+                saveMeasurementPlan();
+            }
+        };
+
+        function bindWaypointEvents(marker) {
+            marker.on('dragstart', pushPathHistory);
+            marker.on('drag', function() {
+                updateLines();
+                updatePathHandlePositions(); 
+            });
+            marker.on('dragend', syncPathHandles); 
+            
+            marker.on('contextmenu', function(e) {
+                L.DomEvent.stopPropagation(e); 
+                const index = measureMarkers.indexOf(this);
+                if (index > -1) removeWaypoint(index);
+            });
+        }
+
+        function addWaypoint(latlng) {
+            pushPathHistory();
+            const dotIcon = L.divIcon({ className: 'draggable-dot', iconSize: [12, 12] });
+            const marker = L.marker(latlng, { icon: dotIcon, draggable: true }).addTo(measureMarkerLayer);
+            marker.wpLabel = '';
+            measureMarkers.push(marker);
+            bindWaypointEvents(marker);
+            updateLines();
+            syncPathHandles();
+        }
+
+        window.removeWaypoint = function(index) {
+            if (index > -1 && index < measureMarkers.length) {
+                pushPathHistory();
+                measureMarkerLayer.removeLayer(measureMarkers[index]);
+                measureMarkers.splice(index, 1);
+                updateLines();
+                syncPathHandles();
+            }
+        };
+
+        window.clearMeasurements = function() {
+            if (measureMarkers.length > 0) pushPathHistory();
+            measureMarkerLayer.clearLayers();
+            measureLineLayer.clearLayers();
+            turnArcLayer.clearLayers();
+            currentGhostMarkers = [];
+            measureMarkers = [];
+            
+            localStorage.removeItem('savedMeasurementPlan');
+            
+            if (isDrawingPath) toggleDrawMode();
+            
+            document.getElementById('path-active').style.display = 'none';
+            document.getElementById('path-active').classList.remove('selected');
+            document.getElementById('path-empty').style.display = 'block';
+            
+            document.getElementById('waypoint-list-box').innerHTML = '<div style="text-align:center; padding: 10px; color: var(--text-muted);">Add waypoints to generate FPL</div>';
+            document.getElementById('route-total-display').innerText = '0.0 NM / 00:00';
+            
+            syncPathHandles();
+        };
+
+        function saveMeasurementPlan() {
+            if (measureMarkers.length === 0) {
+                localStorage.removeItem('savedMeasurementPlan');
+                return;
+            }
+            const coords = measureMarkers.map(m => {
+                const ll = m.getLatLng();
+                return { lat: ll.lat, lng: ll.lng, label: m.wpLabel || '' };
+            });
+            localStorage.setItem('savedMeasurementPlan', JSON.stringify(coords));
+        }
+
+        function getGroundSpeedValue() {
+            let gs = parseFloat(document.getElementById('info-gs-input').value);
+            if (isNaN(gs) || gs <= 0) gs = 110; // Safe fallback
+            return gs;
+        }
+
+        window.onGroundSpeedChange = function() {
+            updateLines();
+            drawTurnArcs();
+        };
+
+        function updateLines() {
+            measureLineLayer.clearLayers();
+            currentGhostMarkers.forEach(marker => measureMarkerLayer.removeLayer(marker));
+            currentGhostMarkers = [];
+
+            map.getContainer().classList.toggle('fpl-overlays-hidden', !showFplOverlays);
+
+            let totalDistanceNM = 0;
+            const isSelected = document.getElementById('path-active').classList.contains('selected');
+
+            // Manage Permanent Numbers Visibility based on showFplOverlays flag and row selected state
+            measureMarkers.forEach((marker, index) => {
+                const wpNum = index + 1;
+                if (isPathVisible && showFplOverlays && isSelected) {
+                    if (!marker.getTooltip()) {
+                        marker.bindTooltip(wpNum.toString(), {
+                            permanent: true, direction: 'top', className: 'wp-map-number', offset: [0, 0]
+                        }).openTooltip();
+                    } else {
+                        marker.setTooltipContent(wpNum.toString());
+                    }
+                } else {
+                    if (marker.getTooltip()) marker.unbindTooltip();
+                }
+            });
+
+            if (measureMarkers.length < 2) {
+                document.getElementById('waypoint-list-box').innerHTML = '<div style="text-align:center; padding: 10px; color: var(--text-muted);">Add waypoints to generate FPL</div>';
+                document.getElementById('route-total-display').innerText = '0.0 NM / 00:00';
+                saveMeasurementPlan();
+                applyWaypointStyling();
+                drawTurnArcs();
+                return;
+            }
+
+            let htmlContent = `
+                <table class="wp-table">
+                    <thead>
+                        <tr><th>WP</th><th>LABEL</th><th>DIST</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color:var(--accent-green)">1 <span class="wp-del-btn" onclick="removeWaypoint(0)">✕</span></td>
+                            <td><input type="text" class="wp-label-input" value="${escapeHtmlAttr(measureMarkers[0].wpLabel || '')}" oninput="updateWaypointLabel(0, this.value)" placeholder="Label"></td>
+                            <td>-</td>
+                        </tr>
+            `;
+
+            let cumHours = 0;
+            let gs = getGroundSpeedValue();
+
+            for (let i = 0; i < measureMarkers.length - 1; i++) {
+                const point1 = measureMarkers[i].getLatLng();
+                const point2 = measureMarkers[i+1].getLatLng();
+                const distNM = map.distance(point1, point2) / 1852;
+                totalDistanceNM += distNM;
+                
+                const legHours = distNM / gs;
+                cumHours += legHours;
+
+                htmlContent += `
+                    <tr>
+                        <td style="color:var(--accent-green)">${i+2} <span class="wp-del-btn" onclick="removeWaypoint(${i+1})">✕</span></td>
+                        <td><input type="text" class="wp-label-input" value="${escapeHtmlAttr(measureMarkers[i+1].wpLabel || '')}" oninput="updateWaypointLabel(${i+1}, this.value)" placeholder="Label"></td>
+                        <td>${distNM.toFixed(1)}</td>
+                    </tr>
+                `;
+                
+                L.polyline([point1, point2], { color: 'black', weight: 3, opacity: 1 }).addTo(measureLineLayer);
+                L.polyline([point1, point2], { color: '#ff9900', weight: 1.5, opacity: 0.7 }).addTo(measureLineLayer);
+                
+                const leftMarker = measureMarkers[i];
+                const midPoint = map.unproject(
+                    map.project(point1, map.getZoom()).add(map.project(point2, map.getZoom())).divideBy(2),
+                    map.getZoom()
+                );
+
+                const ghostMarker = L.marker(midPoint, {
+                    icon: L.divIcon({ className: 'ghost-dot', iconSize: [12, 12] }),
+                    draggable: true
+                }).addTo(measureMarkerLayer);
+                
+                currentGhostMarkers.push(ghostMarker);
+                ghostMarker.on('dragstart', function(e) {
+                    pushPathHistory();
+                    const gIndex = currentGhostMarkers.indexOf(this);
+                    if (gIndex > -1) currentGhostMarkers.splice(gIndex, 1);
+                    L.DomUtil.removeClass(this._icon, 'ghost-dot');
+                    L.DomUtil.addClass(this._icon, 'draggable-dot');
+                    
+                    this.wpLabel = '';
+                    const insertIndex = measureMarkers.indexOf(leftMarker) + 1;
+                    measureMarkers.splice(insertIndex, 0, this);
+                    bindWaypointEvents(this);
+                    updateLines();
+                    syncPathHandles();
+                });
+            }
+            
+            htmlContent += `</tbody></table>`;
+            
+            document.getElementById('waypoint-list-box').innerHTML = htmlContent;
+            document.getElementById('route-total-display').innerText = `${totalDistanceNM.toFixed(1)} NM / ${formatEteTime(cumHours)}`;
+            
+            saveMeasurementPlan();
+            applyWaypointStyling();
+            drawTurnArcs();
+        }
+
+        /* ── STEEP-TURN WAYPOINT STYLING ── */
+        function getDeflectionDegrees(prevLL, vertexLL, nextLL) {
+            const latRad = vertexLL.lat * Math.PI / 180;
+            const mPerDegLat = 111320;
+            const mPerDegLng = 111320 * Math.cos(latRad);
+
+            const P = { x: (prevLL.lng - vertexLL.lng) * mPerDegLng, y: (prevLL.lat - vertexLL.lat) * mPerDegLat };
+            const N = { x: (nextLL.lng - vertexLL.lng) * mPerDegLng, y: (nextLL.lat - vertexLL.lat) * mPerDegLat };
+
+            const distIn = Math.hypot(P.x, P.y);
+            const distOut = Math.hypot(N.x, N.y);
+            if (distIn < 1e-6 || distOut < 1e-6) return 0;
+
+            const uIn = { x: P.x / distIn, y: P.y / distIn };
+            const uOut = { x: N.x / distOut, y: N.y / distOut };
+
+            let dot = uIn.x * uOut.x + uIn.y * uOut.y;
+            dot = Math.max(-1, Math.min(1, dot));
+            const phi = Math.acos(dot);
+
+            return (Math.PI - phi) * 180 / Math.PI; 
+        }
+
+        function applyWaypointStyling() {
+            for (let i = 0; i < measureMarkers.length; i++) {
+                const el = measureMarkers[i].getElement();
+                if (!el) continue;
+
+                let isSteep = false;
+                if (i > 0 && i < measureMarkers.length - 1) {
+                    const deflectionDeg = getDeflectionDegrees(
+                        measureMarkers[i - 1].getLatLng(),
+                        measureMarkers[i].getLatLng(),
+                        measureMarkers[i + 1].getLatLng()
+                    );
+                    isSteep = deflectionDeg > 60;
+                }
+
+                // Incorporate showFplOverlays flag
+                if (isSteep && showFplOverlays) {
+                    L.DomUtil.removeClass(el, 'draggable-dot');
+                    L.DomUtil.addClass(el, 'steep-turn-dot');
+                } else {
+                    L.DomUtil.removeClass(el, 'steep-turn-dot');
+                    L.DomUtil.addClass(el, 'draggable-dot');
+                }
+            }
+        }
+
+        /* ── STANDARD-RATE (30° BANK) TURN RADIUS ARCS ── */
+        function calcStandardTurnRadiusMeters(groundSpeedKt) {
+            const bankAngleRad = 30 * Math.PI / 180;
+            const g = 9.80665; 
+            const vMs = groundSpeedKt * 0.514444; 
+            return (vMs * vMs) / (g * Math.tan(bankAngleRad));
+        }
+
+        function computeTurnArc(prevLL, vertexLL, nextLL, radiusMeters) {
+            const latRad = vertexLL.lat * Math.PI / 180;
+            const mPerDegLat = 111320;
+            const mPerDegLng = 111320 * Math.cos(latRad);
+
+            function toLocal(ll) {
+                return { x: (ll.lng - vertexLL.lng) * mPerDegLng, y: (ll.lat - vertexLL.lat) * mPerDegLat };
+            }
+
+            const P = toLocal(prevLL);
+            const N = toLocal(nextLL);
+
+            const distIn = Math.hypot(P.x, P.y);
+            const distOut = Math.hypot(N.x, N.y);
+            if (distIn < 1 || distOut < 1) return null;
+
+            const uIn = { x: P.x / distIn, y: P.y / distIn };
+            const uOut = { x: N.x / distOut, y: N.y / distOut };
+
+            let dot = uIn.x * uOut.x + uIn.y * uOut.y;
+            dot = Math.max(-1, Math.min(1, dot));
+            const phi = Math.acos(dot);
+            const deflection = Math.PI - phi;
+            const deflectionDeg = deflection * 180 / Math.PI;
+
+            if (deflectionDeg < 1 || deflectionDeg > 179) return null;
+
+            let tangentLen = radiusMeters * Math.tan(deflection / 2);
+
+            const maxLen = Math.min(distIn, distOut) * 0.9;
+            if (tangentLen > maxLen) tangentLen = maxLen;
+            if (tangentLen < 1) return null;
+
+            const effRadius = tangentLen / Math.tan(deflection / 2);
+
+            const Tin = { x: uIn.x * tangentLen, y: uIn.y * tangentLen };
+            const Tout = { x: uOut.x * tangentLen, y: uOut.y * tangentLen };
+
+            let bisX = uIn.x + uOut.x;
+            let bisY = uIn.y + uOut.y;
+            const bisLen = Math.hypot(bisX, bisY);
+            if (bisLen < 1e-6) return null;
+            bisX /= bisLen; bisY /= bisLen;
+
+            const centerDist = effRadius / Math.sin(phi / 2);
+            const center = { x: bisX * centerDist, y: bisY * centerDist };
+
+            const angIn = Math.atan2(Tin.y - center.y, Tin.x - center.x);
+            const angOut = Math.atan2(Tout.y - center.y, Tout.x - center.x);
+
+            let sweep = angOut - angIn;
+            while (sweep > Math.PI) sweep -= 2 * Math.PI;
+            while (sweep < -Math.PI) sweep += 2 * Math.PI;
+
+            const numSteps = 20;
+            const points = [];
+            for (let s = 0; s <= numSteps; s++) {
+                const t = s / numSteps;
+                const ang = angIn + sweep * t;
+                const px = center.x + effRadius * Math.cos(ang);
+                const py = center.y + effRadius * Math.sin(ang);
+                points.push([
+                    vertexLL.lat + py / mPerDegLat,
+                    vertexLL.lng + px / mPerDegLng
+                ]);
+            }
+            return points;
+        }
+
+        function drawTurnArcs() {
+            turnArcLayer.clearLayers();
+            
+            const isSelected = document.getElementById('path-active').classList.contains('selected');
+            // Check showFplOverlays flag and row state before drawing arcs
+            if (!isPathVisible || !isSelected || measureMarkers.length < 3 || !showFplOverlays) return;
+
+            const radiusMeters = calcStandardTurnRadiusMeters(getGroundSpeedValue());
+            for (let i = 1; i < measureMarkers.length - 1; i++) {
+                const arcPoints = computeTurnArc(
+                    measureMarkers[i - 1].getLatLng(),
+                    measureMarkers[i].getLatLng(),
+                    measureMarkers[i + 1].getLatLng(),
+                    radiusMeters
+                );
+                if (arcPoints && arcPoints.length > 1) {
+                    L.polyline(arcPoints, {
+                        color: '#000000',
+                        weight: 7,
+                        opacity: 1.0,
+                        dashArray: '6, 6',
+                        lineCap: 'square',
+                        interactive: false
+                    }).addTo(turnArcLayer);
+                    L.polyline(arcPoints, {
+                        color: '#ff9902',
+                        weight: 4,
+                        opacity: 0.85,
+                        dashArray: '5, 6',
+                        interactive: false
+                    }).addTo(turnArcLayer);
+                }
+            }
+        }
+
+        /* ── PATH TRANSLATION & NON-PROPORTIONAL SCALE HANDLERS ── */
+        
+        function syncPathHandles() {
+            if (pathResizeHandleMarker) { map.removeLayer(pathResizeHandleMarker); pathResizeHandleMarker = null; }
+            if (pathMoveHandleMarker) { map.removeLayer(pathMoveHandleMarker); pathMoveHandleMarker = null; }
+
+            const rowSelected = document.getElementById('path-active').classList.contains('selected');
+            
+            if (!isPathVisible || !rowSelected || isDrawingPath || isPlacingPath || measureMarkers.length < 2) return;
+
+            const bounds = L.latLngBounds(measureMarkers.map(m => m.getLatLng()));
+            
+            pathResizeHandleMarker = L.marker(bounds.getSouthEast(), {
+                icon: L.divIcon({ className: 'resize-handle-icon', iconSize: [10, 10], iconAnchor: [7, 7] }),
+                draggable: false, zIndexOffset: 2000
+            }).addTo(map);
+
+            attachPathResizeHandlers(pathResizeHandleMarker);
+
+            pathMoveHandleMarker = L.marker(bounds.getCenter(), {
+                icon: L.divIcon({
+                    className: 'move-handle-icon',
+                    html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>',
+                    iconSize: [22, 22], iconAnchor: [11, 11]
+                }),
+                draggable: false, zIndexOffset: 2000
+            }).addTo(map);
+
+            pathMoveHandleMarker.on('click', (e) => {
+                L.DomEvent.stop(e);
+                if (isPlacingPath) return;
+                startPathPlacement();
+            });
+        }
+        
+        function updatePathHandlePositions() {
+            if (measureMarkers.length < 2) return;
+            const bounds = L.latLngBounds(measureMarkers.map(m => m.getLatLng()));
+            if (pathResizeHandleMarker) pathResizeHandleMarker.setLatLng(bounds.getSouthEast());
+            if (pathMoveHandleMarker) pathMoveHandleMarker.setLatLng(bounds.getCenter());
+        }
+
+        function attachPathResizeHandlers(marker) {
+            let nwContainerPoint = null;
+            let startWidthPixels = 0, startHeightPixels = 0;
+            let startWaypoints = [];
+            let rafId = null, latestLatLng = null;
+            let latestShiftKey = false;
+
+            function applyPendingResize() {
+                rafId = null;
+                if (!latestLatLng || measureMarkers.length < 2) return;
+                
+                const newPoint = map.latLngToContainerPoint(latestLatLng);
+                let newWidth = newPoint.x - nwContainerPoint.x;
+                let newHeight = newPoint.y - nwContainerPoint.y;
+                
+                let scaleX = newWidth / startWidthPixels;
+                let scaleY = newHeight / startHeightPixels;
+
+                scaleX = Math.max(0.01, scaleX);
+                scaleY = Math.max(0.01, scaleY);
+                
+                if (latestShiftKey) {
+                    let deltaX = Math.abs(1 - scaleX);
+                    let deltaY = Math.abs(1 - scaleY);
+                    let dominantScale = deltaX > deltaY ? scaleX : scaleY;
+                    scaleX = dominantScale;
+                    scaleY = dominantScale;
+                }
+                
+                for (let i = 0; i < measureMarkers.length; i++) {
+                    let p = startWaypoints[i];
+                    let dx = p.x - nwContainerPoint.x;
+                    let dy = p.y - nwContainerPoint.y;
+                    let newPixel = L.point(nwContainerPoint.x + dx * scaleX, nwContainerPoint.y + dy * scaleY);
+                    measureMarkers[i].setLatLng(map.containerPointToLatLng(newPixel));
+                }
+                updateLines();
+                updatePathHandlePositions();
+            }
+
+            function onMouseDown(e) {
+                L.DomEvent.stop(e);
+                pushPathHistory();
+                map.dragging.disable();
+                map.doubleClickZoom.disable();
+                if (map.scrollWheelZoom) map.scrollWheelZoom.disable();
+
+                const bounds = L.latLngBounds(measureMarkers.map(m => m.getLatLng()));
+                nwContainerPoint = map.latLngToContainerPoint(bounds.getNorthWest());
+                const seStart = map.latLngToContainerPoint(bounds.getSouthEast());
+                
+                startWidthPixels = Math.max(1, seStart.x - nwContainerPoint.x);
+                startHeightPixels = Math.max(1, seStart.y - nwContainerPoint.y);
+
+                startWaypoints = measureMarkers.map(m => map.latLngToContainerPoint(m.getLatLng()));
+
+                map.on('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
+            
+            function onMouseMove(e) {
+                latestLatLng = e.latlng;
+                latestShiftKey = e.originalEvent.shiftKey;
+                if (rafId === null) rafId = requestAnimationFrame(applyPendingResize);
+            }
+            
+            function onMouseUp() {
+                if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+                latestLatLng = null;
+                map.dragging.enable(); 
+                map.doubleClickZoom.enable();
+                if (map.scrollWheelZoom) map.scrollWheelZoom.enable();
+                
+                updatePathHandlePositions();
+                map.off('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+            marker.on('mousedown', onMouseDown);
+        }
+
+        function startPathPlacement() {
+            if (isPlacingPath) cancelPathPlacement();
+            pushPathHistory();
+            isPlacingPath = true;
+            map.getContainer().classList.add('placing-cursor');
+            
+            if (pathMoveHandleMarker) { map.removeLayer(pathMoveHandleMarker); pathMoveHandleMarker = null; }
+            if (pathResizeHandleMarker) { map.removeLayer(pathResizeHandleMarker); pathResizeHandleMarker = null; }
+            
+            const bounds = L.latLngBounds(measureMarkers.map(m => m.getLatLng()));
+            const originalCenter = bounds.getCenter();
+            const originalWaypoints = measureMarkers.map(m => m.getLatLng());
+            
+            let rafId = null, latestLatLng = null;
+
+            function applyPendingMove() {
+                rafId = null;
+                if (!latestLatLng) return;
+                let deltaLat = latestLatLng.lat - originalCenter.lat;
+                let deltaLng = latestLatLng.lng - originalCenter.lng;
+                
+                for(let i=0; i < measureMarkers.length; i++) {
+                    measureMarkers[i].setLatLng([originalWaypoints[i].lat + deltaLat, originalWaypoints[i].lng + deltaLng]);
+                }
+                updateLines();
+            }
+
+            function onMouseMove(e) {
+                latestLatLng = e.latlng;
+                if (rafId === null) rafId = requestAnimationFrame(applyPendingMove);
+            }
+            
+            function onConfirmClick(e) {
+                if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+                finishPathPlacement();
+            }
+            
+            function onKeyDown(e) {
+                if (e.key === 'Escape') {
+                    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+                    for(let i=0; i < measureMarkers.length; i++) {
+                        measureMarkers[i].setLatLng(originalWaypoints[i]);
+                    }
+                    updateLines();
+                    finishPathPlacement();
+                }
+            }
+
+            map.on('mousemove', onMouseMove);
+            setTimeout(() => { map.once('click', onConfirmClick); }, 50);
+            document.addEventListener('keydown', onKeyDown);
+            
+            pathPlacementCancelHandler = () => {
+                if (rafId !== null) cancelAnimationFrame(rafId);
+                map.off('mousemove', onMouseMove);
+                map.off('click', onConfirmClick);
+                document.removeEventListener('keydown', onKeyDown);
+            };
+        }
+
+        function finishPathPlacement() {
+            if (pathPlacementCancelHandler) pathPlacementCancelHandler();
+            pathPlacementCancelHandler = null;
+            isPlacingPath = false;
+            map.getContainer().classList.remove('placing-cursor');
+            syncPathHandles();
+        }
+
+        function cancelPathPlacement() {
+            finishPathPlacement();
+        }
+
+
+        // Coordinate zooming map handles
+        map.on('zoomend moveend', () => {
+            if (singleImage) {
+                updateHandlePosition();
+                updateMoveHandlePosition();
+            }
+            updatePathHandlePositions();
+        });
+
+
+        /* ── TOGGLE PATH VISIBILITY ── */
+        let isPathVisible = true;
+        window.togglePathVisibility = function() {
+            isPathVisible = !isPathVisible;
+            const btn = document.getElementById('path-vis-btn');
+            
+            if (isPathVisible) {
+                map.addLayer(measureMarkerLayer); applyWaypointStyling(); 
+                map.addLayer(measureLineLayer);
+                btn.innerText = '\u25C9'; // ◉
+                btn.classList.remove('toggled-off');
+            } else {
+                map.removeLayer(measureMarkerLayer);
+                map.removeLayer(measureLineLayer);
+                btn.innerText = '\u25CB'; // ◯
+                btn.classList.add('toggled-off');
+            }
+            updateLines(); 
+            drawTurnArcs();
+            syncPathHandles();
+        };
+
+        const FPL_MAX_WAYPOINTS = 250;
+
+        function buildFplXml(waypoints, routeName) {
+            const lines = [
+                '<?xml version="1.0" encoding="utf-8"?>',
+                '<flight-plan xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www8.garmin.com/xmlschemas/FlightPlan/v1">',
+                '  <waypoint-table>'
+            ];
+
+            waypoints.forEach(wp => {
+                lines.push('    <waypoint>');
+                lines.push(`      <identifier>${escapeHtmlAttr(wp.identifier)}</identifier>`);
+                lines.push('      <type>USER WAYPOINT</type>');
+                lines.push(`      <lat>${wp.lat.toFixed(6)}</lat>`);
+                lines.push(`      <lon>${wp.lng.toFixed(6)}</lon>`);
+                lines.push('      <elevation>0</elevation>');
+                lines.push('    </waypoint>');
+            });
+
+            lines.push('  </waypoint-table>');
+            lines.push('  <route>');
+            lines.push(`    <route-name>${escapeHtmlAttr(routeName)}</route-name>`);
+
+            waypoints.forEach(wp => {
+                lines.push('    <route-point>');
+                lines.push(`      <waypoint-identifier>${escapeHtmlAttr(wp.identifier)}</waypoint-identifier>`);
+                lines.push('      <waypoint-type>USER WAYPOINT</waypoint-type>');
+                lines.push('    </route-point>');
+            });
+
+            lines.push('  </route>');
+            lines.push('</flight-plan>');
+
+            return lines.join('\n');
+        }
+
+        function downloadTextFile(filename, content) {
+            const blob = new Blob([content], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        window.exportFplFiles = function() {
+            if (!measureMarkers || measureMarkers.length === 0) return;
+
+            const rawName = (document.getElementById('fpl-filename-input').value || 'flight_plan').trim();
+            const baseName = (rawName.replace(/\.fpl$/i, '').replace(/[\\/:*?"<>|]/g, '_') || 'flight_plan');
+            const routeName = baseName.toUpperCase().replace(/_/g, ' ');
+            const useBlankLabel = document.getElementById('fpl-blank-label-input').checked;
+
+            const allWaypoints = measureMarkers.map((m, i) => {
+                const ll = m.getLatLng();
+                const label = (m.wpLabel || '').trim();
+                const identifier = label || (useBlankLabel ? '⠀' : String(i + 1).padStart(3, '0'));
+                return { identifier, lat: ll.lat, lng: ll.lng };
+            });
+
+            const chunks = [];
+            for (let i = 0; i < allWaypoints.length; i += FPL_MAX_WAYPOINTS) {
+                chunks.push(allWaypoints.slice(i, i + FPL_MAX_WAYPOINTS));
+            }
+
+            chunks.forEach((chunk, idx) => {
+                const isSplit = chunks.length > 1;
+                const filename = isSplit ? `${baseName}_part${idx + 1}.fpl` : `${baseName}.fpl`;
+                const thisRouteName = isSplit ? `${routeName} (PART ${idx + 1})` : routeName;
+                const xml = buildFplXml(chunk, thisRouteName);
+                setTimeout(() => downloadTextFile(filename, xml), idx * 150);
+            });
+
+            const btn = document.querySelector('[onclick="exportFplFiles()"]');
+            if (btn) {
+                const original = btn.innerText;
+                btn.innerText = chunks.length > 1 ? `EXPORTED ${chunks.length} FILES` : 'EXPORTED';
+                setTimeout(() => { btn.innerText = original; }, 2000);
+            }
+        };
+
+        function loadMeasurementPlan() {
+            const saved = localStorage.getItem('savedMeasurementPlan');
+            if (saved) {
+                try {
+                    const coords = JSON.parse(saved);
+                    if (coords.length > 0) {
+                        document.getElementById('path-empty').style.display = 'none';
+                        document.getElementById('path-active').style.display = 'block';
+                        
+                        coords.forEach(c => {
+                            const dotIcon = L.divIcon({ className: 'draggable-dot', iconSize: [12, 12] });
+                            const marker = L.marker([c.lat, c.lng], { icon: dotIcon, draggable: true }).addTo(measureMarkerLayer);
+                            marker.wpLabel = c.label || '';
+                            measureMarkers.push(marker);
+                            bindWaypointEvents(marker);
+                        });
+                        updateLines();
+                        syncPathHandles();
+                    }
+                } catch(e) {
+                    console.error("Failed to load saved plan", e);
+                }
+            }
+        }
+
+        loadMeasurementPlan();
+        loadImageLayer();
+
+    </script>
+</body>
+</html>
