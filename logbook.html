@@ -1023,6 +1023,7 @@ window.toggleTheme = function() {
 
     // Canvas labels don't react to CSS, so redraw them in the new theme's colors
     if (airportLabelGroup && labelsVisible) airportLabelGroup.redraw();
+    if (window.updateCircles) window.updateCircles();
 };
 
 // ── Apply saved theme immediately, before map init ──
@@ -1131,8 +1132,8 @@ var AirportLabelLayer = L.Layer.extend({
         ctx.font = '9px "B612 Mono", monospace';
         ctx.textBaseline = 'middle';
         ctx.lineJoin = 'round';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = light ? 'rgba(255,255,255,0.9)' : 'rgba(30,30,30,0.9)';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = light ? 'rgba(255,255,255,0.75)' : 'rgba(30,30,30,0.9)';
         ctx.fillStyle   = light ? 'rgb(70,70,70)' : 'rgb(180,180,180)';
 
         if (this._widthsDirty) {
@@ -1181,6 +1182,12 @@ var AirportLabelLayer = L.Layer.extend({
 // ═══════════════════════════════════════════════════════════
 var circleMode = 'auto';
 
+var airportDotStyle = {
+    dark:  { fillColor: '#7b8794', stroke: false },
+    light: { fillColor: '#abb9c9', stroke: false }               // A. Graphite
+
+};
+    
 window.liveryColorMap = {};
 
 
@@ -1284,13 +1291,16 @@ window.updateCircles = function() {
         op = isZoomedIn ? 1 : 0;
     }
     
+    var theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    var dotStyle = airportDotStyle[theme];
+    
     airportMarkers.forEach(function(marker) {
         var scaledPart = Math.sqrt(marker.flightCount) * .9;
         var cappedScaledPart = Math.min(scaledPart, 3);
         var finalRadius = baseR === 0 ? 0 : baseR + cappedScaledPart;
-        
+    
         marker.setRadius(finalRadius);
-        marker.setStyle({ fillOpacity: op });
+        marker.setStyle(Object.assign({ fillOpacity: op, opacity: dotStyle.stroke ? op : 0 }, dotStyle));
     });
 };
 
