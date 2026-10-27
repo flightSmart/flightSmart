@@ -100,9 +100,13 @@
         }
 
         /* Render airline logos as solid white in dark mode */
-        .airline-logo {
-            filter: brightness(0) invert(1);
-        }
+        /* Airline logos: knockout in dark mode by default, per-livery override via the "Dark Logo" CSV column */
+        .airline-logo            { filter: url(#logo-knockout); }
+        .airline-logo.logo-mono  { filter: brightness(0) invert(1); }
+        .airline-logo.logo-color { filter: none; }
+        .airline-logo.logo-chip  { filter: none; background: #ecece9; padding: 1px 3px; border-radius: 2px; }
+        [data-theme="light"] .airline-logo { filter: none; background: none; padding: 0; }
+        
 
         [data-theme="light"] .airline-logo {
             filter: none;
@@ -2251,6 +2255,7 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
         var c1 = 'transparent', c2 = 'transparent', c3 = 'transparent';
         var logoUrl = null;
         var includeName = true; // Default to true if not specified
+        var darkLogoMode = 'knockout';
         
         if (window.liveryColorMap && window.liveryColorMap[item.livery]) {
             var lData = window.liveryColorMap[item.livery];
@@ -2272,6 +2277,9 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
                 if (lData.includeName) {
                     includeName = (lData.includeName.trim().toUpperCase() === 'T');
                 }
+                if (lData.darkLogo && lData.darkLogo.trim() !== '') {
+                    darkLogoMode = lData.darkLogo.trim().toLowerCase();
+                }
             }
         }
         
@@ -2281,8 +2289,8 @@ var html = '<table><thead><tr><th style="width: 65px;">Date</th><th style="width
         } else if (logoUrl) {
             // If we have a logo, render the image
             var imgStyle = 'height: 14px; max-width: 90px; vertical-align: middle; object-fit: contain; ' + (includeName ? 'margin-right: 6px;' : '');
-            var imgTag = '<img class="airline-logo" src="' + logoUrl + '" style="' + imgStyle + '">';
-            
+            var imgTag = '<img class="airline-logo logo-' + darkLogoMode + '" src="' + logoUrl + '" style="' + imgStyle + '">';            
+
             if (includeName) {
                 liveryContent = imgTag + escapeHtml(truncateText(item.livery, 22));
             } else {
@@ -3023,7 +3031,8 @@ Promise.all([
                                     row["Color 3"]
                                 ],
                                 logo: logoFile,
-                                includeName: row["Include Name"]
+                                includeName: row["Include Name"],
+                                darkLogo: row["Dark Logo"]
                             };
                         }
                     });
@@ -3064,21 +3073,6 @@ map.on('zoomend', function() {
  </filter>
 </svg>
 
-/* CSS: replace the .airline-logo rules */
-.airline-logo           { filter: url(#logo-knockout); }
-.airline-logo.logo-mono { filter: brightness(0) invert(1); }
-.airline-logo.logo-color{ filter: none; }
-.airline-logo.logo-chip { filter: none; background: #ecece9;
-                          padding: 1px 3px; border-radius: 2px; }
-[data-theme="light"] .airline-logo {
-  filter: none; background: none; padding: 0; }
-
-// JS: when building the <img>
-var mode = (lData.darkLogo || 'knockout').trim().toLowerCase();
-var imgTag = '<img class="airline-logo logo-' + mode + '" ...>';
-
-// livery CSV loader
-darkLogo: row["Dark Logo"]
-
+            
 </body>
 </html>
