@@ -101,7 +101,7 @@
 
         /* Render airline logos as solid white in dark mode */
         .airline-logo {
-            filter: url(#logo-knockout);
+            filter: brightness(0) invert(1);
         }
 
         [data-theme="light"] .airline-logo {
@@ -734,16 +734,6 @@
     </style>
 </head>
 <body>
-
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <filter id="logo-knockout" color-interpolation-filters="sRGB">
-    <feColorMatrix type="matrix" values="
-      0 0 0 0 0.878
-      0 0 0 0 0.882
-      0 0 0 0 0.886
-      -0.638 -2.146 -0.217 2.25 0"/>
-  </filter>
-</svg>
 
 <div id="left-panel">
     <div id="routes-label">
@@ -3065,7 +3055,30 @@ map.on('zoomend', function() {
 
 </script>
 
+<!-- once, anywhere in <body> -->
+<svg width="0" height="0" style="position:absolute">
+ <filter id="logo-knockout" color-interpolation-filters="sRGB">
+  <feColorMatrix type="matrix" values="
+   0 0 0 0 0.878  0 0 0 0 0.882  0 0 0 0 0.886
+   -0.638 -2.146 -0.217 2.25 0"/>
+ </filter>
+</svg>
 
+/* CSS: replace the .airline-logo rules */
+.airline-logo           { filter: url(#logo-knockout); }
+.airline-logo.logo-mono { filter: brightness(0) invert(1); }
+.airline-logo.logo-color{ filter: none; }
+.airline-logo.logo-chip { filter: none; background: #ecece9;
+                          padding: 1px 3px; border-radius: 2px; }
+[data-theme="light"] .airline-logo {
+  filter: none; background: none; padding: 0; }
+
+// JS: when building the <img>
+var mode = (lData.darkLogo || 'knockout').trim().toLowerCase();
+var imgTag = '<img class="airline-logo logo-' + mode + '" ...>';
+
+// livery CSV loader
+darkLogo: row["Dark Logo"]
 
 </body>
 </html>
