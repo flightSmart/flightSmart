@@ -113,24 +113,6 @@
             display: none !important;
         }
 
-        /* ── AIRPORT LABELS ON MAP ── */
-        .map-airport-label {
-            font-family: var(--font-mono);
-            font-size: 9px;
-            color: rgb(180, 180, 180);
-            white-space: nowrap;
-            pointer-events: none;
-            /* Default dark mode shadow */
-            text-shadow: 0 0 1px rgb(30, 30, 30), 0 0 1px rgb(30, 30, 30), 0 0 1px rgb(30, 30, 30);
-        }
-
-        [data-theme="light"] .map-airport-label {
-            color: rgb(70, 70, 70); /* Darker text so it reads well */
-            /* Clean white halo for light mode */
-            text-shadow: 0 0 1px rgb(255, 255, 255), 0 0 1px rgb(255, 255, 255), 0 0 1px rgb(255, 255, 255);
-        }
-
-
         /* ── GLOBAL RESET ── */
         *, *::before, *::after { 
             box-sizing: border-box; 
@@ -227,11 +209,26 @@
             font-family: var(--font-mono);
         }
 
+        /* Fills all free height in the sidebar and scrolls internally, so it no longer
+           gets cropped on shorter / high-DPI-scaled screens (e.g. Windows at 125–150%). */
         #filter-container {
             padding: 4px 10px 2px;
             background: var(--bg-dark);
-            flex-shrink: 0; overflow-y: auto; max-height: 65%;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            position: relative;
+            scrollbar-width: thin;
+            scrollbar-color: var(--bg-light) var(--bg-dark);
         }
+        #filter-container::-webkit-scrollbar { width: 8px; }
+        #filter-container::-webkit-scrollbar-track { background: var(--bg-dark); }
+        #filter-container::-webkit-scrollbar-thumb {
+            background: var(--bg-light);
+            border: 1px solid var(--bg-dark);
+            border-radius: 4px;
+        }
+        #filter-container::-webkit-scrollbar-thumb:hover { background: var(--border-main); }
 
         .filter-section { margin-bottom: 4px; }
         .filter-header-row { margin-bottom: 2px; }
@@ -432,7 +429,7 @@
             border: 1px solid var(--border-main);
             cursor: pointer;
             font-size: 10px; font-family: var(--font-mono);
-            transition: 0.2s; margin-top: 10px; margin-bottom: 200px;;
+            transition: 0.2s; margin-top: 10px; margin-bottom: 10px;
         }
         .reset-btn:hover {
             background: var(--text-main); color: var(--bg-dark); border-color: var(--text-main);
@@ -617,15 +614,13 @@
         /* ── AIRPORT HOVER INFO ── */
         #hover-airport-id { color: var(--accent-green) !important; font-size: 15px !important; }
        
-       #sidebar-routes, 
-        #filter-container {
+        #sidebar-routes {
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;     /* Firefox */
         }
 
         /* Hide scrollbar for Chrome, Safari and Opera */
-        #sidebar-routes::-webkit-scrollbar, 
-        #filter-container::-webkit-scrollbar {
+        #sidebar-routes::-webkit-scrollbar {
             display: none;
         }
 
@@ -662,6 +657,7 @@
             align-items: center; 
             justify-content: space-between;
             gap: 6px;
+            flex-shrink: 0;
         }
 
         #hover-airport-id { 
@@ -734,13 +730,6 @@
                 max-width: 260px;
             }
         }
-
-        /* Ensure the button is styled for the filter container context */
-        #filter-container {
-            position: relative;
-        }
-
-
 
     </style>
 </head>
@@ -974,7 +963,7 @@
         <button class="reset-btn" onclick="resetFilters()">Reset All Filters</button>
     </div>
 
-    <div id="active-filters-section" style="padding: 12px 10px; margin-top: auto; flex-shrink: 0; max-height: 55%; overflow-y: auto; transition: max-height 0.2s ease;">
+    <div id="active-filters-section" style="padding: 12px 10px; flex: 0 1 auto; max-height: 40%; overflow-y: auto; border-top: 1px solid var(--border-faint); transition: max-height 0.2s ease;">
         <div class="filter-header-row" style="margin-bottom: 8px;">
             <span class="filter-label">Active Filters</span>
         </div>
@@ -1031,6 +1020,9 @@ window.toggleTheme = function() {
     if (typeof mapBaseLayer !== 'undefined') {
         mapBaseLayer.setUrl(next === 'light' ? lightTileUrl : darkTileUrl);
     }
+
+    // Canvas labels don't react to CSS, so redraw them in the new theme's colors
+    if (airportLabelGroup && labelsVisible) airportLabelGroup.redraw();
 };
 
 // ── Apply saved theme immediately, before map init ──
@@ -1047,6 +1039,7 @@ _updateThemeIcon(_initTheme);
 // ═══════════════════════════════════════════════════════════
 var mapBounds = L.latLngBounds([[-90, -Infinity], [90, Infinity]]);
 var map = L.map('map', {
+    preferCanvas: true,   // draw routes / circles on a canvas instead of thousands of SVG nodes
     minZoom: 2, 
     maxBounds: mapBounds, 
     maxBoundsViscosity: 1.0,
@@ -1079,6 +1072,109 @@ var tpVisible = true;   // toggle state
 
 var atcCircleLayers = [];     // ADDED: array to hold the ATC circles
 var atcCircleVisible = true;  // ADDED: state for ATC circles
+
+// ═══════════════════════════════════════════════════════════
+// CANVAS AIRPORT LABEL LAYER
+// One canvas for all ICAO labels (instead of ~1,700 DOM markers).
+// Labels that would overlap are skipped, busiest airports win.
+// ═══════════════════════════════════════════════════════════
+var AirportLabelLayer = L.Layer.extend({
+    initialize: function() { this._items = []; this.declutter = true; },
+
+    setItems: function(items) {
+        this._items = items.slice().sort(function(a, b) { return b.count - a.count; });
+        this._widthsDirty = true;
+        this.redraw();
+    },
+
+    onAdd: function(map) {
+        this._map = map;
+        var c = this._canvas = L.DomUtil.create('canvas', '', map.getContainer());
+        c.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:450;';
+        this._ctx = c.getContext('2d');
+        this._widthsDirty = true;
+        map.on('move resize zoomend', this.redraw, this);
+        map.on('zoomstart', this._hide, this);
+        if (document.fonts) document.fonts.ready.then(this.redraw.bind(this));
+        this.redraw();
+    },
+
+    onRemove: function(map) {
+        map.off('move resize zoomend', this.redraw, this);
+        map.off('zoomstart', this._hide, this);
+        if (this._frame) { cancelAnimationFrame(this._frame); this._frame = null; }
+        L.DomUtil.remove(this._canvas);
+        this._canvas = null;
+    },
+
+    _hide: function() { if (this._canvas) this._canvas.style.visibility = 'hidden'; },
+
+    redraw: function() {
+        if (!this._canvas || this._frame) return;
+        var self = this;
+        this._frame = requestAnimationFrame(function() { self._frame = null; self._draw(); });
+    },
+
+    _draw: function() {
+        if (!this._canvas) return;
+        var map = this._map, c = this._canvas, ctx = this._ctx;
+        var size = map.getSize(), dpr = window.devicePixelRatio || 1;
+        c.style.visibility = 'visible';
+        if (c.width !== Math.round(size.x * dpr) || c.height !== Math.round(size.y * dpr)) {
+            c.width = Math.round(size.x * dpr); c.height = Math.round(size.y * dpr);
+            c.style.width = size.x + 'px'; c.style.height = size.y + 'px';
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, size.x, size.y);
+
+        var light = document.documentElement.getAttribute('data-theme') === 'light';
+        ctx.font = '9px "B612 Mono", monospace';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = light ? 'rgba(255,255,255,0.9)' : 'rgba(30,30,30,0.9)';
+        ctx.fillStyle   = light ? 'rgb(70,70,70)' : 'rgb(180,180,180)';
+
+        if (this._widthsDirty) {
+            this._items.forEach(function(it) { it.w = ctx.measureText(it.id).width; });
+            this._widthsDirty = false;
+        }
+
+        var H = 10, CELL = 50, grid = {}, declutter = this.declutter;
+        function hit(x, y, w) {
+            var x0 = Math.floor(x / CELL), x1 = Math.floor((x + w) / CELL);
+            var y0 = Math.floor(y / CELL), y1 = Math.floor((y + H) / CELL);
+            var gx, gy;
+            for (gx = x0; gx <= x1; gx++) for (gy = y0; gy <= y1; gy++) {
+                var cell = grid[gx + ',' + gy];
+                if (!cell) continue;
+                for (var i = 0; i < cell.length; i++) {
+                    var r = cell[i];
+                    if (x < r.x + r.w + 3 && x + w + 3 > r.x && y < r.y + H && y + H > r.y) return true;
+                }
+            }
+            for (gx = x0; gx <= x1; gx++) for (gy = y0; gy <= y1; gy++) {
+                (grid[gx + ',' + gy] = grid[gx + ',' + gy] || []).push({ x: x, y: y, w: w });
+            }
+            return false;
+        }
+
+        var centerLng = map.getCenter().lng;
+        this._items.forEach(function(it) {
+            var lng = it.lon;
+            while (lng - centerLng > 180) lng -= 360;
+            while (centerLng - lng > 180) lng += 360;
+            [-360, 0, 360].forEach(function(off) {
+                var p = map.latLngToContainerPoint([it.lat, lng + off]);
+                var x = p.x + 5, y = p.y - H / 2;
+                if (x > size.x || x + it.w < 0 || y > size.y || y + H < 0) return;
+                if (declutter && hit(x, y, it.w)) return;
+                ctx.strokeText(it.id, x, p.y);
+                ctx.fillText(it.id, x, p.y);
+            });
+        });
+    }
+});
 
 // ═══════════════════════════════════════════════════════════
 // CIRCLE VISIBILITY LOGIC
@@ -1731,6 +1827,19 @@ function getTpSize() {
         halfW: scale * 1.2,
         cornerR: scale * 1.0
     }
+}
+
+// Resizes existing traffic-pattern rectangles in place for the current zoom,
+// instead of rebuilding the whole map on every zoom.
+function resizeTrafficPatterns() {
+    var sz = getTpSize();
+    tpLayers.forEach(function(l) {
+        var c = l._tpCenter;
+        if (!c) return;
+        l.setLatLngs(makeRoundedRectPoints(
+            c.lat + sz.halfH * 0.2, c.lon + c.offset + sz.halfW * 0.6,
+            sz.halfH, sz.halfW, sz.cornerR, 12));
+    });
 }
 
 
@@ -2570,7 +2679,7 @@ Promise.all([
 
             var drawnLayers = L.layerGroup().addTo(map);
             
-            airportLabelGroup = L.layerGroup();
+            airportLabelGroup = new AirportLabelLayer();
 
             function renderMap(filteredFlights) {
                 window.closeAllFlightDetails(); 
@@ -2580,7 +2689,7 @@ Promise.all([
                 tpLayers = [];
                 atcCircleLayers = [];
 
-                airportLabelGroup.clearLayers();
+                var labelItems = [];
 
                 var counts={};
                 filteredFlights.forEach(function(f){
@@ -2619,23 +2728,7 @@ Promise.all([
                             drawnLayers.addLayer(marker);
                         });
 
-                        mapOffsets.forEach(function(offset) {
-                            var labelMarker = L.marker(
-                                [airportData[id].lat, airportData[id].lon + offset],
-                                {
-                                    icon: L.divIcon({
-                                        className: '',
-                                        html: '<div class="map-airport-label">' + escapeHtml(id) + '</div>',
-                                        iconSize: [0, 0],
-                                        iconAnchor: [-5, 5]
-                                    }),
-                                    interactive: false,
-                                    zIndexOffset: -100
-                                }
-                            
-                            );
-                            airportLabelGroup.addLayer(labelMarker);
-                        });
+                        labelItems.push({ id: id, lat: airportData[id].lat, lon: airportData[id].lon, count: cnt });
 
                         drawn[id]=true;
                     });
@@ -2646,34 +2739,33 @@ Promise.all([
                     var linesForFlight = [];
 
                     if (f.isATC) {
-    var existingCircleLayers = drawnAtcCircles[f.departure];
-    if (existingCircleLayers) {
-        // Airport already has a circle — just reference it, don't draw again
-        existingCircleLayers.forEach(function(c) { linesForFlight.push(c); });
-    } else {
-        // First time seeing this ATC airport — draw the circle
-        var newCircleLayers = [];
-        mapOffsets.forEach(function(offset) {
-            var circle = L.circle([dep.lat, dep.lon + offset], {
-                radius: 20000,
-                color: '#64c49a',
-                weight: 1,
-                fillColor: '#64c49a',
-                fillOpacity: 0.2,
-                opacity: atcCircleVisible ? 0.5 : 0,
-                interactive: false
-            });
-            circle.isAtc = true;
-            drawnLayers.addLayer(circle);
-            linesForFlight.push(circle);
-            newCircleLayers.push(circle);
-            atcCircleLayers.push(circle);
-        });
-        drawnAtcCircles[f.departure] = newCircleLayers;
-    }
+                        var existingCircleLayers = drawnAtcCircles[f.departure];
+                        if (existingCircleLayers) {
+                            // Airport already has a circle — just reference it, don't draw again
+                            existingCircleLayers.forEach(function(c) { linesForFlight.push(c); });
+                        } else {
+                            // First time seeing this ATC airport — draw the circle
+                            var newCircleLayers = [];
+                            mapOffsets.forEach(function(offset) {
+                                var circle = L.circle([dep.lat, dep.lon + offset], {
+                                    radius: 20000,
+                                    color: '#64c49a',
+                                    weight: 1,
+                                    fillColor: '#64c49a',
+                                    fillOpacity: atcCircleVisible ? 0.2 : 0,
+                                    opacity: atcCircleVisible ? 0.5 : 0,
+                                    interactive: false
+                                });
+                                circle.isAtc = true;
+                                drawnLayers.addLayer(circle);
+                                linesForFlight.push(circle);
+                                newCircleLayers.push(circle);
+                                atcCircleLayers.push(circle);
+                            });
+                            drawnAtcCircles[f.departure] = newCircleLayers;
+                        }
 
                     } else {
-                        // Standard Flight & Traffic Pattern Logic
                         // Standard Flight & Traffic Pattern Logic
                         var tpMatch = f.remarks ? f.remarks.match(/\bTP\s+at\s+([A-Z0-9]{3,4})\b/i) : null;
                         var isTP = tpMatch || (f.departure === f.arrival);
@@ -2702,6 +2794,7 @@ Promise.all([
                                 var rectLine = L.polyline(shifted, { color: '#64c49a', weight: 1, opacity: tpVisible ? 0.5 : 0, interactive: false });
                                 
                                 rectLine.isTp = true; // Flag for hover visibility toggling
+                                rectLine._tpCenter = { lat: targetAp.lat, lon: targetAp.lon, offset: offset }; // for resize on zoom
                                 drawnLayers.addLayer(rectLine);
                                 linesForFlight.push(rectLine);
                                 tpLayers.push(rectLine);
@@ -2715,16 +2808,10 @@ Promise.all([
                         });
                     }
 
-
-                    mapOffsets.forEach(function(offset) {
-                        var shiftedPts = continuousPts.map(function(p) { return [p[0], p[1] + offset]; });
-                        var line = L.polyline(shiftedPts, { color: '#64c49a', weight: 1, opacity: 0.5, interactive: false });
-                        drawnLayers.addLayer(line);
-                        linesForFlight.push(line);
-                    });
                     flightLayers.push({flight:f, layers: linesForFlight});
                 });
 
+                airportLabelGroup.setItems(labelItems);
                 window.updateCircles();
             }
 
@@ -2948,25 +3035,11 @@ Promise.all([
     });
 });
 
+// Zooming no longer rebuilds the map/table — only airport dots and TP rectangles
+// need to adapt, so open flights and scroll position stay put naturally.
 map.on('zoomend', function() {
     window.updateCircles();
-    
-    // Copy the currently open flights before resetting
-    var savedSelections = new Set(window.selectedFlightIndices);
-    var sidebarContainer = document.getElementById('sidebar-routes');
-    var savedScroll = sidebarContainer ? sidebarContainer.scrollTop : 0;
-
-    if (window.applyFiltersGlobal) window.applyFiltersGlobal();
-    
-    // Re-click all previously opened flights to restore them
-    savedSelections.forEach(function(idx) {
-        var row = document.querySelector('.flight-row[data-index="' + idx + '"]');
-        if (row) row.click();
-    });
-    
-    if (sidebarContainer) {
-        sidebarContainer.scrollTop = savedScroll;
-    }
+    resizeTrafficPatterns();
 });
 
 
