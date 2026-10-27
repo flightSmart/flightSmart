@@ -101,7 +101,7 @@
 
         /* Render airline logos as solid white in dark mode */
         .airline-logo {
-            filter: brightness(0) invert(1);
+            filter: url(#logo-knockout);
         }
 
         [data-theme="light"] .airline-logo {
@@ -734,6 +734,16 @@
     </style>
 </head>
 <body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="logo-knockout" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values="
+      0 0 0 0 0.878
+      0 0 0 0 0.882
+      0 0 0 0 0.886
+      -0.638 -2.146 -0.217 2.25 0"/>
+  </filter>
+</svg>
 
 <div id="left-panel">
     <div id="routes-label">
