@@ -984,8 +984,11 @@
         let userMarker = null;
         let flightPlanLayer = null;
         let trackingInterval = null;
-        let activeFlightSessionId = null;
+        let flightSearchRequestId = 0;
+        let trackingGeneration = 0;
+        let flightUpdateSequence = 0;
         let availableFlights = [];
+        let availableFlightsUsername = null;
         let currentAircraftAltitude = null;
         let currentAircraftSpeed = null;
         let glideCircle = null;
@@ -1001,7 +1004,26 @@
         let breadcrumbCoords = [];
         let breadcrumbPolyline = null;
 
+function clearTrackedFlightLayers() {
+    if (userMarker) map.removeLayer(userMarker);
+    if (flightPlanLayer) map.removeLayer(flightPlanLayer);
+    if (headingLine) map.removeLayer(headingLine);
+    if (glideCircle) map.removeLayer(glideCircle);
+    if (breadcrumbPolyline) map.removeLayer(breadcrumbPolyline);
+    clearAircraftDrag();
+
+    userMarker = null;
+    flightPlanLayer = null;
+    headingLine = null;
+    glideCircle = null;
+    breadcrumbPolyline = null;
+    breadcrumbCoords = [];
+    lastFlightData = null;
+    lastDataTimestamp = null;
+}
+
 async function findUserFlights() {
+    const requestId = ++flightSearchRequestId;
     const username = document.getElementById('username-input').value.trim();
     const msgDiv = document.getElementById('search-message');
     const selectContainer = document.getElementById('flight-select-container');
@@ -1013,29 +1035,31 @@ async function findUserFlights() {
         return;
     }
 
+    trackingGeneration++;
     msgDiv.style.color = "var(--text-muted)";
     msgDiv.innerText = "Searching servers...";
     if(apiTimeDiv) apiTimeDiv.style.display = 'none';
     selectContainer.style.display = "none";
     
     if (trackingInterval) clearInterval(trackingInterval);
-    if (flightPlanLayer) map.removeLayer(flightPlanLayer);
-    if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
-    
-    breadcrumbCoords = [];
-    if (breadcrumbPolyline) { map.removeLayer(breadcrumbPolyline); breadcrumbPolyline = null; }
+    trackingInterval = null;
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    clearTrackedFlightLayers();
 
-    activeFlightSessionId = null;
     availableFlights = [];
+    availableFlightsUsername = null;
 
     try {
         const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}`);
         const data = await response.json();
+        if (requestId !== flightSearchRequestId) return;
 
         const flights = data.flights || (data.flight ? [{ flight: data.flight, sessionId: data.sessionId, serverName: data.serverName || "Server" }] : []);
 
         if (data.found && flights.length > 0) {
             availableFlights = flights;
+            availableFlightsUsername = username;
 
             if (flights.length === 1) {
                 trackSpecificFlight(0);
@@ -1051,7 +1075,7 @@ async function findUserFlights() {
                     option.value = index;
 
                     // 1. Shorten Server Names
-                    let sName = fData.serverName;
+                    let sName = fData.serverName || "Server";
                     if (sName.includes("Expert")) sName = "ES";
                     else if (sName.includes("Training")) sName = "TS";
                     else if (sName.includes("Casual")) sName = "CS";
@@ -1072,6 +1096,7 @@ async function findUserFlights() {
             msgDiv.innerText = data.message || "User not found or offline.";
         }
     } catch (err) {
+        if (requestId !== flightSearchRequestId) return;
         console.error(err);
         msgDiv.style.color = "var(--exc-txt)";
         msgDiv.innerText = "Error connecting to backend.";
@@ -1084,28 +1109,38 @@ function trackSelectedFlight() {
 }
 
 function trackSpecificFlight(index) {
-    const selectedData = availableFlights[index];
+    const selectedData = availableFlights[Number(index)];
+    if (!selectedData || !selectedData.flight || selectedData.sessionId == null || !availableFlightsUsername) return;
+
+    const generation = ++trackingGeneration;
+    const username = availableFlightsUsername;
     const msgDiv = document.getElementById('search-message');
     const selectContainer = document.getElementById('flight-select-container');
+
+    if (trackingInterval) clearInterval(trackingInterval);
+    trackingInterval = null;
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    clearTrackedFlightLayers();
 
     selectContainer.style.display = "none";
     msgDiv.style.color = "var(--accent-green)";
     msgDiv.innerText = "Tracking live...";
 
-    activeFlightSessionId = selectedData.sessionId;
-
-    drawFlight(selectedData.flight, true);
-    drawFlightPlan(selectedData.sessionId, selectedData.flight.flightId);
+    drawFlight(selectedData.flight, true, generation);
+    drawFlightPlan(selectedData.sessionId, selectedData.flight.flightId, generation);
     updateApiTime();
 
     trackingInterval = setInterval(() => {
-        pollFlightPosition(document.getElementById('username-input').value.trim(), selectedData.sessionId, msgDiv);
+        pollFlightPosition(username, selectedData.sessionId, selectedData.flight.flightId, generation, msgDiv);
     }, 15000);
 }
 
 
 
-async function drawFlight(flight, isFirstLoad) {
+async function drawFlight(flight, isFirstLoad, generation = trackingGeneration) {
+    if (generation !== trackingGeneration) return;
+    const updateSequence = ++flightUpdateSequence;
     currentAircraftAltitude = flight.altitude;
     currentAircraftSpeed = flight.speed;
     const coords = [flight.latitude, flight.longitude];
@@ -1136,6 +1171,8 @@ async function drawFlight(flight, isFirstLoad) {
     } catch (err) {
         console.warn("Could not fetch terrain for AGL calculation, defaulting to MSL.");
     }
+
+    if (generation !== trackingGeneration || updateSequence !== flightUpdateSequence) return;
 
     const aglFeet = Math.max(0, currentAircraftAltitude - terrainElevationFeet);
     const glideRadiusMeters = (aglFeet / 1000) * 1.2 * 1852;
@@ -1241,21 +1278,22 @@ if (userMarker) {
 if (!userMarker.getTooltip()) {
         userMarker.bindTooltip(popupContent, {
             permanent: true,      
-            direction: 'right',    
+            direction: 'left',
             className: 'aircraft-tooltip',
-            offset: [10, 0]        
+            offset: [-10, 0]
         }).openTooltip();          
     } else {
         userMarker.setTooltipContent(popupContent);
     }
 
-const followEnabled = document.getElementById('btn-follow').classList.contains('selected');
     if (isFirstLoad) {
         userMarker.openPopup();
         map.flyTo(coords, 10, { duration: 1.5 });
         
         // Wait for the initial flyTo animation to finish, then start smooth gliding
-        setTimeout(startAircraftInterpolation, 1500);
+        setTimeout(() => {
+            if (generation === trackingGeneration) startAircraftInterpolation();
+        }, 1500);
     } 
 
     // Save the latest actual API data for the interpolation loop to use
@@ -1269,15 +1307,33 @@ const followEnabled = document.getElementById('btn-follow').classList.contains('
 
 
 
-async function pollFlightPosition(username, sessionId, msgDiv) {
+async function pollFlightPosition(username, sessionId, flightId, generation, msgDiv) {
     try {
         const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}?sessionId=${sessionId}`);
         const data = await response.json();
+        if (generation !== trackingGeneration) return;
 
-        const activeFlight = data.flight || (data.flights && data.flights[0] ? data.flights[0].flight : null);
+        let activeFlight = null;
+        if (data.flight) {
+            const responseSessionId = data.sessionId;
+            const sessionMatches = responseSessionId == null || String(responseSessionId) === String(sessionId);
+            const flightMatches = flightId == null || data.flight.flightId == null ||
+                String(data.flight.flightId) === String(flightId);
+            if (sessionMatches && flightMatches) activeFlight = data.flight;
+        } else if (Array.isArray(data.flights)) {
+            const matchingFlight = data.flights.find(item => {
+                const sessionMatches = item.sessionId != null && String(item.sessionId) === String(sessionId);
+                const flightMatches = flightId != null && item.flight?.flightId != null &&
+                    String(item.flight.flightId) === String(flightId);
+                return (sessionMatches && (flightId == null || item.flight?.flightId == null ||
+                    String(item.flight.flightId) === String(flightId))) ||
+                    (flightMatches && (item.sessionId == null || sessionMatches));
+            });
+            if (matchingFlight) activeFlight = matchingFlight.flight;
+        }
 
         if (data.found && activeFlight) {
-            drawFlight(activeFlight, false);
+            drawFlight(activeFlight, false, generation);
             updateApiTime();
         } else {
             msgDiv.style.color = "var(--exc-txt)";
@@ -1355,10 +1411,11 @@ function startAircraftInterpolation() {
 
 
 
-async function drawFlightPlan(sessionId, flightId) {
+async function drawFlightPlan(sessionId, flightId, generation = trackingGeneration) {
     try {
         const response = await fetch(`https://flightsmart.tools/api/if/flightplan/${sessionId}/${flightId}`);
         const planData = await response.json();
+        if (generation !== trackingGeneration) return;
 
         if (planData.errorCode === 0 && planData.result && planData.result.flightPlanItems) {
             let pathCoordinates = [];
@@ -1977,33 +2034,31 @@ function updateAircraftDragLines() {
 
         let labelTextWithArrow = isFlipped ? `< ${labelText}` : `${labelText} >`;
 
-        if (map.getZoom() > 8) {
-            const labelIcon = L.divIcon({
-                className: '',
-                html: `<div style="
-                    position: absolute;
-                    ${isFlipped ? 'right: 0;' : 'left: 0;'}
-                    bottom: 0;
-                    transform-origin: ${isFlipped ? 'bottom right' : 'bottom left'};
-                    transform: rotate(${cssRotation}deg) translate(${isFlipped ? '-15px' : '15px'}, -4px);
-                    color: #00b9ff;
-                    font-family: var(--font-mono);
-                    font-size: 11px;
-                    font-weight: bold;
-                    -webkit-text-stroke: 2px black;
-                    paint-order: stroke fill;
-                    white-space: nowrap;
-                    pointer-events: none;
-                ">${labelTextWithArrow}</div>`,
-                iconSize: [0, 0],
-                iconAnchor: [0, 0]
-            });
+        const labelIcon = L.divIcon({
+            className: '',
+            html: `<div style="
+                position: absolute;
+                ${isFlipped ? 'right: 0;' : 'left: 0;'}
+                bottom: 0;
+                transform-origin: ${isFlipped ? 'bottom right' : 'bottom left'};
+                transform: rotate(${cssRotation}deg) translate(${isFlipped ? '-15px' : '15px'}, -4px);
+                color: #00b9ff;
+                font-family: var(--font-mono);
+                font-size: 11px;
+                font-weight: bold;
+                -webkit-text-stroke: 2px black;
+                paint-order: stroke fill;
+                white-space: nowrap;
+                pointer-events: none;
+            ">${labelTextWithArrow}</div>`,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0]
+        });
 
-            L.marker([point1.lat, point1.lng], {
-                icon: labelIcon,
-                interactive: false
-            }).addTo(acDragLineLayer);
-        }
+        L.marker([point1.lat, point1.lng], {
+            icon: labelIcon,
+            interactive: false
+        }).addTo(acDragLineLayer);
     }
 }
 
