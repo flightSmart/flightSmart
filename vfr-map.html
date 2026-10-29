@@ -983,7 +983,25 @@
 
         let userMarker = null;
         let flightPlanLayer = null;
-        let trackingInterval = null;
+        const FLIGHT_POLL_INTERVAL_MS = 15000;
+        const FLIGHT_POLL_IDLE_LIMIT_MS = 15 * 60 * 1000;
+        const FLIGHT_API_DATA_TTL_MS = 60 * 60 * 1000;
+        let trackingTimeout = null;
+        let trackingIdleTimeout = null;
+        let flightPollCacheTimeout = null;
+        let flightDataExpiryTimeout = null;
+        let flightPlanExpiryTimeout = null;
+        let flightPlanCacheTimeout = null;
+        let flightSearchCacheTimeout = null;
+        let activeTrackingRequest = null;
+        let trackingPollInProgressGeneration = null;
+        let lastFlightPollAt = 0;
+        let lastFlightPlanRequestAt = 0;
+        let lastUserActivityAt = 0;
+        let lastLiveFlightListRequestAt = 0;
+        let lastFlightPollCache = null;
+        let flightSearchCache = null;
+        let flightPlanResponseCache = null;
         let flightSearchRequestId = 0;
         let trackingGeneration = 0;
         let flightUpdateSequence = 0;
@@ -999,28 +1017,126 @@
         let lastDataTimestamp = null;
         let lastFrameTime = null;
 
-
-        // Breadcrumb Variables
-        let breadcrumbCoords = [];
-        let breadcrumbPolyline = null;
-
 function clearTrackedFlightLayers() {
     if (userMarker) map.removeLayer(userMarker);
     if (flightPlanLayer) map.removeLayer(flightPlanLayer);
     if (headingLine) map.removeLayer(headingLine);
     if (glideCircle) map.removeLayer(glideCircle);
-    if (breadcrumbPolyline) map.removeLayer(breadcrumbPolyline);
     clearAircraftDrag();
+    if (flightDataExpiryTimeout) clearTimeout(flightDataExpiryTimeout);
+    if (flightPlanExpiryTimeout) clearTimeout(flightPlanExpiryTimeout);
+    flightDataExpiryTimeout = null;
+    flightPlanExpiryTimeout = null;
 
     userMarker = null;
     flightPlanLayer = null;
     headingLine = null;
     glideCircle = null;
-    breadcrumbPolyline = null;
-    breadcrumbCoords = [];
     lastFlightData = null;
     lastDataTimestamp = null;
+    currentAircraftAltitude = null;
+    currentAircraftSpeed = null;
 }
+
+function stopTrackingPolls() {
+    if (trackingTimeout) clearTimeout(trackingTimeout);
+    if (trackingIdleTimeout) clearTimeout(trackingIdleTimeout);
+    if (flightPollCacheTimeout) clearTimeout(flightPollCacheTimeout);
+    trackingTimeout = null;
+    trackingIdleTimeout = null;
+    flightPollCacheTimeout = null;
+    activeTrackingRequest = null;
+    lastFlightPollCache = null;
+}
+
+function scheduleTrackingPoll() {
+    if (!activeTrackingRequest || trackingTimeout ||
+        trackingPollInProgressGeneration === activeTrackingRequest.generation) return;
+
+    const { generation } = activeTrackingRequest;
+    const now = Date.now();
+    const sinceLastRequest = now - lastFlightPollAt;
+    const sinceCachedResponse = lastFlightPollCache
+        ? now - lastFlightPollCache.fetchedAt
+        : FLIGHT_POLL_INTERVAL_MS;
+    const delay = Math.max(
+        0,
+        FLIGHT_POLL_INTERVAL_MS - sinceLastRequest,
+        FLIGHT_POLL_INTERVAL_MS - sinceCachedResponse
+    );
+
+    trackingTimeout = setTimeout(async () => {
+        trackingTimeout = null;
+        if (!activeTrackingRequest || generation !== trackingGeneration) return;
+
+        if (Date.now() - lastUserActivityAt >= FLIGHT_POLL_IDLE_LIMIT_MS) {
+            pauseTrackingForInactivity(generation);
+            return;
+        }
+
+        const request = activeTrackingRequest;
+        trackingPollInProgressGeneration = generation;
+        try {
+            await pollFlightPosition(
+                request.username,
+                request.sessionId,
+                request.flightId,
+                request.generation,
+                request.msgDiv
+            );
+        } finally {
+            if (trackingPollInProgressGeneration === generation) {
+                trackingPollInProgressGeneration = null;
+            }
+        }
+
+        if (activeTrackingRequest && generation === trackingGeneration &&
+            Date.now() - lastUserActivityAt >= FLIGHT_POLL_IDLE_LIMIT_MS) {
+            pauseTrackingForInactivity(generation);
+        } else if (activeTrackingRequest && generation === trackingGeneration) {
+            scheduleTrackingPoll();
+        }
+    }, delay);
+}
+
+function armTrackingIdleTimeout(generation) {
+    if (trackingIdleTimeout) clearTimeout(trackingIdleTimeout);
+
+    const remaining = Math.max(
+        0,
+        FLIGHT_POLL_IDLE_LIMIT_MS - (Date.now() - lastUserActivityAt)
+    );
+    trackingIdleTimeout = setTimeout(() => {
+        pauseTrackingForInactivity(generation);
+    }, remaining);
+}
+
+function pauseTrackingForInactivity(generation) {
+    if (!activeTrackingRequest || generation !== trackingGeneration) return;
+    if (trackingTimeout) clearTimeout(trackingTimeout);
+    trackingTimeout = null;
+    trackingIdleTimeout = null;
+    if (flightPollCacheTimeout) clearTimeout(flightPollCacheTimeout);
+    flightPollCacheTimeout = null;
+    lastFlightPollCache = null;
+    document.getElementById('search-message').innerText =
+        'Tracking paused after 15 minutes without activity. Interact to resume.';
+}
+
+function recordTrackingUserActivity() {
+    if (!activeTrackingRequest || activeTrackingRequest.generation !== trackingGeneration) return;
+
+    lastUserActivityAt = Date.now();
+    armTrackingIdleTimeout(activeTrackingRequest.generation);
+    if (!trackingTimeout) {
+        document.getElementById('search-message').innerText = 'Tracking live...';
+        scheduleTrackingPoll();
+    }
+}
+
+document.addEventListener('pointerdown', recordTrackingUserActivity, { passive: true });
+document.addEventListener('keydown', recordTrackingUserActivity);
+document.addEventListener('touchstart', recordTrackingUserActivity, { passive: true });
 
 async function findUserFlights() {
     const requestId = ++flightSearchRequestId;
@@ -1041,8 +1157,7 @@ async function findUserFlights() {
     if(apiTimeDiv) apiTimeDiv.style.display = 'none';
     selectContainer.style.display = "none";
     
-    if (trackingInterval) clearInterval(trackingInterval);
-    trackingInterval = null;
+    stopTrackingPolls();
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
     clearTrackedFlightLayers();
@@ -1051,8 +1166,32 @@ async function findUserFlights() {
     availableFlightsUsername = null;
 
     try {
-        const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}`);
-        const data = await response.json();
+        let data;
+        const cachedSearch = flightSearchCache &&
+            flightSearchCache.username === username &&
+            Date.now() - flightSearchCache.fetchedAt < FLIGHT_POLL_INTERVAL_MS;
+        if (cachedSearch) {
+            data = flightSearchCache.data;
+        } else {
+            lastLiveFlightListRequestAt = Date.now();
+            const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}`);
+            data = await response.json();
+            if (requestId !== flightSearchRequestId) return;
+
+            const cacheEntry = { username, data, fetchedAt: Date.now() };
+            flightSearchCache = cacheEntry;
+            if (flightSearchCacheTimeout) clearTimeout(flightSearchCacheTimeout);
+            flightSearchCacheTimeout = setTimeout(() => {
+                if (flightSearchCache === cacheEntry) {
+                    flightSearchCache = null;
+                    availableFlights = [];
+                    availableFlightsUsername = null;
+                    document.getElementById('flight-select-container').style.display = 'none';
+                    document.getElementById('flight-select').innerHTML = '';
+                    flightSearchCacheTimeout = null;
+                }
+            }, FLIGHT_API_DATA_TTL_MS);
+        }
         if (requestId !== flightSearchRequestId) return;
 
         const flights = data.flights || (data.flight ? [{ flight: data.flight, sessionId: data.sessionId, serverName: data.serverName || "Server" }] : []);
@@ -1117,8 +1256,7 @@ function trackSpecificFlight(index) {
     const msgDiv = document.getElementById('search-message');
     const selectContainer = document.getElementById('flight-select-container');
 
-    if (trackingInterval) clearInterval(trackingInterval);
-    trackingInterval = null;
+    stopTrackingPolls();
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
     clearTrackedFlightLayers();
@@ -1127,40 +1265,31 @@ function trackSpecificFlight(index) {
     msgDiv.style.color = "var(--accent-green)";
     msgDiv.innerText = "Tracking live...";
 
-    drawFlight(selectedData.flight, true, generation);
+    drawFlight(selectedData.flight, true, generation, flightSearchCache?.fetchedAt || Date.now());
     drawFlightPlan(selectedData.sessionId, selectedData.flight.flightId, generation);
     updateApiTime();
 
-    trackingInterval = setInterval(() => {
-        pollFlightPosition(username, selectedData.sessionId, selectedData.flight.flightId, generation, msgDiv);
-    }, 15000);
+    activeTrackingRequest = {
+        username,
+        sessionId: selectedData.sessionId,
+        flightId: selectedData.flight.flightId,
+        generation,
+        msgDiv
+    };
+    lastFlightPollAt = Math.max(lastFlightPollAt, lastLiveFlightListRequestAt);
+    lastUserActivityAt = Date.now();
+    armTrackingIdleTimeout(generation);
+    scheduleTrackingPoll();
 }
 
 
 
-async function drawFlight(flight, isFirstLoad, generation = trackingGeneration) {
+async function drawFlight(flight, isFirstLoad, generation = trackingGeneration, dataFetchedAt = Date.now()) {
     if (generation !== trackingGeneration) return;
     const updateSequence = ++flightUpdateSequence;
     currentAircraftAltitude = flight.altitude;
     currentAircraftSpeed = flight.speed;
     const coords = [flight.latitude, flight.longitude];
-
-    // Build the short breadcrumb trail
-    breadcrumbCoords.push(coords);
-    if (breadcrumbCoords.length > 30) {
-        breadcrumbCoords.shift();
-    }
-    
-    if (breadcrumbPolyline) {
-        breadcrumbPolyline.setLatLngs(breadcrumbCoords);
-    } else {
-        breadcrumbPolyline = L.polyline(breadcrumbCoords, {
-            color: '#000000',
-            weight: 2.5,
-            opacity: 0.8,
-            pane: 'aircraftPane'
-        }).addTo(map);
-    }
 
     let terrainElevationFeet = 0;
     try {
@@ -1227,9 +1356,11 @@ if (userMarker) {
             acDragMarkers.push(endMarker);
             endMarker.on('drag', updateAircraftDragLines);
             endMarker.on('click', clearAircraftDrag);
+            updateAircraftTooltipDirection();
 
             function tempMouseMove(ev) {
                 endMarker.setLatLng(ev.latlng);
+                updateAircraftTooltipDirection();
                 updateAircraftDragLines();
             }
 
@@ -1278,9 +1409,9 @@ if (userMarker) {
 if (!userMarker.getTooltip()) {
         userMarker.bindTooltip(popupContent, {
             permanent: true,      
-            direction: 'left',
+            direction: 'right',
             className: 'aircraft-tooltip',
-            offset: [-10, 0]
+            offset: [10, 0]
         }).openTooltip();          
     } else {
         userMarker.setTooltipContent(popupContent);
@@ -1299,6 +1430,11 @@ if (!userMarker.getTooltip()) {
     // Save the latest actual API data for the interpolation loop to use
     lastFlightData = flight;
     lastDataTimestamp = Date.now();
+    if (flightDataExpiryTimeout) clearTimeout(flightDataExpiryTimeout);
+    flightDataExpiryTimeout = setTimeout(() => {
+        clearTrackedFlightLayers();
+        flightDataExpiryTimeout = null;
+    }, Math.max(0, FLIGHT_API_DATA_TTL_MS - (Date.now() - dataFetchedAt)));
 
 }
 
@@ -1309,8 +1445,31 @@ if (!userMarker.getTooltip()) {
 
 async function pollFlightPosition(username, sessionId, flightId, generation, msgDiv) {
     try {
-        const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}?sessionId=${sessionId}`);
-        const data = await response.json();
+        const cacheKey = `${username}:${sessionId}`;
+        let data;
+        if (lastFlightPollCache &&
+            lastFlightPollCache.key === cacheKey &&
+            Date.now() - lastFlightPollCache.fetchedAt < FLIGHT_POLL_INTERVAL_MS) {
+            data = lastFlightPollCache.data;
+        } else {
+            lastFlightPollAt = Date.now();
+            const response = await fetch(`https://flightsmart.tools/api/if/live-flight/${username}?sessionId=${sessionId}`);
+            data = await response.json();
+            if (generation !== trackingGeneration) return;
+            lastFlightPollCache = {
+                key: cacheKey,
+                data,
+                fetchedAt: Date.now()
+            };
+            const cacheEntry = lastFlightPollCache;
+            if (flightPollCacheTimeout) clearTimeout(flightPollCacheTimeout);
+            flightPollCacheTimeout = setTimeout(() => {
+                if (lastFlightPollCache === cacheEntry) {
+                    lastFlightPollCache = null;
+                    flightPollCacheTimeout = null;
+                }
+            }, FLIGHT_API_DATA_TTL_MS);
+        }
         if (generation !== trackingGeneration) return;
 
         let activeFlight = null;
@@ -1333,12 +1492,12 @@ async function pollFlightPosition(username, sessionId, flightId, generation, msg
         }
 
         if (data.found && activeFlight) {
-            drawFlight(activeFlight, false, generation);
+            drawFlight(activeFlight, false, generation, lastFlightPollCache.fetchedAt);
             updateApiTime();
         } else {
             msgDiv.style.color = "var(--exc-txt)";
             msgDiv.innerText = "Flight tracking lost.";
-            clearInterval(trackingInterval);
+            stopTrackingPolls();
         }
     } catch (err) {
         console.error("Polling error:", err);
@@ -1391,13 +1550,6 @@ function startAircraftInterpolation() {
                 headingLine.setLatLngs([nextCoords, endLineCoords]);
             }
 
-            // 3.5 Smoothly stretch the breadcrumb trail to the live animated position
-            if (breadcrumbPolyline && breadcrumbCoords.length > 0) {
-                // Combine the historical points with the current live point
-                breadcrumbPolyline.setLatLngs([...breadcrumbCoords, nextCoords]);
-            }
-            // --------------------------
-
             // 4. Smoothly pan the map if "Follow" mode is active
             if (document.getElementById('btn-follow').classList.contains('selected')) {
                 map.panTo(nextCoords, { animate: false }); 
@@ -1413,15 +1565,54 @@ function startAircraftInterpolation() {
 
 async function drawFlightPlan(sessionId, flightId, generation = trackingGeneration) {
     try {
-        const response = await fetch(`https://flightsmart.tools/api/if/flightplan/${sessionId}/${flightId}`);
-        const planData = await response.json();
+        const cacheKey = `${sessionId}:${flightId}`;
+        let planData;
+        let planFetchedAt;
+        if (flightPlanResponseCache &&
+            flightPlanResponseCache.key === cacheKey &&
+            Date.now() - flightPlanResponseCache.fetchedAt < FLIGHT_POLL_INTERVAL_MS) {
+            planData = flightPlanResponseCache.data;
+            planFetchedAt = flightPlanResponseCache.fetchedAt;
+        } else {
+            const delay = Math.max(
+                0,
+                FLIGHT_POLL_INTERVAL_MS - (Date.now() - lastFlightPlanRequestAt)
+            );
+            if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay));
+            if (generation !== trackingGeneration) return;
+
+            lastFlightPlanRequestAt = Date.now();
+            const response = await fetch(`https://flightsmart.tools/api/if/flightplan/${sessionId}/${flightId}`);
+            planData = await response.json();
+            planFetchedAt = Date.now();
+            if (generation !== trackingGeneration) return;
+
+            const cacheEntry = { key: cacheKey, data: planData, fetchedAt: planFetchedAt };
+            flightPlanResponseCache = cacheEntry;
+            if (flightPlanCacheTimeout) clearTimeout(flightPlanCacheTimeout);
+            flightPlanCacheTimeout = setTimeout(() => {
+                if (flightPlanResponseCache === cacheEntry) {
+                    flightPlanResponseCache = null;
+                    flightPlanCacheTimeout = null;
+                }
+            }, FLIGHT_API_DATA_TTL_MS);
+        }
         if (generation !== trackingGeneration) return;
 
         if (planData.errorCode === 0 && planData.result && planData.result.flightPlanItems) {
             let pathCoordinates = [];
             
             if (flightPlanLayer) map.removeLayer(flightPlanLayer);
+            if (flightPlanExpiryTimeout) clearTimeout(flightPlanExpiryTimeout);
             flightPlanLayer = L.layerGroup().addTo(map);
+            const currentPlanLayer = flightPlanLayer;
+            flightPlanExpiryTimeout = setTimeout(() => {
+                if (flightPlanLayer === currentPlanLayer) {
+                    map.removeLayer(currentPlanLayer);
+                    flightPlanLayer = null;
+                    flightPlanExpiryTimeout = null;
+                }
+            }, Math.max(0, FLIGHT_API_DATA_TTL_MS - (Date.now() - planFetchedAt)));
 
             const processNode = (node) => {
                 if (node.location && node.location.latitude !== 0) {
@@ -1711,6 +1902,25 @@ function clearAircraftDrag() {
     acDragMarkerLayer.clearLayers();
     acDragLineLayer.clearLayers();
     acDragMarkers = [];
+    updateAircraftTooltipDirection();
+}
+
+function updateAircraftTooltipDirection() {
+    if (!userMarker) return;
+
+    const tooltip = userMarker.getTooltip();
+    if (!tooltip) return;
+
+    let direction = 'right';
+    if (acDragMarkers.length >= 2) {
+        const startPoint = map.latLngToContainerPoint(acDragMarkers[0].getLatLng());
+        const endPoint = map.latLngToContainerPoint(acDragMarkers[1].getLatLng());
+        if (endPoint.x > startPoint.x) direction = 'left';
+    }
+
+    tooltip.options.offset = L.point(direction === 'right' ? [10, 0] : [-10, 0]);
+    tooltip.options.direction = direction;
+    tooltip.update();
 }
 
 function formatEteTime(hours) {
@@ -1974,6 +2184,7 @@ function updateLines() {
 }
 
 function updateAircraftDragLines() {
+    updateAircraftTooltipDirection();
     acDragLineLayer.clearLayers();
 
     if (acDragMarkers.length < 2) return;
