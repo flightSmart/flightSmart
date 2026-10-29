@@ -1886,7 +1886,7 @@ function updateLines() {
                 <td>${totalDistanceNM.toFixed(1)}</td>
                 <td>${cumEteString}</td>
                 <td id="wp-elev-${i+1}">...</td>
-                <td id="leg-max-${i+1}">...</td>
+                <td id="leg-max-${i+1}">${formatLegMax(legMaxCache.get(legKey(point1, point2)))}</td>
             </tr>
         `;
     }
@@ -2187,6 +2187,26 @@ const LEG_SAMPLE_SPACING_NM = 0.25;
 const LEG_MAX_SAMPLES = 400;
 let legMaxGeneration = 0;
 
+// Results keyed by leg endpoints, so redraws (e.g. on zoom) don't resample unchanged legs
+const legMaxCache = new Map();
+
+function legKey(p1, p2) {
+    return `${p1.lat},${p1.lng}|${p2.lat},${p2.lng}`;
+}
+
+function formatLegMax(maxMeters) {
+    if (maxMeters === undefined) return '...';
+    if (maxMeters === null) return 'N/A';
+
+    const maxFt = Math.round(maxMeters * 3.28084);
+    let color = '';
+    if (currentAircraftAltitude !== null) {
+        const diff = maxFt - currentAircraftAltitude;
+        if (diff > -1000) color = diff > 0 ? '#fc031c' : '#ffcc00';
+    }
+    return `<strong${color ? ` style="color:${color}"` : ''}>${maxFt.toLocaleString()} ft</strong>`;
+}
+
 async function fetchLegMaxElevations() {
     const generation = ++legMaxGeneration;
     const points = measureMarkers.map(m => m.getLatLng());
@@ -2194,6 +2214,9 @@ async function fetchLegMaxElevations() {
     for (let i = 0; i < points.length - 1; i++) {
         const p1 = points[i];
         const p2 = points[i + 1];
+        const key = legKey(p1, p2);
+        if (legMaxCache.has(key)) continue;
+
         const distNM = map.distance(p1, p2) / 1852;
         const steps = Math.min(LEG_MAX_SAMPLES, Math.max(1, Math.ceil(distNM / LEG_SAMPLE_SPACING_NM)));
 
@@ -2214,20 +2237,11 @@ async function fetchLegMaxElevations() {
             if (generation !== legMaxGeneration) return;
         }
 
-        const cell = document.getElementById(`leg-max-${i + 1}`);
-        if (!cell) continue;
-        if (maxMeters === null) {
-            cell.innerHTML = failed ? 'Error' : 'N/A';
-            continue;
-        }
+        // Don't cache failures so they get retried on the next redraw
+        if (!failed || maxMeters !== null) legMaxCache.set(key, maxMeters);
 
-        const maxFt = Math.round(maxMeters * 3.28084);
-        let color = '';
-        if (currentAircraftAltitude !== null) {
-            const diff = maxFt - currentAircraftAltitude;
-            if (diff > -1000) color = diff > 0 ? '#fc031c' : '#ffcc00';
-        }
-        cell.innerHTML = `<strong${color ? ` style="color:${color}"` : ''}>${maxFt.toLocaleString()} ft</strong>`;
+        const cell = document.getElementById(`leg-max-${i + 1}`);
+        if (cell) cell.innerHTML = (failed && maxMeters === null) ? 'Error' : formatLegMax(maxMeters);
     }
 }
 
