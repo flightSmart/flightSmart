@@ -2181,14 +2181,16 @@ async function fetchElevationForWaypoint(latlng, index) {
     }
 }
 
-// Highest terrain along each leg, found by sampling points between waypoints.
-// Samples are fetched sequentially so terrain tiles get cached and reused.
-const LEG_SAMPLE_SPACING_NM = 0.25;
-const LEG_MAX_SAMPLES = 400;
+// Highest terrain along each leg. Terrain-RGB tiles are fetched directly and decoded once,
+// then every pixel along the leg is read from memory (much faster than per-point lookups).
+const LEG_TERRAIN_ZOOM = topoOptions.scale;
+const TERRAIN_TILE_SIZE = 256;
 let legMaxGeneration = 0;
 
 // Results keyed by leg endpoints, so redraws (e.g. on zoom) don't resample unchanged legs
 const legMaxCache = new Map();
+// Decoded tile pixel data, keyed "x/y"
+const terrainTileCache = new Map();
 
 function legKey(p1, p2) {
     return `${p1.lat},${p1.lng}|${p2.lat},${p2.lng}`;
@@ -2207,45 +2209,104 @@ function formatLegMax(maxMeters) {
     return `<strong${color ? ` style="color:${color}"` : ''}>${maxFt.toLocaleString()} ft</strong>`;
 }
 
+// Lat/lng -> global Web Mercator pixel coordinates at the terrain zoom level
+function latLngToTerrainPixel(latlng) {
+    const worldSize = TERRAIN_TILE_SIZE * Math.pow(2, LEG_TERRAIN_ZOOM);
+    const latRad = latlng.lat * Math.PI / 180;
+    return {
+        x: (latlng.lng + 180) / 360 * worldSize,
+        y: (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * worldSize
+    };
+}
+
+function getTerrainTile(tx, ty) {
+    const key = `${tx}/${ty}`;
+    if (!terrainTileCache.has(key)) {
+        const url = `https://api.mapbox.com/v4/mapbox.terrain-rgb/${LEG_TERRAIN_ZOOM}/${tx}/${ty}.pngraw?access_token=${topoOptions.token}`;
+        const promise = fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error(`Terrain tile ${key}: HTTP ${res.status}`);
+                return res.blob();
+            })
+            .then(blob => createImageBitmap(blob))
+            .then(bitmap => {
+                const canvas = document.createElement('canvas');
+                canvas.width = TERRAIN_TILE_SIZE;
+                canvas.height = TERRAIN_TILE_SIZE;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(bitmap, 0, 0, TERRAIN_TILE_SIZE, TERRAIN_TILE_SIZE);
+                return ctx.getImageData(0, 0, TERRAIN_TILE_SIZE, TERRAIN_TILE_SIZE).data;
+            })
+            .catch(err => {
+                terrainTileCache.delete(key); // allow a retry later
+                throw err;
+            });
+        terrainTileCache.set(key, promise);
+    }
+    return terrainTileCache.get(key);
+}
+
+async function computeLegMax(p1, p2) {
+    const a = latLngToTerrainPixel(p1);
+    const b = latLngToTerrainPixel(p2);
+    const steps = Math.max(1, Math.ceil(Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y))));
+
+    // One sample per pixel along the leg
+    const pixels = [];
+    const tileKeys = new Set();
+    for (let s = 0; s <= steps; s++) {
+        const px = Math.floor(a.x + (b.x - a.x) * s / steps);
+        const py = Math.floor(a.y + (b.y - a.y) * s / steps);
+        pixels.push(px, py);
+        tileKeys.add(`${Math.floor(px / TERRAIN_TILE_SIZE)}/${Math.floor(py / TERRAIN_TILE_SIZE)}`);
+    }
+
+    const tiles = new Map();
+    let failed = false;
+    await Promise.all([...tileKeys].map(async key => {
+        const [tx, ty] = key.split('/').map(Number);
+        try {
+            tiles.set(key, await getTerrainTile(tx, ty));
+        } catch (err) {
+            console.warn(err);
+            failed = true;
+        }
+    }));
+
+    let maxMeters = null;
+    for (let i = 0; i < pixels.length; i += 2) {
+        const px = pixels[i], py = pixels[i + 1];
+        const data = tiles.get(`${Math.floor(px / TERRAIN_TILE_SIZE)}/${Math.floor(py / TERRAIN_TILE_SIZE)}`);
+        if (!data) continue;
+        const idx = ((py % TERRAIN_TILE_SIZE) * TERRAIN_TILE_SIZE + (px % TERRAIN_TILE_SIZE)) * 4;
+        const elevation = -10000 + (data[idx] * 65536 + data[idx + 1] * 256 + data[idx + 2]) * 0.1;
+        if (maxMeters === null || elevation > maxMeters) maxMeters = elevation;
+    }
+    return { maxMeters, failed };
+}
+
 async function fetchLegMaxElevations() {
     const generation = ++legMaxGeneration;
     const points = measureMarkers.map(m => m.getLatLng());
 
-    for (let i = 0; i < points.length - 1; i++) {
-        const p1 = points[i];
+    await Promise.all(points.slice(0, -1).map(async (p1, i) => {
         const p2 = points[i + 1];
         const key = legKey(p1, p2);
-        if (legMaxCache.has(key)) continue;
+        if (legMaxCache.has(key)) return;
 
-        const distNM = map.distance(p1, p2) / 1852;
-        const steps = Math.min(LEG_MAX_SAMPLES, Math.max(1, Math.ceil(distNM / LEG_SAMPLE_SPACING_NM)));
+        const { maxMeters, failed } = await computeLegMax(p1, p2);
 
-        let maxMeters = null;
-        let failed = false;
-        for (let s = 0; s <= steps; s++) {
-            const t = s / steps;
-            const sample = L.latLng(p1.lat + (p2.lat - p1.lat) * t, p1.lng + (p2.lng - p1.lng) * t);
-            try {
-                const results = await L.Topography.getTopography(sample, topoOptions);
-                if (results && results.elevation !== undefined) {
-                    if (maxMeters === null || results.elevation > maxMeters) maxMeters = results.elevation;
-                }
-            } catch (err) {
-                failed = true;
-            }
-            // Route changed while we were working; a newer run will take over
-            if (generation !== legMaxGeneration) return;
-        }
+        // Don't cache partial results so failed tiles get retried on the next redraw
+        if (!failed) legMaxCache.set(key, maxMeters);
 
-        // Don't cache failures so they get retried on the next redraw
-        if (!failed || maxMeters !== null) legMaxCache.set(key, maxMeters);
-
+        // Route changed while we were working; a newer run will take over
+        if (generation !== legMaxGeneration) return;
         const cell = document.getElementById(`leg-max-${i + 1}`);
         if (cell) cell.innerHTML = (failed && maxMeters === null) ? 'Error' : formatLegMax(maxMeters);
-    }
+    }));
 }
 
-const fetchLegMaxElevationsDebounced = debounce(fetchLegMaxElevations, 300);
+const fetchLegMaxElevationsDebounced = debounce(fetchLegMaxElevations, 150);
 
 // ═══════════════════════════════════════════════════════════
 //   CUSTOM CONTEXT MENU
