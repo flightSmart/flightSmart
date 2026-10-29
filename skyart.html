@@ -1640,7 +1640,7 @@
                 }).addTo(measureMarkerLayer);
                 
                 currentGhostMarkers.push(ghostMarker);
-                ghostMarker.on('dragstart', function(e) {
+                ghostMarker.once('dragstart', function(e) {
                     pushPathHistory();
                     const gIndex = currentGhostMarkers.indexOf(this);
                     if (gIndex > -1) currentGhostMarkers.splice(gIndex, 1);

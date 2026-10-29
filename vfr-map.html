@@ -1803,7 +1803,7 @@ function updateLines() {
         
         currentGhostMarkers.push(ghostMarker);
 
-        ghostMarker.on('dragstart', function(e) {
+        ghostMarker.once('dragstart', function(e) {
             // 1. Remove from the temporary array immediately so it survives the redraw
             const gIndex = currentGhostMarkers.indexOf(this);
             if (gIndex > -1) currentGhostMarkers.splice(gIndex, 1);
