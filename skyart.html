@@ -619,6 +619,10 @@
                     <button class="layer-remove-btn" style="border-color: var(--accent-green); color: var(--accent-green); margin-top: 0;" onclick="exportFplFiles()">EXPORT FPL</button>
                 </div>
                 <div style="display: flex; gap: 4px; margin-top: 4px;">
+                    <button id="copy-simbrief-btn" class="layer-remove-btn" style="flex: 1; border-color: var(--accent-green); color: var(--accent-green); margin-top: 0;" onclick="copySimbriefRoute()">SIMBRIEF COORDS</button>
+                    <button id="copy-if-coords-btn" class="layer-remove-btn" style="flex: 1; border-color: var(--accent-green); color: var(--accent-green); margin-top: 0;" onclick="copyInfiniteFlightCoords()">IF COORDS</button>
+                </div>
+                <div style="display: flex; gap: 4px; margin-top: 4px;">
                     <button class="layer-remove-btn" style="border-color: #d97757; color: #d97757; margin-top: 0;" onclick="clearMeasurements()">REMOVE PATH</button>
                 </div>
             </div>
@@ -2130,6 +2134,52 @@
             });
 
             openFplExportModal(files);
+        };
+
+        function copyRouteToClipboard(buttonId, originalLabel, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const button = document.getElementById(buttonId);
+                if (!button) return;
+                button.innerText = 'COPIED';
+                setTimeout(() => { button.innerText = originalLabel; }, 2000);
+            }).catch(err => {
+                console.error('Clipboard copy failed:', err);
+                const button = document.getElementById(buttonId);
+                if (!button) return;
+                button.innerText = 'COPY FAILED';
+                setTimeout(() => { button.innerText = originalLabel; }, 2000);
+            });
+        }
+
+        function getSimbriefWaypointCoordinates() {
+            return measureMarkers.map(marker => {
+                const { lat, lng } = marker.getLatLng();
+                const latDir = lat >= 0 ? 'N' : 'S';
+                const lngDir = lng >= 0 ? 'E' : 'W';
+                const totalLatSeconds = Math.round(Math.abs(lat) * 3600);
+                const totalLngSeconds = Math.round(Math.abs(lng) * 3600);
+                const latStr = String(Math.floor(totalLatSeconds / 3600)).padStart(2, '0') +
+                    String(Math.floor((totalLatSeconds % 3600) / 60)).padStart(2, '0') +
+                    String(totalLatSeconds % 60).padStart(2, '0') + latDir;
+                const lngStr = String(Math.floor(totalLngSeconds / 3600)).padStart(3, '0') +
+                    String(Math.floor((totalLngSeconds % 3600) / 60)).padStart(2, '0') +
+                    String(totalLngSeconds % 60).padStart(2, '0') + lngDir;
+                return `${latStr}${lngStr}`;
+            }).join(' ');
+        }
+
+        window.copySimbriefRoute = function() {
+            if (measureMarkers.length === 0) return;
+            copyRouteToClipboard('copy-simbrief-btn', 'SIMBRIEF COORDS', getSimbriefWaypointCoordinates());
+        };
+
+        window.copyInfiniteFlightCoords = function() {
+            if (measureMarkers.length === 0) return;
+            const coords = measureMarkers.map(marker => {
+                const { lat, lng } = marker.getLatLng();
+                return `${lng.toFixed(14)},${lat.toFixed(14)},0`;
+            }).join(' ');
+            copyRouteToClipboard('copy-if-coords-btn', 'IF COORDS', coords);
         };
 
         // Parse a Garmin-style .fpl XML string into [{lat, lng, label}, ...],

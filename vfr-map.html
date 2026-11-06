@@ -770,9 +770,13 @@
             
             <div id="waypoint-list-box" style="display: block; margin-top: 0; border-top: none; padding-top: 0; margin-bottom: 8px;"></div>
             
-            <div id="waypoint-footer" style="display: flex; gap: 4px; margin-top: 4px; margin-bottom: 2px;">
-                <button id="copy-coords-btn" class="text-btn" style="flex: 1; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--accent-green);" onclick="copySimbriefRoute()">COPY COORDS</button>
-                <button id="delete-fpl-btn" class="text-btn" style="flex: 1; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--exc-brd);" onclick="clearMeasurements()">DELETE PLAN</button>
+            <div id="waypoint-footer" style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px; margin-bottom: 2px;">
+                <div style="display: flex; gap: 4px;">
+                    <button id="export-if-fpl-btn" class="text-btn" style="flex: 1; padding: 4px 2px; font-weight: bold; font-size: 8px; border-color: var(--accent-green);" onclick="exportInfiniteFlightFpl()">EXPORT IF FPL</button>
+                    <button id="copy-simbrief-btn" class="text-btn" style="flex: 1; padding: 4px 2px; font-weight: bold; font-size: 8px; border-color: var(--accent-green);" onclick="copySimbriefRoute()">SIMBRIEF COORDS</button>
+                    <button id="copy-if-coords-btn" class="text-btn" style="flex: 1; padding: 4px 2px; font-weight: bold; font-size: 8px; border-color: var(--accent-green);" onclick="copyInfiniteFlightCoords()">IF COORDS</button>
+                </div>
+                <button id="delete-fpl-btn" class="text-btn" style="width: 100%; padding: 4px; font-weight: bold; font-size: 9px; border-color: var(--exc-brd);" onclick="clearMeasurements()">DELETE PLAN</button>
             </div>
 
         </div>
@@ -2274,16 +2278,95 @@ function updateAircraftDragLines() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//   COPY TO SIMBRIEF HANDLER
+//   FLIGHT PLAN EXPORTS
 // ═══════════════════════════════════════════════════════════
 
+function getMeasurementCoordinates() {
+    return measureMarkers.map(marker => {
+        const latlng = marker.getLatLng();
+        return { lat: latlng.lat, lng: latlng.lng };
+    });
+}
+
+function buildInfiniteFlightFpl(coords) {
+    const waypoints = coords.map((point, index) => ({
+        identifier: String(index + 1).padStart(3, '0'),
+        ...point
+    }));
+    const lines = [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        '<flight-plan xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www8.garmin.com/xmlschemas/FlightPlan/v1">',
+        '  <waypoint-table>'
+    ];
+
+    waypoints.forEach(waypoint => {
+        lines.push('    <waypoint>');
+        lines.push(`      <identifier>${waypoint.identifier}</identifier>`);
+        lines.push('      <type>USER WAYPOINT</type>');
+        lines.push(`      <lat>${waypoint.lat.toFixed(6)}</lat>`);
+        lines.push(`      <lon>${waypoint.lng.toFixed(6)}</lon>`);
+        lines.push('      <elevation>0</elevation>');
+        lines.push('    </waypoint>');
+    });
+
+    lines.push('  </waypoint-table>');
+    lines.push('  <route>');
+    lines.push('    <route-name>FLIGHTSMART ROUTE</route-name>');
+    waypoints.forEach(waypoint => {
+        lines.push('    <route-point>');
+        lines.push(`      <waypoint-identifier>${waypoint.identifier}</waypoint-identifier>`);
+        lines.push('      <waypoint-type>USER WAYPOINT</waypoint-type>');
+        lines.push('    </route-point>');
+    });
+    lines.push('  </route>');
+    lines.push('</flight-plan>');
+
+    return lines.join('\n');
+}
+
+window.exportInfiniteFlightFpl = function() {
+    const coords = getMeasurementCoordinates();
+    if (coords.length === 0) return;
+
+    const blob = new Blob([buildInfiniteFlightFpl(coords)], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'flightsmart_route.fpl';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+function showCopyResult(buttonId, originalLabel, error) {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
+    button.innerText = error ? 'COPY FAILED' : 'COPIED';
+    button.style.backgroundColor = error ? 'var(--exc-brd)' : 'var(--accent-green)';
+    button.style.color = 'var(--bg-dark)';
+    setTimeout(() => {
+        button.innerText = originalLabel;
+        button.style.backgroundColor = '';
+        button.style.color = '';
+    }, 2000);
+}
+
+async function copyRouteToClipboard(buttonId, originalLabel, text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        showCopyResult(buttonId, originalLabel, false);
+    } catch (err) {
+        console.error('Clipboard copy failed:', err);
+        showCopyResult(buttonId, originalLabel, true);
+    }
+}
+
 window.copySimbriefRoute = function() {
-    if (!measureMarkers || measureMarkers.length === 0) return;
-    
-    const coords = measureMarkers.map(m => {
-        const lat = m.getLatLng().lat;
-        const lng = m.getLatLng().lng;
-        
+    const coords = getMeasurementCoordinates();
+    if (coords.length === 0) return;
+
+    const formattedCoords = coords.map(({ lat, lng }) => {
         const latDir = lat >= 0 ? 'N' : 'S';
         const lngDir = lng >= 0 ? 'E' : 'W';
         
@@ -2317,20 +2400,17 @@ window.copySimbriefRoute = function() {
         return `${latStr}${lngStr}`;
     }).join(' ');
 
-    navigator.clipboard.writeText(coords).then(() => {
-        const btn = document.getElementById('copy-coords-btn');
-        if (btn) {
-            btn.innerText = 'COPIED';
-            btn.style.backgroundColor = 'var(--accent-green)';
-            btn.style.color = 'var(--bg-dark)';
-            
-            setTimeout(() => {
-                btn.innerText = 'COPY COORDS';
-                btn.style.backgroundColor = 'var(--bg-light)';
-                btn.style.color = 'var(--text-main)';
-            }, 2000);
-        }
-    }).catch(err => console.error('Clipboard copy failed:', err));
+    copyRouteToClipboard('copy-simbrief-btn', 'SIMBRIEF COORDS', formattedCoords);
+};
+
+window.copyInfiniteFlightCoords = function() {
+    const coords = getMeasurementCoordinates();
+    if (coords.length === 0) return;
+
+    const formattedCoords = coords
+        .map(({ lat, lng }) => `${lng.toFixed(14)},${lat.toFixed(14)},0`)
+        .join(' ');
+    copyRouteToClipboard('copy-if-coords-btn', 'IF COORDS', formattedCoords);
 };
 
 function toggleWaypointList() {
