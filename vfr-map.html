@@ -849,9 +849,7 @@
         <button id="btn-terrain-mask" title="Shade terrain above the selected altitude">TERRAIN</button>
         <input type="range" id="terrain-mask-slider" min="0" max="30000" step="500" value="5000" />
         <span id="terrain-mask-value">5,000 ft</span>
-        <button id="btn-terrain-link" title="Follow the tracked aircraft's altitude">A/C</button>
-        <button id="btn-terrain-clearance" title="Clearance mode: lighter shading, red wherever terrain is within 500 ft of the selected altitude or above it">CLR</button>
-    </div>
+        <button id="btn-terrain-link" title="Follow the tracked aircraft's altitude">A/C</button>    </div>
     
     <div id="elevation-box">Elevation: Hover over map...</div>
 
@@ -2960,12 +2958,11 @@ function showNoWikiPopup(latlng, msg = "No Wikipedia articles found within 10km.
 //   same Mapbox terrain-RGB tiles used for the leg MAX column; each tile is
 //   decoded once, so moving the slider only repaints from memory.
 // ═══════════════════════════════════════════════════════════
-const TERRAIN_MASK_MAX_Z = 15;          // highest zoom terrain-RGB tiles exist at
-const TERRAIN_MASK_BUFFER_FT = 1000;    // yellow band below the threshold
-const TERRAIN_CLEARANCE_FT = 500;       // clearance mode: required clearance above terrain
-let terrainClearanceMode = false;
-try { terrainClearanceMode = localStorage.getItem('terrainClearanceMode') === '1'; } catch (e) {}
-const TERRAIN_MASK_CACHE_LIMIT = 150;   // decoded source tiles kept in memory (~256 KB each)
+// Terrain tiles are never requested above this zoom; closer zooms crop and upscale
+// the zoom-12 tile (~30 m/px). One z12 tile covers 64 z15 tiles, so zooming in
+// costs almost no extra Mapbox requests. Same zoom as the leg MAX lookups.
+const TERRAIN_MASK_MAX_Z = topoOptions.scale; // 12
+const TERRAIN_MASK_BUFFER_FT = 1000;    // yellow band below the thresholdconst TERRAIN_MASK_CACHE_LIMIT = 150;   // decoded source tiles kept in memory (~256 KB each)
 const terrainMaskSourceCache = new Map(); // "z/x/y" -> Promise<Float32Array of feet>
 
 let terrainMaskThresholdFt = 5000;
@@ -3025,15 +3022,11 @@ function paintTerrainMask(canvas) {
     const ctx = canvas.getContext('2d');
     const img = ctx.createImageData(256, 256);
     const out = img.data;
-    // Normal: red above the altitude, yellow within 1,000 ft below it.
-    // Clearance: red wherever there's less than 500 ft clearance, yellow for the
-    // next 500 ft down, and both drawn lighter so the map shows through.
-    const redAbove = terrainClearanceMode
-        ? terrainMaskThresholdFt - TERRAIN_CLEARANCE_FT
-        : terrainMaskThresholdFt;
+    // Red above the altitude, yellow within 1,000 ft below it
+    const redAbove = terrainMaskThresholdFt;
     const yellowAbove = terrainMaskThresholdFt - TERRAIN_MASK_BUFFER_FT;
-    const redAlpha = terrainClearanceMode ? 95 : 150;
-    const yellowAlpha = terrainClearanceMode ? 55 : 80;
+    const redAlpha = 150;
+    const yellowAlpha = 80;
 
     for (let py = 0; py < 256; py++) {
         const row = (oy + Math.floor(py * scale)) * 256 + ox;
@@ -3063,7 +3056,7 @@ const TerrainMaskLayer = L.GridLayer.extend({
             return canvas;
         }
 
-        // Past z15 there are no terrain tiles, so crop and upscale the z15 parent
+        // Above TERRAIN_MASK_MAX_Z, crop and upscale the parent tile at that zoom
         const dz = Math.max(0, coords.z - TERRAIN_MASK_MAX_Z);
         const f = Math.pow(2, dz);
         canvas._terrainSub = {
@@ -3108,17 +3101,6 @@ const terrainMaskBtn = document.getElementById('btn-terrain-mask');
 const terrainLinkBtn = document.getElementById('btn-terrain-link');
 const terrainMaskSlider = document.getElementById('terrain-mask-slider');
 const terrainMaskValue = document.getElementById('terrain-mask-value');
-const terrainClearanceBtn = document.getElementById('btn-terrain-clearance');
-terrainClearanceBtn.classList.toggle('active', terrainClearanceMode);
-
-terrainClearanceBtn.addEventListener('click', () => {
-    terrainClearanceMode = !terrainClearanceMode;
-    terrainClearanceBtn.classList.toggle('active', terrainClearanceMode);
-    try { localStorage.setItem('terrainClearanceMode', terrainClearanceMode ? '1' : '0'); } catch (e) {}
-    if (!map.hasLayer(terrainMaskLayer)) setTerrainMaskEnabled(true);
-    repaintTerrainMask();
-});
-
 function setTerrainMaskThreshold(ft) {
     terrainMaskThresholdFt = Math.round(ft);
     terrainMaskSlider.value = terrainMaskThresholdFt;
