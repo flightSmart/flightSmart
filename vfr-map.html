@@ -594,6 +594,52 @@
             font-weight: bold;
         }
 
+        /* ── TERRAIN ALTITUDE MASK CONTROL ── */
+        #terrain-mask-control {
+            position: absolute;
+            top: 42px;
+            left: 50px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-main);
+            padding: 3px 6px 3px 3px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+        }
+
+        #terrain-mask-control button {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            border: 1px solid var(--border-main);
+            padding: 4px 8px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #terrain-mask-control button:hover { background-color: var(--bg-light); }
+        #terrain-mask-control button.active {
+            background-color: #d8d8d9;
+            color: var(--bg-dark);
+            border-color: var(--bg-dark);
+        }
+
+        #terrain-mask-slider {
+            width: 170px;
+            accent-color: #61ba92;
+            cursor: pointer;
+        }
+
+        #terrain-mask-value {
+            min-width: 64px;
+            text-align: right;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
         /* ═══════════════════════════════════════════════════════════
         MOBILE RESPONSIVENESS
         ═══════════════════════════════════════════════════════════ */
@@ -659,6 +705,17 @@
                 flex: 1;
                 text-align: center;
             }
+
+            #terrain-mask-control {
+                top: auto;
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 95%;
+            }
+            #terrain-mask-control button { padding: 8px 8px; font-size: 12px; }
+            #terrain-mask-slider { flex: 1; width: auto; }
+            #terrain-mask-value { font-size: 12px; }
 
             /* Adjust context menu size for thumbs */
             .context-menu-item {
@@ -786,6 +843,14 @@
         <button onclick="switchLayer('topo')">TOPO</button>
         <button onclick="switchLayer('sat')">SATELLITE</button>
         <button onclick="switchLayer('relief')">RELIEF</button>
+    </div>
+
+    <div id="terrain-mask-control">
+        <button id="btn-terrain-mask" title="Shade terrain above the selected altitude">TERRAIN</button>
+        <input type="range" id="terrain-mask-slider" min="0" max="30000" step="500" value="5000" />
+        <span id="terrain-mask-value">5,000 ft</span>
+        <button id="btn-terrain-link" title="Follow the tracked aircraft's altitude">A/C</button>
+        <button id="btn-terrain-clearance" title="Clearance mode: lighter shading, red wherever terrain is within 500 ft of the selected altitude or above it">CLR</button>
     </div>
     
     <div id="elevation-box">Elevation: Hover over map...</div>
@@ -1293,6 +1358,7 @@ async function drawFlight(flight, isFirstLoad, generation = trackingGeneration, 
     const updateSequence = ++flightUpdateSequence;
     currentAircraftAltitude = flight.altitude;
     currentAircraftSpeed = flight.speed;
+    syncTerrainMaskToAircraft();
     const coords = [flight.latitude, flight.longitude];
 
     let terrainElevationFeet = 0;
@@ -2886,6 +2952,219 @@ function showNoWikiPopup(latlng, msg = "No Wikipedia articles found within 10km.
 //     clearTimeout(wikiDebounceTimer);
 //     wikiDebounceTimer = setTimeout(updateWikipedia, 600);
 // });
+
+// ═══════════════════════════════════════════════════════════
+//   TERRAIN ALTITUDE MASK
+//   Shades every pixel whose terrain is above the chosen altitude (red),
+//   and terrain within 1,000 ft below it (yellow). Elevations come from the
+//   same Mapbox terrain-RGB tiles used for the leg MAX column; each tile is
+//   decoded once, so moving the slider only repaints from memory.
+// ═══════════════════════════════════════════════════════════
+const TERRAIN_MASK_MAX_Z = 15;          // highest zoom terrain-RGB tiles exist at
+const TERRAIN_MASK_BUFFER_FT = 1000;    // yellow band below the threshold
+const TERRAIN_CLEARANCE_FT = 500;       // clearance mode: required clearance above terrain
+let terrainClearanceMode = false;
+try { terrainClearanceMode = localStorage.getItem('terrainClearanceMode') === '1'; } catch (e) {}
+const TERRAIN_MASK_CACHE_LIMIT = 150;   // decoded source tiles kept in memory (~256 KB each)
+const terrainMaskSourceCache = new Map(); // "z/x/y" -> Promise<Float32Array of feet>
+
+let terrainMaskThresholdFt = 5000;
+try {
+    const saved = parseInt(localStorage.getItem('terrainMaskThresholdFt'), 10);
+    if (!isNaN(saved)) terrainMaskThresholdFt = Math.round(saved / 500) * 500; // snap to slider step
+} catch (e) {}
+
+map.createPane('terrainMaskPane');
+map.getPane('terrainMaskPane').style.zIndex = 250;        // above base tiles, below lines/markers
+map.getPane('terrainMaskPane').style.pointerEvents = 'none';
+
+function getTerrainMaskSource(z, x, y) {
+    const key = `${z}/${x}/${y}`;
+    let promise = terrainMaskSourceCache.get(key);
+    if (promise) {
+        // Refresh LRU position
+        terrainMaskSourceCache.delete(key);
+        terrainMaskSourceCache.set(key, promise);
+        return promise;
+    }
+
+    promise = fetch(`https://api.mapbox.com/v4/mapbox.terrain-rgb/${z}/${x}/${y}.pngraw?access_token=${topoOptions.token}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`Terrain mask tile ${key}: HTTP ${res.status}`);
+            return res.blob();
+        })
+        .then(blob => createImageBitmap(blob))
+        .then(bitmap => {
+            const c = document.createElement('canvas');
+            c.width = c.height = 256;
+            const ctx = c.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(bitmap, 0, 0, 256, 256);
+            const d = ctx.getImageData(0, 0, 256, 256).data;
+            const feet = new Float32Array(256 * 256);
+            for (let i = 0, j = 0; i < feet.length; i++, j += 4) {
+                feet[i] = (-10000 + (d[j] * 65536 + d[j + 1] * 256 + d[j + 2]) * 0.1) * 3.28084;
+            }
+            return feet;
+        })
+        .catch(err => {
+            terrainMaskSourceCache.delete(key); // allow retry
+            throw err;
+        });
+
+    terrainMaskSourceCache.set(key, promise);
+    while (terrainMaskSourceCache.size > TERRAIN_MASK_CACHE_LIMIT) {
+        terrainMaskSourceCache.delete(terrainMaskSourceCache.keys().next().value);
+    }
+    return promise;
+}
+
+function paintTerrainMask(canvas) {
+    const src = canvas._terrainFt;
+    if (!src) return;
+    const { scale, ox, oy } = canvas._terrainSub;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.createImageData(256, 256);
+    const out = img.data;
+    // Normal: red above the altitude, yellow within 1,000 ft below it.
+    // Clearance: red wherever there's less than 500 ft clearance, yellow for the
+    // next 500 ft down, and both drawn lighter so the map shows through.
+    const redAbove = terrainClearanceMode
+        ? terrainMaskThresholdFt - TERRAIN_CLEARANCE_FT
+        : terrainMaskThresholdFt;
+    const yellowAbove = terrainMaskThresholdFt - TERRAIN_MASK_BUFFER_FT;
+    const redAlpha = terrainClearanceMode ? 95 : 150;
+    const yellowAlpha = terrainClearanceMode ? 55 : 80;
+
+    for (let py = 0; py < 256; py++) {
+        const row = (oy + Math.floor(py * scale)) * 256 + ox;
+        for (let px = 0; px < 256; px++) {
+            const elev = src[row + Math.floor(px * scale)];
+            const o = (py * 256 + px) * 4;
+            if (elev > redAbove) {
+                out[o] = 252; out[o + 1] = 3; out[o + 2] = 28; out[o + 3] = redAlpha;
+            } else if (elev > yellowAbove) {
+                out[o] = 255; out[o + 1] = 204; out[o + 2] = 0; out[o + 3] = yellowAlpha;
+            }
+        }
+    }
+    ctx.putImageData(img, 0, 0);
+}
+
+const TerrainMaskLayer = L.GridLayer.extend({
+    createTile: function(coords, done) {
+        const canvas = L.DomUtil.create('canvas');
+        canvas.width = canvas.height = 256;
+
+        const n = Math.pow(2, coords.z);
+        const x = ((coords.x % n) + n) % n;   // wrap around the antimeridian
+        const y = coords.y;
+        if (y < 0 || y >= n) {
+            setTimeout(() => done(null, canvas), 0);
+            return canvas;
+        }
+
+        // Past z15 there are no terrain tiles, so crop and upscale the z15 parent
+        const dz = Math.max(0, coords.z - TERRAIN_MASK_MAX_Z);
+        const f = Math.pow(2, dz);
+        canvas._terrainSub = {
+            scale: 1 / f,
+            ox: Math.floor((x % f) * 256 / f),
+            oy: Math.floor((y % f) * 256 / f)
+        };
+
+        getTerrainMaskSource(coords.z - dz, Math.floor(x / f), Math.floor(y / f))
+            .then(feet => {
+                canvas._terrainFt = feet;
+                paintTerrainMask(canvas);
+                done(null, canvas);
+            })
+            .catch(err => {
+                console.warn(err);
+                done(err, canvas);
+            });
+
+        return canvas;
+    }
+});
+
+const terrainMaskLayer = new TerrainMaskLayer({
+    pane: 'terrainMaskPane',
+    tileSize: 256,
+    updateWhenZooming: false,
+    keepBuffer: 1
+});
+
+let terrainMaskRepaintQueued = false;
+function repaintTerrainMask() {
+    if (terrainMaskRepaintQueued || !map.hasLayer(terrainMaskLayer)) return;
+    terrainMaskRepaintQueued = true;
+    requestAnimationFrame(() => {
+        terrainMaskRepaintQueued = false;
+        Object.values(terrainMaskLayer._tiles).forEach(tile => paintTerrainMask(tile.el));
+    });
+}
+
+const terrainMaskBtn = document.getElementById('btn-terrain-mask');
+const terrainLinkBtn = document.getElementById('btn-terrain-link');
+const terrainMaskSlider = document.getElementById('terrain-mask-slider');
+const terrainMaskValue = document.getElementById('terrain-mask-value');
+const terrainClearanceBtn = document.getElementById('btn-terrain-clearance');
+terrainClearanceBtn.classList.toggle('active', terrainClearanceMode);
+
+terrainClearanceBtn.addEventListener('click', () => {
+    terrainClearanceMode = !terrainClearanceMode;
+    terrainClearanceBtn.classList.toggle('active', terrainClearanceMode);
+    try { localStorage.setItem('terrainClearanceMode', terrainClearanceMode ? '1' : '0'); } catch (e) {}
+    if (!map.hasLayer(terrainMaskLayer)) setTerrainMaskEnabled(true);
+    repaintTerrainMask();
+});
+
+function setTerrainMaskThreshold(ft) {
+    terrainMaskThresholdFt = Math.round(ft);
+    terrainMaskSlider.value = terrainMaskThresholdFt;
+    terrainMaskValue.innerText = `${terrainMaskThresholdFt.toLocaleString()} ft`;
+    try { localStorage.setItem('terrainMaskThresholdFt', terrainMaskThresholdFt); } catch (e) {}
+    repaintTerrainMask();
+}
+
+function setTerrainMaskEnabled(enabled) {
+    if (enabled && !map.hasLayer(terrainMaskLayer)) terrainMaskLayer.addTo(map);
+    if (!enabled && map.hasLayer(terrainMaskLayer)) map.removeLayer(terrainMaskLayer);
+    terrainMaskBtn.classList.toggle('active', enabled);
+    if (!enabled) terrainLinkBtn.classList.remove('active');
+    try { localStorage.setItem('terrainMaskEnabled', enabled ? '1' : '0'); } catch (e) {}
+}
+
+// Called from drawFlight() on every position update
+function syncTerrainMaskToAircraft() {
+    if (!terrainLinkBtn.classList.contains('active') || currentAircraftAltitude === null) return;
+    setTerrainMaskThreshold(currentAircraftAltitude);
+}
+
+terrainMaskBtn.addEventListener('click', () => {
+    setTerrainMaskEnabled(!map.hasLayer(terrainMaskLayer));
+});
+
+terrainMaskSlider.addEventListener('input', () => {
+    terrainLinkBtn.classList.remove('active');   // manual input overrides aircraft link
+    if (!map.hasLayer(terrainMaskLayer)) setTerrainMaskEnabled(true);
+    setTerrainMaskThreshold(Number(terrainMaskSlider.value));
+});
+
+terrainLinkBtn.addEventListener('click', () => {
+    const linking = !terrainLinkBtn.classList.contains('active');
+    terrainLinkBtn.classList.toggle('active', linking);
+    if (linking) {
+        setTerrainMaskEnabled(true);
+        terrainLinkBtn.classList.add('active');
+        syncTerrainMaskToAircraft();
+    }
+});
+
+setTerrainMaskThreshold(terrainMaskThresholdFt);
+try {
+    if (localStorage.getItem('terrainMaskEnabled') === '1') setTerrainMaskEnabled(true);
+} catch (e) {}
 
     loadMeasurementPlan();
 
